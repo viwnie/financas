@@ -1,0 +1,72 @@
+
+> frontend@0.1.0 build
+> next build
+
+   Ôû▓ Next.js 16.0.3 (Turbopack)
+
+   Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 3 errors:
+./src/app/layout.tsx:21:1
+Module not found: Can't resolve '@/components/ui/sonner'
+  19 | };
+  20 |
+> 21 | import { Toaster } from "@/components/ui/sonner";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  22 | import { NotificationListener } from "@/components/notification-listener";
+  23 |
+  24 | export default function RootLayout({
+
+Import map: aliased to relative './src/components/ui/sonner' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/components/notification-listener.tsx:7:1
+Module not found: Can't resolve 'sonner'
+   5 | import { io } from 'socket.io-client';
+   6 | import { useAuthStore } from '@/store/auth-store';
+>  7 | import { toast } from 'sonner';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   8 | export function NotificationListener() {
+   9 |   const $ = _c(4);
+  10 |   const {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/notification-listener.tsx
+    ./src/app/layout.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/components/notification-listener.tsx:6:1
+Module not found: Can't resolve 'sonner'
+  4 | import { io } from 'socket.io-client';
+  5 | import { useAuthStore } from '@/store/auth-store';
+> 6 | import { toast } from 'sonner';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 |
+  8 | export function NotificationListener() {
+  9 |     const { token, user } = useAuthStore();
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/notification-listener.tsx
+    ./src/app/layout.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./src/app/layout.tsx:21:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/components/notification-listener.tsx:7:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/components/notification-listener.tsx:6:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

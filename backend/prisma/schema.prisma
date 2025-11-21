@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXITED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PAID
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  username  String   @unique
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sentFriendRequests     Friendship[] @relation("FriendshipRequester")
+  receivedFriendRequests Friendship[] @relation("FriendshipAddressee")
+  
+  createdTransactions    Transaction[] @relation("TransactionCreator")
+  participatingIn        TransactionParticipant[]
+  
+  categories             Category[] // Custom categories created by user
+  notifications          Notification[]
+  
+  sentMergeRequests     MergeRequest[] @relation("MergeRequester")
+  receivedMergeRequests MergeRequest[] @relation("MergeTarget")
+}
+
+model MergeRequest {
+  id              String   @id @default(uuid())
+  requesterId     String
+  targetUserId    String
+  placeholderName String
+  status          String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  requester       User     @relation("MergeRequester", fields: [requesterId], references: [id])
+  targetUser      User     @relation("MergeTarget", fields: [targetUserId], references: [id])
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester   User @relation("FriendshipRequester", fields: [requesterId], references: [id])
+  addressee   User @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  isSystem  Boolean  @default(false) // If true, available to everyone
+  userId    String?  // If null and isSystem=false, it's an error. If null and isSystem=true, it's global.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  type        TransactionType
+  amount      Decimal         @db.Decimal(10, 2)
+  description String?
+  date        DateTime
+  isShared    Boolean         @default(false)
+  isFixed     Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  creatorId   String
+  creator     User     @relation("TransactionCreator", fields: [creatorId], references: [id])
+
+  installments Installment[]
+  participants TransactionParticipant[]
+}
+
+model Installment {
+  id            String            @id @default(uuid())
+  transactionId String
+  number        Int
+  amount        Decimal           @db.Decimal(10, 2)
+  dueDate       DateTime
+  status        InstallmentStatus @default(PENDING)
+  
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model TransactionParticipant {
+  id            String            @id @default(uuid())
+  transactionId String
+  userId        String?           // Nullable for placeholder friends (future feature)
+  placeholderName String?         // For non-registered friends
+  shareAmount   Decimal?          @db.Decimal(10, 2)
+  sharePercent  Decimal?          @db.Decimal(5, 2)
+  status        ParticipantStatus @default(PENDING)
+  
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  user          User?         @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

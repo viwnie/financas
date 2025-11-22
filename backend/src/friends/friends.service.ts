@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma.service';
 import { FriendshipStatus } from '@prisma/client';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
@@ -391,5 +392,37 @@ export class FriendsService {
         }
 
         return updatedRequest;
+    }
+
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    async handleFriendshipCleanup() {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        // Delete PENDING requests older than 7 days
+        const deletedPending = await this.prisma.friendship.deleteMany({
+            where: {
+                status: FriendshipStatus.PENDING,
+                updatedAt: { lt: sevenDaysAgo }
+            }
+        });
+
+        // Delete CANCELLED requests older than 24 hours
+        const deletedCancelled = await this.prisma.friendship.deleteMany({
+            where: {
+                status: FriendshipStatus.CANCELLED,
+                updatedAt: { lt: oneDayAgo }
+            }
+        });
+
+        // Delete FriendRequestLogs older than 30 days
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const deletedLogs = await this.prisma.friendRequestLog.deleteMany({
+            where: {
+                createdAt: { lt: thirtyDaysAgo }
+            }
+        });
+
+        console.log(`[Cleanup] Deleted ${deletedPending.count} pending, ${deletedCancelled.count} cancelled friendships, and ${deletedLogs.count} request logs.`);
     }
 }

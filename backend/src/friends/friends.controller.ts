@@ -58,6 +58,16 @@ export class FriendsController {
         return this.friendsService.getExternalFriends(req.user.userId);
     }
 
+    @Post('external')
+    addExternalFriend(@Request() req, @Body('name') name: string) {
+        return this.friendsService.addExternalFriend(req.user.userId, name);
+    }
+
+    @Delete('external/:id')
+    deleteExternalFriend(@Request() req, @Param('id') id: string) {
+        return this.friendsService.deleteExternalFriend(req.user.userId, id);
+    }
+
     @Post('merge')
     createMergeRequest(@Request() req, @Body() body: { placeholderName: string; targetUsername: string }) {
         return this.friendsService.createMergeRequest(req.user.userId, body.placeholderName, body.targetUsername);

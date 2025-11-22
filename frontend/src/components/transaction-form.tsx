@@ -400,7 +400,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                     {filteredFriends.length > 0 ? (
                                         filteredFriends.map((friend: any) => (
                                             <div
-                                                key={friend.id}
+                                                key={friend.username}
                                                 className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer rounded"
                                                 onClick={() => handleAddFriend(friend)}
                                             >

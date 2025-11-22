@@ -58,6 +58,17 @@ model User {
 
   sentRequestLogs     FriendRequestLog[] @relation("RequestLogRequester")
   receivedRequestLogs FriendRequestLog[] @relation("RequestLogAddressee")
+  
+  externalFriends     ExternalFriend[]
+}
+
+model ExternalFriend {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model FriendRequestLog {

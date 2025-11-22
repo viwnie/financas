@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
-import { Search } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     Dialog,
@@ -120,7 +120,7 @@ export default function FriendsPage() {
         enabled: !!token && searchQuery.length >= 2,
     });
 
-    const { data: externalFriends = [] } = useQuery<{ name: string }[]>({
+    const { data: externalFriends = [] } = useQuery<{ id: string | null, name: string }[]>({
         queryKey: ['externalFriends'],
         queryFn: async () => {
             const res = await fetch('http://localhost:3000/friends/external', {
@@ -236,6 +236,46 @@ export default function FriendsPage() {
         },
     });
 
+    const addExternalFriendMutation = useMutation({
+        mutationFn: async (name: string) => {
+            const res = await fetch('http://localhost:3000/friends/external', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ name }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'Failed to add external friend');
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            setSearchQuery('');
+            setShowSuggestions(false);
+            queryClient.invalidateQueries({ queryKey: ['externalFriends'] });
+            toast.success('External friend added');
+        },
+        onError: (err) => toast.error(err.message),
+    });
+
+    const deleteExternalFriendMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`http://localhost:3000/friends/external/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to delete external friend');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['externalFriends'] });
+            toast.success('External friend deleted');
+        },
+    });
+
     const createMergeRequestMutation = useMutation({
         mutationFn: async () => {
             if (!selectedExternalFriend || !selectedMergeTarget) return;
@@ -343,7 +383,7 @@ export default function FriendsPage() {
                                         </Button>
                                     </div>
 
-                                    {showSuggestions && searchResults.length > 0 && (
+                                    {showSuggestions && searchQuery && (
                                         <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-md">
                                             <ul className="py-1">
                                                 {searchResults.map((user) => (
@@ -356,6 +396,15 @@ export default function FriendsPage() {
                                                         <span className="text-xs text-muted-foreground">@{user.username}</span>
                                                     </li>
                                                 ))}
+                                                {searchResults.length === 0 && (
+                                                    <li
+                                                        className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex justify-between items-center text-blue-600"
+                                                        onClick={() => addExternalFriendMutation.mutate(searchQuery)}
+                                                    >
+                                                        <span>Adicionar "{searchQuery}" (Não cadastrado)</span>
+                                                        <UserPlus className="h-4 w-4" />
+                                                    </li>
+                                                )}
                                             </ul>
                                         </div>
                                     )}
@@ -510,16 +559,28 @@ export default function FriendsPage() {
                                                     <p className="font-medium">{friend.name}</p>
                                                     <p className="text-sm text-muted-foreground">Ad-hoc participant</p>
                                                 </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        setSelectedExternalFriend(friend.name);
-                                                        setMergeModalOpen(true);
-                                                    }}
-                                                >
-                                                    Link to User
-                                                </Button>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setSelectedExternalFriend(friend.name);
+                                                            setMergeModalOpen(true);
+                                                        }}
+                                                    >
+                                                        Link to User
+                                                    </Button>
+                                                    {friend.id && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            onClick={() => deleteExternalFriendMutation.mutate(friend.id!)}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

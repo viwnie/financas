@@ -254,24 +254,59 @@ export class FriendsService {
             where: { id: requestId },
         });
     }
-
     async getExternalFriends(userId: string) {
-        // Find transactions created by user where participants have no userId (placeholder)
+        // 1. Get explicitly added external friends
+        const storedExternalFriends = await this.prisma.externalFriend.findMany({
+            where: { userId },
+            select: { id: true, name: true }
+        });
+
+        // 2. Find transactions created by user where participants have no userId (placeholder)
         const transactions = await this.prisma.transaction.findMany({
             where: { creatorId: userId },
             include: { participants: true }
         });
 
-        const externalFriends = new Set<string>();
+        const externalFriendsMap = new Map<string, { id: string | null, name: string }>();
+
+        // Add stored ones
+        storedExternalFriends.forEach(f => externalFriendsMap.set(f.name, { id: f.id, name: f.name }));
+
+        // Add from transactions
         transactions.forEach(t => {
             t.participants.forEach(p => {
                 if (!p.userId && p.placeholderName) {
-                    externalFriends.add(p.placeholderName);
+                    if (!externalFriendsMap.has(p.placeholderName)) {
+                        externalFriendsMap.set(p.placeholderName, { id: null, name: p.placeholderName });
+                    }
                 }
             });
         });
 
-        return Array.from(externalFriends).map(name => ({ name }));
+        return Array.from(externalFriendsMap.values());
+    }
+
+    async addExternalFriend(userId: string, name: string) {
+        // Check if already exists in DB
+        const existing = await this.prisma.externalFriend.findFirst({
+            where: { userId, name }
+        });
+
+        if (existing) {
+            throw new BadRequestException('External friend already exists');
+        }
+
+        return this.prisma.externalFriend.create({
+            data: { userId, name }
+        });
+    }
+
+    async deleteExternalFriend(userId: string, id: string) {
+        const friend = await this.prisma.externalFriend.findUnique({ where: { id } });
+        if (!friend) throw new NotFoundException('External friend not found');
+        if (friend.userId !== userId) throw new BadRequestException('Not authorized');
+
+        return this.prisma.externalFriend.delete({ where: { id } });
     }
 
     async createMergeRequest(requesterId: string, placeholderName: string, targetUsername: string) {

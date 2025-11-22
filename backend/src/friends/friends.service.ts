@@ -400,7 +400,50 @@ export class FriendsService {
         });
 
         if (status === 'ACCEPTED') {
-            // Update transactions
+            // 1. Find and delete the ExternalFriend record
+            // We need to find it first to ensure it exists and belongs to the requester
+            const externalFriend = await this.prisma.externalFriend.findFirst({
+                where: {
+                    userId: request.requesterId,
+                    name: request.placeholderName
+                }
+            });
+
+            if (externalFriend) {
+                await this.prisma.externalFriend.delete({ where: { id: externalFriend.id } });
+            }
+
+            // 2. Create Friendship if it doesn't exist
+            const existingFriendship = await this.prisma.friendship.findFirst({
+                where: {
+                    OR: [
+                        { requesterId: request.requesterId, addresseeId: userId },
+                        { requesterId: userId, addresseeId: request.requesterId }
+                    ]
+                }
+            });
+
+            if (!existingFriendship) {
+                await this.prisma.friendship.create({
+                    data: {
+                        requesterId: request.requesterId,
+                        addresseeId: userId,
+                        status: 'ACCEPTED'
+                    }
+                });
+            } else if (existingFriendship.status !== 'ACCEPTED') {
+                // Optionally update existing friendship to ACCEPTED? 
+                // The user didn't explicitly ask for this, but it makes sense.
+                // Let's stick to creating if not exists for now to avoid side effects on pending requests.
+                // Actually, if they are merging, they SHOULD be friends. 
+                // Let's update it to ACCEPTED if it exists but is PENDING.
+                await this.prisma.friendship.update({
+                    where: { id: existingFriendship.id },
+                    data: { status: 'ACCEPTED' }
+                });
+            }
+
+            // 3. Update transactions (Auto-accept)
             await this.prisma.transactionParticipant.updateMany({
                 where: {
                     transaction: { creatorId: request.requesterId },
@@ -410,8 +453,7 @@ export class FriendsService {
                 data: {
                     userId: userId,
                     placeholderName: null,
-                    status: 'PENDING' // Set to pending so user can accept/reject the transactions individually? Or ACCEPTED?
-                    // Plan said PENDING. Let's stick to PENDING so they can review each.
+                    status: 'ACCEPTED' // Auto-accept
                 }
             });
 

@@ -55,6 +55,19 @@ model User {
   
   sentMergeRequests     MergeRequest[] @relation("MergeRequester")
   receivedMergeRequests MergeRequest[] @relation("MergeTarget")
+
+  sentRequestLogs     FriendRequestLog[] @relation("RequestLogRequester")
+  receivedRequestLogs FriendRequestLog[] @relation("RequestLogAddressee")
+}
+
+model FriendRequestLog {
+  id          String   @id @default(uuid())
+  requesterId String
+  addresseeId String
+  createdAt   DateTime @default(now())
+
+  requester   User @relation("RequestLogRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User @relation("RequestLogAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
 }
 
 model MergeRequest {

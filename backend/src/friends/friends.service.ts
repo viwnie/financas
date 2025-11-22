@@ -23,6 +23,20 @@ export class FriendsService {
             throw new BadRequestException('You cannot add yourself');
         }
 
+        // Rate Limit Check
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const recentRequests = await this.prisma.friendRequestLog.count({
+            where: {
+                requesterId,
+                addresseeId: userToAdd.id,
+                createdAt: { gte: oneHourAgo },
+            },
+        });
+
+        if (recentRequests >= 7) {
+            throw new BadRequestException('You have reached the limit of friend requests to this user. Please try again later.');
+        }
+
         const existingFriendship = await this.prisma.friendship.findFirst({
             where: {
                 OR: [
@@ -40,13 +54,13 @@ export class FriendsService {
                 throw new BadRequestException('Friend request already pending');
             }
 
-            // Anti-Spam Check
-            if (existingFriendship.status === FriendshipStatus.CANCELLED) {
-                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-                if (existingFriendship.updatedAt > fiveMinutesAgo) {
-                    throw new BadRequestException('Please wait 5 minutes before sending another request to this user.');
-                }
-            }
+            // Anti-Spam Check - Removed in favor of 7 requests/hour limit
+            // if (existingFriendship.status === FriendshipStatus.CANCELLED) {
+            //     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            //     if (existingFriendship.updatedAt > fiveMinutesAgo) {
+            //         throw new BadRequestException('Please wait 5 minutes before sending another request to this user.');
+            //     }
+            // }
 
             // If declined or cancelled (and cooldown passed), update to PENDING
             const updated = await this.prisma.friendship.update({
@@ -54,6 +68,12 @@ export class FriendsService {
                 data: { status: FriendshipStatus.PENDING, requesterId, addresseeId: userToAdd.id },
                 include: { requester: { select: { name: true } } }
             });
+
+            // Log the request
+            await this.prisma.friendRequestLog.create({
+                data: { requesterId, addresseeId: userToAdd.id }
+            });
+
             this.notificationsGateway.sendNotification(userToAdd.id, 'friend_request', {
                 message: `${updated.requester.name} sent you a friend request`,
                 friendshipId: updated.id
@@ -68,6 +88,11 @@ export class FriendsService {
                 status: FriendshipStatus.PENDING,
             },
             include: { requester: { select: { name: true } } }
+        });
+
+        // Log the request
+        await this.prisma.friendRequestLog.create({
+            data: { requesterId, addresseeId: userToAdd.id }
         });
 
         this.notificationsGateway.sendNotification(userToAdd.id, 'friend_request', {

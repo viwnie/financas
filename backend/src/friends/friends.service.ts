@@ -54,14 +54,6 @@ export class FriendsService {
                 throw new BadRequestException('Friend request already pending');
             }
 
-            // Anti-Spam Check - Removed in favor of 7 requests/hour limit
-            // if (existingFriendship.status === FriendshipStatus.CANCELLED) {
-            //     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-            //     if (existingFriendship.updatedAt > fiveMinutesAgo) {
-            //         throw new BadRequestException('Please wait 5 minutes before sending another request to this user.');
-            //     }
-            // }
-
             // If declined or cancelled (and cooldown passed), update to PENDING
             const updated = await this.prisma.friendship.update({
                 where: { id: existingFriendship.id },
@@ -146,8 +138,8 @@ export class FriendsService {
                 ],
             },
             include: {
-                requester: { select: { id: true, name: true, username: true, email: true } },
-                addressee: { select: { id: true, name: true, username: true, email: true } },
+                requester: { select: { name: true, username: true } },
+                addressee: { select: { name: true, username: true } },
             },
         });
 
@@ -163,7 +155,7 @@ export class FriendsService {
                 status: FriendshipStatus.PENDING,
             },
             include: {
-                requester: { select: { id: true, name: true, username: true } },
+                requester: { select: { name: true, username: true } },
             },
         });
     }
@@ -175,7 +167,7 @@ export class FriendsService {
                 status: FriendshipStatus.PENDING,
             },
             include: {
-                addressee: { select: { id: true, name: true, username: true } },
+                addressee: { select: { name: true, username: true } },
             },
         });
     }
@@ -204,12 +196,17 @@ export class FriendsService {
         });
     }
 
-    async removeFriend(userId: string, friendId: string) {
+    async removeFriend(userId: string, username: string) {
+        const friend = await this.prisma.user.findUnique({ where: { username } });
+        if (!friend) {
+            throw new NotFoundException('User not found');
+        }
+
         const friendship = await this.prisma.friendship.findFirst({
             where: {
                 OR: [
-                    { requesterId: userId, addresseeId: friendId, status: FriendshipStatus.ACCEPTED },
-                    { requesterId: friendId, addresseeId: userId, status: FriendshipStatus.ACCEPTED },
+                    { requesterId: userId, addresseeId: friend.id, status: FriendshipStatus.ACCEPTED },
+                    { requesterId: friend.id, addresseeId: userId, status: FriendshipStatus.ACCEPTED },
                 ],
             },
         });
@@ -230,7 +227,7 @@ export class FriendsService {
                 status: FriendshipStatus.DECLINED,
             },
             include: {
-                addressee: { select: { id: true, name: true, username: true } },
+                addressee: { select: { name: true, username: true } },
             },
         });
     }
@@ -276,16 +273,16 @@ export class FriendsService {
         return Array.from(externalFriends).map(name => ({ name }));
     }
 
-    async createMergeRequest(requesterId: string, placeholderName: string, targetUserId: string) {
+    async createMergeRequest(requesterId: string, placeholderName: string, targetUsername: string) {
         // Verify target user exists
-        const targetUser = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+        const targetUser = await this.prisma.user.findUnique({ where: { username: targetUsername } });
         if (!targetUser) throw new NotFoundException('Target user not found');
 
         // Check if request already exists
         const existing = await this.prisma.mergeRequest.findFirst({
             where: {
                 requesterId,
-                targetUserId,
+                targetUserId: targetUser.id,
                 placeholderName,
                 status: 'PENDING'
             }
@@ -296,7 +293,7 @@ export class FriendsService {
         const request = await this.prisma.mergeRequest.create({
             data: {
                 requesterId,
-                targetUserId,
+                targetUserId: targetUser.id,
                 placeholderName,
                 status: 'PENDING'
             },
@@ -304,7 +301,7 @@ export class FriendsService {
         });
 
         // Notify target user
-        this.notificationsGateway.sendNotification(targetUserId, 'merge_request', {
+        this.notificationsGateway.sendNotification(targetUser.id, 'merge_request', {
             message: `${request.requester.name} wants to link "External Friend: ${placeholderName}" to your account`,
             requestId: request.id
         });

@@ -38,10 +38,11 @@ export class FriendsController {
         return this.friendsService.cancelRequest(req.user.userId, id);
     }
 
-    @Delete(':friendId')
-    removeFriend(@Request() req, @Param('friendId') friendId: string) {
-        return this.friendsService.removeFriend(req.user.userId, friendId);
+    @Delete(':username')
+    removeFriend(@Request() req, @Param('username') username: string) {
+        return this.friendsService.removeFriend(req.user.userId, username);
     }
+
     @Get('declined')
     getDeclinedRequests(@Request() req) {
         return this.friendsService.getDeclinedRequests(req.user.userId);
@@ -58,8 +59,8 @@ export class FriendsController {
     }
 
     @Post('merge')
-    createMergeRequest(@Request() req, @Body() body: { placeholderName: string; targetUserId: string }) {
-        return this.friendsService.createMergeRequest(req.user.userId, body.placeholderName, body.targetUserId);
+    createMergeRequest(@Request() req, @Body() body: { placeholderName: string; targetUsername: string }) {
+        return this.friendsService.createMergeRequest(req.user.userId, body.placeholderName, body.targetUsername);
     }
 
     @Get('merge/received')

@@ -46,7 +46,7 @@ export class UsersService {
         });
     }
 
-    async search(query: string, currentUserId: string): Promise<User[]> {
+    async search(query: string, currentUserId: string): Promise<Pick<User, 'name' | 'username'>[]> {
         return this.prisma.user.findMany({
             where: {
                 username: {
@@ -58,6 +58,10 @@ export class UsersService {
                 },
             },
             take: 10,
+            select: {
+                name: true,
+                username: true
+            }
         });
     }
 }

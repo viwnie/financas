@@ -20,16 +20,13 @@ import {
 } from "@/components/ui/dialog";
 
 interface Friend {
-    id: string;
     name: string;
     username: string;
-    email: string;
 }
 
 interface FriendRequest {
     id: string;
     requester: {
-        id: string;
         name: string;
         username: string;
     };
@@ -38,14 +35,12 @@ interface FriendRequest {
 interface SentRequest {
     id: string;
     addressee: {
-        id: string;
         name: string;
         username: string;
     };
 }
 
 interface UserSearch {
-    id: string;
     name: string;
     username: string;
 }
@@ -227,8 +222,8 @@ export default function FriendsPage() {
     });
 
     const removeFriendMutation = useMutation({
-        mutationFn: async (friendId: string) => {
-            const res = await fetch(`http://localhost:3000/friends/${friendId}`, {
+        mutationFn: async (username: string) => {
+            const res = await fetch(`http://localhost:3000/friends/${username}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -252,7 +247,7 @@ export default function FriendsPage() {
                 },
                 body: JSON.stringify({
                     placeholderName: selectedExternalFriend,
-                    targetUserId: selectedMergeTarget
+                    targetUsername: selectedMergeTarget
                 }),
             });
             if (!res.ok) {
@@ -353,7 +348,7 @@ export default function FriendsPage() {
                                             <ul className="py-1">
                                                 {searchResults.map((user) => (
                                                     <li
-                                                        key={user.id}
+                                                        key={user.username}
                                                         className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex justify-between items-center"
                                                         onClick={() => handleSelectUser(user.username)}
                                                     >
@@ -477,7 +472,7 @@ export default function FriendsPage() {
                                 ) : (
                                     <div className="space-y-4">
                                         {friends.map((friend) => (
-                                            <div key={friend.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                            <div key={friend.username} className="flex items-center justify-between p-4 border rounded-lg bg-card">
                                                 <div>
                                                     <p className="font-medium">{friend.name}</p>
                                                     <p className="text-sm text-muted-foreground">@{friend.username}</p>
@@ -551,7 +546,7 @@ export default function FriendsPage() {
                             variant="destructive"
                             onClick={() => {
                                 if (friendToRemove) {
-                                    removeFriendMutation.mutate(friendToRemove.id);
+                                    removeFriendMutation.mutate(friendToRemove.username);
                                     setFriendToRemove(null);
                                 }
                             }}
@@ -576,9 +571,9 @@ export default function FriendsPage() {
                         <div className="grid gap-2">
                             {friends.map(friend => (
                                 <div
-                                    key={friend.id}
-                                    className={`p-3 border rounded cursor-pointer ${selectedMergeTarget === friend.id ? 'border-primary bg-primary/10' : 'hover:bg-accent'}`}
-                                    onClick={() => setSelectedMergeTarget(friend.id)}
+                                    key={friend.username}
+                                    className={`p-3 border rounded cursor-pointer ${selectedMergeTarget === friend.username ? 'border-primary bg-primary/10' : 'hover:bg-accent'}`}
+                                    onClick={() => setSelectedMergeTarget(friend.username)}
                                 >
                                     <p className="font-medium">{friend.name}</p>
                                     <p className="text-xs text-muted-foreground">@{friend.username}</p>

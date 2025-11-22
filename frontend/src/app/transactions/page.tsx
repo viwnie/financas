@@ -30,6 +30,8 @@ interface Transaction {
         userId: string;
         shareAmount: string;
         sharePercent: string;
+        baseShareAmount?: string;
+        baseSharePercent?: string;
         status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXITED';
         placeholderName?: string;
         user?: { name: string; username: string };
@@ -295,19 +297,15 @@ export default function TransactionsPage() {
                                         let displayAmount = parseFloat(t.amount);
                                         let shareLabel = "";
 
-                                        if (t.isShared) {
-                                            if (isCreator) {
-                                                // Creator pays total MINUS accepted shares from others (excluding self)
-                                                const acceptedShares = t.participants
-                                                    .filter(p => p.status === 'ACCEPTED' && p.userId !== user?.id)
-                                                    .reduce((acc, curr) => acc + parseFloat(curr.shareAmount || '0'), 0);
+                                        if (t.isShared && myParticipant) {
+                                            // If pending, show the proposed amount (baseShareAmount)
+                                            // If accepted, show the effective amount (shareAmount)
+                                            const amountToShow = myParticipant.status === 'PENDING'
+                                                ? (myParticipant.baseShareAmount || myParticipant.shareAmount)
+                                                : myParticipant.shareAmount;
 
-                                                displayAmount = parseFloat(t.amount) - acceptedShares;
-                                                shareLabel = "(My Share)";
-                                            } else if (myParticipant) {
-                                                displayAmount = parseFloat(myParticipant.shareAmount);
-                                                shareLabel = "(My Share)";
-                                            }
+                                            displayAmount = parseFloat(amountToShow);
+                                            shareLabel = "(My Share)";
                                         }
 
                                         const acceptedCount = t.participants.filter(p => p.status === 'ACCEPTED' && p.userId !== t.creatorId).length;

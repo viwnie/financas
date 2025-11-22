@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,6 +24,7 @@ const participantSchema = z.object({
     name: z.string().optional(),
     amount: z.coerce.number().optional(),
     percent: z.coerce.number().optional(),
+    status: z.string().optional(),
 });
 
 const transactionSchema = z.object({
@@ -54,8 +55,9 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                 id: p.id,
                 userId: p.userId,
                 name: p.user?.name || p.placeholderName || 'Unknown',
-                amount: parseFloat(p.shareAmount),
-                percent: parseFloat(p.sharePercent)
+                amount: parseFloat(p.baseShareAmount ?? p.shareAmount),
+                percent: parseFloat(p.baseSharePercent ?? p.sharePercent),
+                status: p.status
             }))
         : [];
 
@@ -84,16 +86,23 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     const isShared = watch('isShared');
 
     const participants = watch('participants');
+    const prevTotalAmount = useRef(totalAmount);
 
     // Recalculate splits when total amount changes
     useEffect(() => {
-        if (totalAmount > 0 && fields.length > 0) {
-            fields.forEach((field, index) => {
-                if (field.percent) {
-                    const newAmount = (field.percent / 100) * totalAmount;
-                    update(index, { ...field, amount: parseFloat(newAmount.toFixed(2)) });
-                }
-            });
+        // Only run if totalAmount actually changed from the previous value
+        // This prevents overwriting loaded values on initial mount
+        if (totalAmount !== prevTotalAmount.current) {
+            prevTotalAmount.current = totalAmount;
+
+            if (totalAmount > 0 && fields.length > 0) {
+                fields.forEach((field, index) => {
+                    if (field.percent) {
+                        const newAmount = (field.percent / 100) * totalAmount;
+                        update(index, { ...field, amount: parseFloat(newAmount.toFixed(2)) });
+                    }
+                });
+            }
         }
     }, [totalAmount]);
 
@@ -152,8 +161,20 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         setError('');
 
         if (data.isShared && data.participants && data.participants.length > 0) {
+            // Calculate total proposed amount (including pending)
             const totalParticipantsAmount = data.participants.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-            // Allow a small margin of error (0.10) for rounding differences
+
+            // We allow the sum to exceed totalAmount because Pending users + Active users > Total
+            // But we should check that Accepted participants don't exceed Total?
+            // Or just rely on backend validation?
+            // Let's remove the strict client-side check for now, or relax it.
+            // Actually, if we are proposing shares, the sum of PROPOSED shares should probably be <= Total?
+            // If I invite 3 people, I propose 25/25/25/25. Sum = 100.
+            // If I invite 1 Pending (33) and 1 External (33). I pay 33. Sum = 100.
+            // The issue is that the Creator's share *dynamically* increases.
+            // But in the FORM, we are setting the *base* shares.
+            // So the sum of base shares should be <= Total.
+
             if (totalParticipantsAmount > data.amount + 0.1) {
                 setError('A soma das partes dos participantes não pode exceder o valor total da transação.');
                 return;
@@ -179,7 +200,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     };
 
     const handleAddFriend = (friend: any) => {
-        const newParticipant = { userId: friend.id, name: friend.name };
+        const newParticipant = { userId: friend.id, name: friend.name, status: 'PENDING' };
         const updatedFields = [...fields, newParticipant];
         const distributedFields = distributeEqually(updatedFields);
         replace(distributedFields);
@@ -188,7 +209,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
     const handleAddAdHoc = () => {
         if (friendSearch.trim()) {
-            const newParticipant = { name: friendSearch.trim() };
+            const newParticipant = { name: friendSearch.trim(), status: 'ACCEPTED' };
             const updatedFields = [...fields, newParticipant];
             const distributedFields = distributeEqually(updatedFields);
             replace(distributedFields);
@@ -217,6 +238,38 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         }
     };
 
+    // Calculate "You Pay"
+    // Logic: Proportional Split
+    // 1. Creator Base Share = Total - Sum(All Participants Base Amounts)
+    // 2. Total Active Base = Creator Base + Sum(Accepted Participants Base Amounts)
+    // 3. Creator Ratio = Creator Base / Total Active Base
+    // 4. Creator Dynamic Share = Total * Creator Ratio
+    const calculateMyShare = () => {
+        if (!totalAmount) return 0;
+
+        const participantsList = participants || [];
+        const totalParticipantsAmount = participantsList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+        // Creator's proposed base share
+        const creatorBaseShare = Math.max(0, totalAmount - totalParticipantsAmount);
+
+        // Sum of base shares of ACCEPTED participants
+        const acceptedBaseTotal = participantsList
+            .filter(p => p.status === 'ACCEPTED')
+            .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+        // Total base share of all ACTIVE participants (Creator + Accepted)
+        // Note: Creator is always considered active/accepted
+        const totalActiveBase = creatorBaseShare + acceptedBaseTotal;
+
+        if (totalActiveBase <= 0) return 0; // Should not happen if totalAmount > 0
+
+        const creatorRatio = creatorBaseShare / totalActiveBase;
+        const creatorDynamicShare = totalAmount * creatorRatio;
+
+        return creatorDynamicShare;
+    };
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="flex flex-wrap gap-4 items-start">
@@ -232,7 +285,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     {isShared && totalAmount > 0 && (
                         <div className="text-xs text-muted-foreground mt-1">
                             Você paga: <span className="font-medium text-primary">
-                                R$ {(totalAmount - (participants || []).reduce((acc, curr) => acc + (curr.amount || 0), 0)).toFixed(2)}
+                                R$ {calculateMyShare().toFixed(2)}
                             </span>
                         </div>
                     )}
@@ -376,6 +429,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                         <div className="flex-1 font-medium">
                                             {field.name}
                                             {!field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
+                                            {field.status === 'PENDING' && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
                                         </div>
 
                                         <div className="flex items-center gap-2">

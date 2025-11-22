@@ -160,24 +160,16 @@ export class TransactionsService {
                     });
                 }
             } else {
-                // Equal Split Fallback
-                // Dynamic Split Logic: Only active participants pay initially
-                const activeParticipantsCount = 1 + participants.filter(p => !p.userId).length; // Creator + Ad-hoc
+                // Equal Split Fallback (Initially distribute equally among ALL)
+                const totalCount = 1 + participants.length; // Creator + All Participants
 
-                creatorAmount = Number(amount) / activeParticipantsCount;
-                creatorPercent = 100 / activeParticipantsCount;
+                creatorAmount = Number(amount) / totalCount;
+                creatorPercent = 100 / totalCount;
 
                 // Update participants
                 participantsData.forEach(p => {
-                    if (p.userId) {
-                        // Pending user -> 0 share
-                        p.shareAmount = 0;
-                        p.sharePercent = 0;
-                    } else {
-                        // Ad-hoc user -> Equal share
-                        p.shareAmount = creatorAmount;
-                        p.sharePercent = creatorPercent;
-                    }
+                    p.shareAmount = creatorAmount;
+                    p.sharePercent = creatorPercent;
                 });
             }
 
@@ -206,6 +198,9 @@ export class TransactionsService {
                     );
                 }
             }
+
+            // Recalculate Dynamic Shares to adjust for Pending users
+            await this.recalculateDynamicShares(transaction.id);
         }
 
         return transaction;
@@ -621,21 +616,24 @@ export class TransactionsService {
 
             // 3. Update existing participants
             for (const { existing, dto: p } of participantsToUpdate) {
-                const shareAmount = p.amount !== undefined ? Number(p.amount) : Number(existing.shareAmount);
-                const sharePercent = p.percent !== undefined ? Number(p.percent) : Number(existing.sharePercent);
+                let shareAmount = p.amount !== undefined ? Number(p.amount) : Number(existing.shareAmount);
+                let sharePercent = p.percent !== undefined ? Number(p.percent) : Number(existing.sharePercent);
 
                 const isCriticalParticipantUpdate =
                     shareAmount !== Number(existing.shareAmount) ||
                     sharePercent !== Number(existing.sharePercent);
 
                 const shouldResetStatus = isCriticalUpdate || isCriticalParticipantUpdate;
+                const newStatus = shouldResetStatus ? ParticipantStatus.PENDING : existing.status;
 
                 await this.prisma.transactionParticipant.update({
                     where: { id: existing.id },
                     data: {
                         shareAmount: shareAmount,
                         sharePercent: sharePercent,
-                        status: shouldResetStatus ? ParticipantStatus.PENDING : existing.status
+                        baseShareAmount: shareAmount, // Store as base
+                        baseSharePercent: sharePercent, // Store as base
+                        status: newStatus
                     }
                 });
 
@@ -652,14 +650,20 @@ export class TransactionsService {
 
             // 4. Create new participants
             for (const p of participantsToCreate) {
+                const isPending = !!p.userId;
+                const newShareAmount = Number(p.amount);
+                const newSharePercent = Number(p.percent);
+
                 await this.prisma.transactionParticipant.create({
                     data: {
                         transactionId: id,
                         userId: p.userId,
                         placeholderName: p.userId ? undefined : p.name,
-                        shareAmount: Number(p.amount),
-                        sharePercent: Number(p.percent),
-                        status: p.userId ? ParticipantStatus.PENDING : ParticipantStatus.ACCEPTED
+                        shareAmount: newShareAmount,
+                        sharePercent: newSharePercent,
+                        baseShareAmount: newShareAmount, // Store as base
+                        baseSharePercent: newSharePercent, // Store as base
+                        status: isPending ? ParticipantStatus.PENDING : ParticipantStatus.ACCEPTED
                     }
                 });
 
@@ -673,6 +677,10 @@ export class TransactionsService {
                     );
                 }
             }
+
+            // 5. Recalculate Dynamic Shares for Active Participants
+            await this.recalculateDynamicShares(id);
+
         } else if (isCriticalUpdate) {
             // If participants list wasn't sent but critical info changed, reset all existing participants
             const participantsToReset = transaction.participants.filter(p => p.userId !== userId);
@@ -692,38 +700,116 @@ export class TransactionsService {
                     );
                 }
             }
+            await this.recalculateDynamicShares(id);
         }
 
         return this.findOne(id, userId);
     }
 
     private async recalculateDynamicShares(transactionId: string) {
+        console.log(`[recalculateDynamicShares] Starting for transaction ${transactionId}`);
         const transaction = await this.prisma.transaction.findUnique({
             where: { id: transactionId },
-            include: { participants: true }
+            include: { participants: { include: { user: true } } }
         });
 
-        if (!transaction) return;
+        if (!transaction) {
+            console.log(`[recalculateDynamicShares] Transaction not found`);
+            return;
+        }
 
-        // Find all ACCEPTED participants
         const activeParticipants = transaction.participants.filter(p => p.status === ParticipantStatus.ACCEPTED);
+        const pendingParticipants = transaction.participants.filter(p => p.status === ParticipantStatus.PENDING);
+
+        console.log(`[recalculateDynamicShares] Found ${activeParticipants.length} active, ${pendingParticipants.length} pending`);
+
+        // 1. Reset Pending Users (Effective Share = 0, Base Share preserved)
+        for (const p of pendingParticipants) {
+            // Ensure base shares are set if missing (migration fallback)
+            const baseAmount = p.baseShareAmount !== null ? p.baseShareAmount : p.shareAmount;
+            const basePercent = p.baseSharePercent !== null ? p.baseSharePercent : p.sharePercent;
+
+            await this.prisma.transactionParticipant.update({
+                where: { id: p.id },
+                data: {
+                    shareAmount: 0,
+                    sharePercent: 0,
+                    baseShareAmount: baseAmount, // Save if it was null
+                    baseSharePercent: basePercent
+                }
+            });
+        }
 
         if (activeParticipants.length === 0) return;
 
-        const newShare = Number(transaction.amount) / activeParticipants.length;
-        const newPercent = 100 / activeParticipants.length;
+        const totalAmount = Number(transaction.amount);
 
-        // Update all active participants
-        await this.prisma.transactionParticipant.updateMany({
-            where: {
-                transactionId: transactionId,
-                status: ParticipantStatus.ACCEPTED
-            },
-            data: {
-                shareAmount: newShare,
-                sharePercent: newPercent
-            }
+        // 2. Calculate Total Active Base Amount
+        let totalActiveBaseAmount = 0;
+        const activeWithBase = activeParticipants.map(p => {
+            const basePercent = p.baseSharePercent !== null ? Number(p.baseSharePercent) : Number(p.sharePercent);
+            const baseAmount = p.baseShareAmount !== null ? Number(p.baseShareAmount) : Number(p.shareAmount);
+            totalActiveBaseAmount += baseAmount;
+            return { ...p, basePercent, baseAmount };
         });
-    }
-}
 
+        console.log(`[recalculateDynamicShares] Total Amount: ${totalAmount}, Total Active Base Amount: ${totalActiveBaseAmount}`);
+
+        // 3. Distribute proportionally
+        if (totalActiveBaseAmount > 0) {
+            let remainingAmount = totalAmount;
+
+            for (let i = 0; i < activeWithBase.length; i++) {
+                const p = activeWithBase[i];
+                const isLast = i === activeWithBase.length - 1;
+
+                let share = 0;
+                let percent = 0;
+
+                if (isLast) {
+                    share = Number(remainingAmount.toFixed(2));
+                } else {
+                    const ratio = p.baseAmount / totalActiveBaseAmount;
+                    share = Number((ratio * totalAmount).toFixed(2));
+                    remainingAmount -= share;
+                }
+
+                percent = Number(((share / totalAmount) * 100).toFixed(2));
+
+                console.log(`[recalculateDynamicShares] Updating ${p.user?.name || p.placeholderName} (Base: ${p.baseAmount}) -> New: ${share} (${percent}%)`);
+
+                await this.prisma.transactionParticipant.update({
+                    where: { id: p.id },
+                    data: {
+                        shareAmount: share,
+                        sharePercent: percent,
+                        baseShareAmount: p.baseAmount, // Ensure saved
+                        baseSharePercent: p.basePercent
+                    }
+                });
+            }
+        } else {
+            // Fallback to Equal Split if no base amounts (shouldn't happen usually)
+            const count = activeParticipants.length;
+            const baseShare = Math.floor((totalAmount / count) * 100) / 100;
+            const remainder = Math.round((totalAmount - (baseShare * count)) * 100) / 100;
+            let remainderPennies = Math.round(remainder * 100);
+
+            for (let i = 0; i < count; i++) {
+                const p = activeParticipants[i];
+                let share = baseShare;
+                if (remainderPennies > 0) {
+                    share = Number((share + 0.01).toFixed(2));
+                    remainderPennies--;
+                }
+                const percent = Number(((share / totalAmount) * 100).toFixed(2));
+
+                await this.prisma.transactionParticipant.update({
+                    where: { id: p.id },
+                    data: { shareAmount: share, sharePercent: percent }
+                });
+            }
+        }
+    }
+
+}

@@ -35,6 +35,17 @@ export class UsersService {
         });
     }
 
+    async findByUsernameInsensitive(username: string): Promise<User | null> {
+        return this.prisma.user.findFirst({
+            where: {
+                username: {
+                    equals: username,
+                    mode: 'insensitive',
+                },
+            },
+        });
+    }
+
     async search(query: string, currentUserId: string): Promise<User[]> {
         return this.prisma.user.findMany({
             where: {

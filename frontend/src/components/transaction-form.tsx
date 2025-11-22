@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, X, Search, UserPlus } from 'lucide-react';
+import { CalendarIcon, Plus, X, Search, UserPlus, Clock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -118,10 +118,106 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         enabled: !!token && isShared,
     });
 
-    const filteredFriends = friends.filter((f: any) =>
-        f.name.toLowerCase().includes(friendSearch.toLowerCase()) &&
-        !fields.some(p => p.userId === f.id)
-    );
+    const { data: sentRequests = [] } = useQuery({
+        queryKey: ['sentRequests'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:3000/friends/sent', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to fetch sent requests');
+            return res.json();
+        },
+        enabled: !!token && isShared,
+    });
+
+    const { data: searchResults = [] } = useQuery({
+        queryKey: ['userSearch', friendSearch],
+        queryFn: async () => {
+            if (friendSearch.length < 2) return [];
+            const res = await fetch(`http://localhost:3000/users/search?q=${friendSearch}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return [];
+            return res.json();
+        },
+        enabled: !!token && isShared && friendSearch.length >= 2,
+    });
+
+    const { data: externalFriends = [] } = useQuery<{ id: string | null, name: string }[]>({
+        queryKey: ['externalFriends'],
+        queryFn: async () => {
+            const res = await fetch('http://localhost:3000/friends/external', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed to fetch external friends');
+            return res.json();
+        },
+        enabled: !!token && isShared,
+    });
+
+    const addFriendMutation = useMutation({
+        mutationFn: async (username: string) => {
+            const res = await fetch('http://localhost:3000/friends/request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ username }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'Failed to send request');
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['sentRequests'] });
+            toast.success('Friend request sent!');
+        },
+        onError: (err) => {
+            toast.error(err.message);
+        },
+    });
+
+    // Combine and sort results
+    const getFilteredResults = () => {
+        if (!friendSearch) return [];
+
+        const searchLower = friendSearch.toLowerCase();
+        const addedUserIds = new Set(fields.map(p => p.userId).filter(Boolean));
+        const addedNames = new Set(fields.map(p => p.name?.toLowerCase()));
+
+        // 1. Internal Friends (Accepted)
+        const internalMatches = friends.filter((f: any) =>
+            f.name.toLowerCase().includes(searchLower) &&
+            !addedUserIds.has(f.id)
+        ).map((f: any) => ({ ...f, type: 'FRIEND' }));
+
+        // 2. External Friends
+        const externalMatches = externalFriends.filter((f: any) =>
+            f.name.toLowerCase().includes(searchLower) &&
+            !addedNames.has(f.name.toLowerCase())
+        ).map((f: any) => ({ ...f, type: 'EXTERNAL' }));
+
+        // 3. Pending Friends (Sent Requests)
+        const pendingMatches = sentRequests.filter((req: any) =>
+            req.addressee.name.toLowerCase().includes(searchLower)
+        ).map((req: any) => ({ ...req.addressee, type: 'PENDING' }));
+
+        // 4. Global Users (Not friends)
+        const globalMatches = searchResults.filter((u: any) =>
+            !internalMatches.some((f: any) => f.id === u.id) &&
+            !pendingMatches.some((p: any) => p.id === u.id) &&
+            !addedUserIds.has(u.id) &&
+            u.id !== user?.id // Exclude self
+        ).map((u: any) => ({ ...u, type: 'GLOBAL' }));
+
+        return [...internalMatches, ...externalMatches, ...pendingMatches, ...globalMatches];
+    };
+
+    const filteredResults = getFilteredResults();
 
     const mutation = useMutation({
         mutationFn: async (data: TransactionFormValues) => {
@@ -200,7 +296,12 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     };
 
     const handleAddFriend = (friend: any) => {
-        const newParticipant = { userId: friend.id, name: friend.name, status: 'PENDING' };
+        const isExternal = friend.type === 'EXTERNAL';
+        const newParticipant = {
+            userId: isExternal ? undefined : friend.id,
+            name: friend.name,
+            status: isExternal ? 'ACCEPTED' : 'PENDING'
+        };
         const updatedFields = [...fields, newParticipant];
         const distributedFields = distributeEqually(updatedFields);
         replace(distributedFields);
@@ -396,27 +497,61 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                             </div>
 
                             {friendSearch && (
-                                <div className="border rounded-md bg-background p-2 shadow-sm max-h-[200px] overflow-y-auto">
-                                    {filteredFriends.length > 0 ? (
-                                        filteredFriends.map((friend: any) => (
-                                            <div
-                                                key={friend.username}
-                                                className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer rounded"
-                                                onClick={() => handleAddFriend(friend)}
-                                            >
-                                                <span>{friend.name}</span>
-                                                <Plus className="h-4 w-4 text-muted-foreground" />
-                                            </div>
-                                        ))
-                                    ) : (
+                                <div className="border rounded-md bg-background p-2 shadow-sm max-h-[200px] overflow-y-auto mt-2">
+                                    {filteredResults.map((result: any) => (
                                         <div
-                                            className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer rounded text-blue-600"
-                                            onClick={handleAddAdHoc}
+                                            key={result.id || result.name}
+                                            className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer rounded"
+                                            onClick={() => {
+                                                if (result.type === 'FRIEND' || result.type === 'EXTERNAL') {
+                                                    handleAddFriend(result);
+                                                }
+                                            }}
                                         >
-                                            <span>Adicionar "{friendSearch}" (Não cadastrado)</span>
-                                            <UserPlus className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{result.name}</span>
+                                                    {result.username && <span className="text-xs text-muted-foreground">@{result.username}</span>}
+                                                </div>
+                                                {result.type === 'FRIEND' && <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">Friend</span>}
+                                                {result.type === 'EXTERNAL' && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">External</span>}
+                                            </div>
+
+                                            {result.type === 'GLOBAL' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-8 px-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        addFriendMutation.mutate(result.username);
+                                                    }}
+                                                >
+                                                    <UserPlus className="h-4 w-4 mr-1" />
+                                                    Add Friend
+                                                </Button>
+                                            )}
+
+                                            {result.type === 'PENDING' && (
+                                                <span className="flex items-center text-xs text-muted-foreground">
+                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    Request Sent
+                                                </span>
+                                            )}
+
+                                            {(result.type === 'FRIEND' || result.type === 'EXTERNAL') && (
+                                                <Plus className="h-4 w-4 text-muted-foreground" />
+                                            )}
                                         </div>
-                                    )}
+                                    ))}
+
+                                    <div
+                                        className="p-2 hover:bg-muted cursor-pointer rounded flex items-center gap-2 text-muted-foreground border-t mt-1"
+                                        onClick={handleAddAdHoc}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Add "{friendSearch}" (Non-registered)
+                                    </div>
                                 </div>
                             )}
                         </div>

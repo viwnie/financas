@@ -60,6 +60,7 @@ model User {
   receivedRequestLogs FriendRequestLog[] @relation("RequestLogAddressee")
   
   externalFriends     ExternalFriend[]
+  personalCategoryOverrides PersonalCategoryOverride[]
 }
 
 model ExternalFriend {
@@ -118,6 +119,9 @@ model Category {
 
   user         User?         @relation(fields: [userId], references: [id])
   transactions Transaction[]
+  keywords     CategoryKeyword[]
+  globalStats  GlobalCategoryStats[]
+  personalOverrides PersonalCategoryOverride[]
 }
 
 model Transaction {
@@ -178,4 +182,37 @@ model Notification {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CategoryKeyword {
+  id         String   @id @default(uuid())
+  categoryId String
+  keyword    String
+  weight     Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model PersonalCategoryOverride {
+  id          String   @id @default(uuid())
+  userId      String
+  textPattern String
+  categoryId  String
+  weight      Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model GlobalCategoryStats {
+  id         String   @id @default(uuid())
+  keyword    String   @unique
+  categoryId String
+  usageCount Int      @default(1)
+  updatedAt  DateTime @updatedAt
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }

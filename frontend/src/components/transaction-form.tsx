@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, Plus, X, Search, UserPlus, Clock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const participantSchema = z.object({
     id: z.string().optional(),
@@ -87,26 +88,68 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     const totalAmount = watch('amount');
     const isShared = watch('isShared');
 
-    const participants = watch('participants');
-    const prevTotalAmount = useRef(totalAmount);
+    const description = watch('description');
+    const categoryName = watch('categoryName');
+    const debouncedDescription = useDebounce(description, 500);
+    const debouncedCategoryName = useDebounce(categoryName, 300);
+    const [autoFilledCategory, setAutoFilledCategory] = useState<string | null>(null);
+    const [isAutoFilled, setIsAutoFilled] = useState(false);
+    const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
 
-    // Recalculate splits when total amount changes
+    const { data: prediction } = useQuery({
+        queryKey: ['predictCategory', debouncedDescription],
+        queryFn: async () => {
+            if (!debouncedDescription || debouncedDescription.length < 3) return null;
+            const res = await fetch(`http://localhost:3000/categories/predict?description=${encodeURIComponent(debouncedDescription)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return null;
+            return res.json();
+        },
+        enabled: !!token && !!debouncedDescription && debouncedDescription.length >= 3,
+    });
+
+    const { data: categorySuggestions = [] } = useQuery({
+        queryKey: ['searchCategories', debouncedCategoryName, debouncedDescription],
+        queryFn: async () => {
+            if (!debouncedCategoryName || debouncedCategoryName.length < 1) return [];
+            const res = await fetch(`http://localhost:3000/categories/search?q=${encodeURIComponent(debouncedCategoryName)}&context=${encodeURIComponent(debouncedDescription || '')}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return [];
+            return res.json();
+        },
+        enabled: !!token && !!debouncedCategoryName && debouncedCategoryName.length >= 1,
+    });
+
     useEffect(() => {
-        // Only run if totalAmount actually changed from the previous value
-        // This prevents overwriting loaded values on initial mount
-        if (totalAmount !== prevTotalAmount.current) {
-            prevTotalAmount.current = totalAmount;
-
-            if (totalAmount > 0 && fields.length > 0) {
-                fields.forEach((field, index) => {
-                    if (field.percent) {
-                        const newAmount = (field.percent / 100) * totalAmount;
-                        update(index, { ...field, amount: parseFloat(newAmount.toFixed(2)) });
-                    }
+        if (prediction && prediction.category) {
+            // Auto-fill if category is empty OR if it was previously auto-filled and user hasn't changed it manually
+            if (!categoryName || isAutoFilled) {
+                setValue('categoryName', prediction.category.name);
+                setAutoFilledCategory(prediction.category.name);
+                setIsAutoFilled(true);
+                toast.info(`Categoria sugerida: ${prediction.category.name}`, {
+                    description: 'Baseado na descrição',
+                    icon: '✨'
                 });
             }
         }
-    }, [totalAmount]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [prediction, setValue]);
+
+    const learnMutation = useMutation({
+        mutationFn: async (data: { description: string, categoryId: string }) => {
+            await fetch('http://localhost:3000/categories/learn', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(data),
+            });
+        }
+    });
 
     const { data: friends = [] } = useQuery({
         queryKey: ['friends'],
@@ -258,21 +301,13 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     const onSubmit = (data: TransactionFormValues) => {
         setError('');
 
+        // Trigger learning if description exists and category is set
+        if (data.description && prediction?.category && prediction.category.name === data.categoryName) {
+            learnMutation.mutate({ description: data.description, categoryId: prediction.category.id });
+        }
+
         if (data.isShared && data.participants && data.participants.length > 0) {
-            // Calculate total proposed amount (including pending)
             const totalParticipantsAmount = data.participants.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
-            // We allow the sum to exceed totalAmount because Pending users + Active users > Total
-            // But we should check that Accepted participants don't exceed Total?
-            // Or just rely on backend validation?
-            // Let's remove the strict client-side check for now, or relax it.
-            // Actually, if we are proposing shares, the sum of PROPOSED shares should probably be <= Total?
-            // If I invite 3 people, I propose 25/25/25/25. Sum = 100.
-            // If I invite 1 Pending (33) and 1 External (33). I pay 33. Sum = 100.
-            // The issue is that the Creator's share *dynamically* increases.
-            // But in the FORM, we are setting the *base* shares.
-            // So the sum of base shares should be <= Total.
-
             if (totalParticipantsAmount > data.amount + 0.1) {
                 setError('A soma das partes dos participantes não pode exceder o valor total da transação.');
                 return;
@@ -343,28 +378,19 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     };
 
     // Calculate "You Pay"
-    // Logic: Proportional Split
-    // 1. Creator Base Share = Total - Sum(All Participants Base Amounts)
-    // 2. Total Active Base = Creator Base + Sum(Accepted Participants Base Amounts)
-    // 3. Creator Ratio = Creator Base / Total Active Base
-    // 4. Creator Dynamic Share = Total * Creator Ratio
     const calculateMyShare = () => {
         if (!totalAmount) return 0;
 
-        const participantsList = participants || [];
+        const participantsList = watch('participants') || [];
         const totalParticipantsAmount = participantsList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
         // Creator's proposed base share
-        // In the form, we want to show the split based on the *current* inputs, 
-        // assuming everyone accepts (equal split or custom values).
-        // We should NOT use the dynamic calculation logic here, but the simple "Creator pays what's left" logic.
-
         const creatorBaseShare = Math.max(0, totalAmount - totalParticipantsAmount);
         return creatorBaseShare;
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" >
             <div className="flex flex-wrap gap-4 items-start">
                 <div className="flex-1 min-w-[200px] space-y-2">
                     <Label>Descrição</Label>
@@ -436,7 +462,55 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             <div className="flex flex-wrap gap-4 items-start">
                 <div className="flex-1 min-w-[200px] space-y-2">
                     <Label>Categoria</Label>
-                    <Input {...register('categoryName')} placeholder="Ex: Alimentação, Aluguel" />
+                    <div className="relative">
+                        <Input
+                            {...register('categoryName')}
+                            placeholder="Ex: Alimentação, Aluguel"
+                            autoComplete="off"
+                            onFocus={() => setShowCategorySuggestions(true)}
+                            onBlur={() => {
+                                // Delay hiding to allow click on suggestion
+                                setTimeout(() => setShowCategorySuggestions(false), 200);
+                            }}
+                            onChange={(e) => {
+                                setValue('categoryName', e.target.value);
+                                setIsAutoFilled(false); // User manually typing
+                                setShowCategorySuggestions(true);
+                            }}
+                        />
+                        {isAutoFilled && (
+                            <div className="absolute right-2 top-2.5 text-xs text-purple-600 flex items-center bg-purple-50 px-2 rounded-full pointer-events-none">
+                                <span className="mr-1">✨</span> Sugerido
+                            </div>
+                        )}
+
+                        {showCategorySuggestions && categorySuggestions.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                                {categorySuggestions.map((cat: any) => (
+                                    <div
+                                        key={cat.id}
+                                        className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
+                                        onClick={() => {
+                                            setValue('categoryName', cat.name);
+                                            setIsAutoFilled(false);
+                                            setShowCategorySuggestions(false);
+                                            // Trigger learning immediately on selection if description exists
+                                            if (description) {
+                                                learnMutation.mutate({ description, categoryId: cat.id });
+                                            }
+                                        }}
+                                    >
+                                        <span>{cat.name}</span>
+                                        {cat.score > 0 && (
+                                            <span className="text-xs text-muted-foreground">
+                                                {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     {errors.categoryName && <p className="text-xs text-red-500">{errors.categoryName.message}</p>}
                 </div>
 

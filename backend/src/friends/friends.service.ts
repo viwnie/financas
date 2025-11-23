@@ -443,19 +443,69 @@ export class FriendsService {
                 });
             }
 
-            // 3. Update transactions (Auto-accept)
-            await this.prisma.transactionParticipant.updateMany({
+            // 3. Update transactions (Smart Merge)
+            // Find all transactions where the placeholder exists
+            const affectedTransactions = await this.prisma.transaction.findMany({
                 where: {
-                    transaction: { creatorId: request.requesterId },
-                    placeholderName: request.placeholderName,
-                    userId: null
+                    creatorId: request.requesterId,
+                    participants: {
+                        some: {
+                            placeholderName: request.placeholderName,
+                            userId: null
+                        }
+                    }
                 },
-                data: {
-                    userId: userId,
-                    placeholderName: null,
-                    status: 'ACCEPTED' // Auto-accept
+                include: {
+                    participants: true
                 }
             });
+
+            for (const transaction of affectedTransactions) {
+                const externalParticipant = transaction.participants.find(p =>
+                    p.placeholderName === request.placeholderName && p.userId === null
+                );
+
+                if (!externalParticipant) continue;
+
+                const existingTargetParticipant = transaction.participants.find(p => p.userId === userId);
+
+                if (existingTargetParticipant) {
+                    // Target user is ALREADY in the transaction. Merge shares.
+                    const newShareAmount = Number(existingTargetParticipant.shareAmount) + Number(externalParticipant.shareAmount);
+                    const newSharePercent = Number(existingTargetParticipant.sharePercent) + Number(externalParticipant.sharePercent);
+                    const newBaseAmount = (existingTargetParticipant.baseShareAmount !== null ? Number(existingTargetParticipant.baseShareAmount) : Number(existingTargetParticipant.shareAmount)) +
+                        (externalParticipant.baseShareAmount !== null ? Number(externalParticipant.baseShareAmount) : Number(externalParticipant.shareAmount));
+                    const newBasePercent = (existingTargetParticipant.baseSharePercent !== null ? Number(existingTargetParticipant.baseSharePercent) : Number(existingTargetParticipant.sharePercent)) +
+                        (externalParticipant.baseSharePercent !== null ? Number(externalParticipant.baseSharePercent) : Number(externalParticipant.sharePercent));
+
+                    // Update existing participant
+                    await this.prisma.transactionParticipant.update({
+                        where: { id: existingTargetParticipant.id },
+                        data: {
+                            shareAmount: newShareAmount,
+                            sharePercent: newSharePercent,
+                            baseShareAmount: newBaseAmount,
+                            baseSharePercent: newBasePercent
+                        }
+                    });
+
+                    // Delete external participant
+                    await this.prisma.transactionParticipant.delete({
+                        where: { id: externalParticipant.id }
+                    });
+
+                } else {
+                    // Target user is NOT in the transaction. Just take over the spot.
+                    await this.prisma.transactionParticipant.update({
+                        where: { id: externalParticipant.id },
+                        data: {
+                            userId: userId,
+                            placeholderName: null,
+                            status: 'ACCEPTED' // Auto-accept
+                        }
+                    });
+                }
+            }
 
             this.notificationsGateway.sendNotification(request.requesterId, 'merge_request_accepted', {
                 message: `${request.targetUser.name} accepted the merge for "${request.placeholderName}"`,

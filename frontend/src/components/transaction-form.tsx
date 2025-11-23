@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 const participantSchema = z.object({
     id: z.string().optional(),
     userId: z.string().nullable().optional(),
+    username: z.string().optional(),
     name: z.string().optional(),
     amount: z.coerce.number().optional(),
     percent: z.coerce.number().optional(),
@@ -54,6 +55,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             .map((p: any) => ({
                 id: p.id,
                 userId: p.userId,
+                username: p.user?.username,
                 name: p.user?.name || p.placeholderName || 'Unknown',
                 amount: parseFloat(p.baseShareAmount ?? p.shareAmount),
                 percent: parseFloat(p.baseSharePercent ?? p.sharePercent),
@@ -186,13 +188,13 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         if (!friendSearch) return [];
 
         const searchLower = friendSearch.toLowerCase();
-        const addedUserIds = new Set(fields.map(p => p.userId).filter(Boolean));
+        const addedUsernames = new Set(fields.map(p => p.username).filter(Boolean));
         const addedNames = new Set(fields.map(p => p.name?.toLowerCase()));
 
         // 1. Internal Friends (Accepted)
         const internalMatches = friends.filter((f: any) =>
             f.name.toLowerCase().includes(searchLower) &&
-            !addedUserIds.has(f.id)
+            !addedUsernames.has(f.username)
         ).map((f: any) => ({ ...f, type: 'FRIEND' }));
 
         // 2. External Friends
@@ -210,7 +212,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         const globalMatches = searchResults.filter((u: any) =>
             !internalMatches.some((f: any) => f.id === u.id) &&
             !pendingMatches.some((p: any) => p.id === u.id) &&
-            !addedUserIds.has(u.id) &&
+            !addedUsernames.has(u.username) &&
             u.id !== user?.id // Exclude self
         ).map((u: any) => ({ ...u, type: 'GLOBAL' }));
 
@@ -298,7 +300,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     const handleAddFriend = (friend: any) => {
         const isExternal = friend.type === 'EXTERNAL';
         const newParticipant = {
-            userId: isExternal ? undefined : friend.id,
+            userId: isExternal ? undefined : undefined, // Don't send userId for internal friends, use username
+            username: isExternal ? undefined : friend.username,
             name: friend.name,
             status: isExternal ? 'ACCEPTED' : 'PENDING'
         };
@@ -352,23 +355,12 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         const totalParticipantsAmount = participantsList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
         // Creator's proposed base share
+        // In the form, we want to show the split based on the *current* inputs, 
+        // assuming everyone accepts (equal split or custom values).
+        // We should NOT use the dynamic calculation logic here, but the simple "Creator pays what's left" logic.
+
         const creatorBaseShare = Math.max(0, totalAmount - totalParticipantsAmount);
-
-        // Sum of base shares of ACCEPTED participants
-        const acceptedBaseTotal = participantsList
-            .filter(p => p.status === 'ACCEPTED')
-            .reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
-        // Total base share of all ACTIVE participants (Creator + Accepted)
-        // Note: Creator is always considered active/accepted
-        const totalActiveBase = creatorBaseShare + acceptedBaseTotal;
-
-        if (totalActiveBase <= 0) return 0; // Should not happen if totalAmount > 0
-
-        const creatorRatio = creatorBaseShare / totalActiveBase;
-        const creatorDynamicShare = totalAmount * creatorRatio;
-
-        return creatorDynamicShare;
+        return creatorBaseShare;
     };
 
     return (
@@ -563,8 +555,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                     <div key={field.id} className="flex items-center gap-3 bg-background p-3 rounded border">
                                         <div className="flex-1 font-medium">
                                             {field.name}
-                                            {!field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
-                                            {field.status === 'PENDING' && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
+                                            {!field.username && !field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
+                                            {field.status === 'PENDING' && transactionId && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
                                         </div>
 
                                         <div className="flex items-center gap-2">

@@ -65,4 +65,8 @@ export class TransactionParticipantDto {
     @IsOptional()
     @IsNumber()
     percent?: number;
+
+    @IsOptional()
+    @IsString()
+    username?: string;
 }

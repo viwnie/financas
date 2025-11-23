@@ -93,6 +93,15 @@ export class TransactionsService {
 
             // Process invited/ad-hoc participants
             for (const p of participants) {
+                // Resolve userId from username if provided and userId is missing
+                let userId = p.userId;
+                if (!userId && p.username) {
+                    const user = await this.prisma.user.findUnique({ where: { username: p.username } });
+                    if (user) {
+                        userId = user.id;
+                    }
+                }
+
                 // If no specific split info is provided, we'll calculate equal splits later
                 // But if provided, we use it.
                 const pAmount = p.amount ? Number(p.amount) : 0;
@@ -103,11 +112,11 @@ export class TransactionsService {
 
                 participantsData.push({
                     transactionId: transaction.id,
-                    userId: p.userId, // Can be undefined for ad-hoc
-                    placeholderName: p.userId ? undefined : p.name, // Use name if no userId
+                    userId: userId, // Can be undefined for ad-hoc
+                    placeholderName: userId ? undefined : p.name, // Use name if no userId
                     shareAmount: p.amount,
                     sharePercent: p.percent,
-                    status: p.userId ? ParticipantStatus.PENDING : ParticipantStatus.ACCEPTED
+                    status: userId ? ParticipantStatus.PENDING : ParticipantStatus.ACCEPTED
                 });
             }
 
@@ -568,12 +577,23 @@ export class TransactionsService {
 
             // 1. Identify participants to keep/update/create
             for (const p of participants) {
+                // Resolve userId from username if provided and userId is missing
+                let userId = p.userId;
+                if (!userId && p.username) {
+                    const user = await this.prisma.user.findUnique({ where: { username: p.username } });
+                    if (user) {
+                        userId = user.id;
+                    }
+                }
+                // Update p with resolved userId for later use
+                p.userId = userId;
+
                 // Try to find existing participant by ID first
                 let existingParticipant = p.id ? transaction.participants.find(ep => ep.id === p.id) : undefined;
 
                 // Fallback: Try to find by userId if not found by ID
-                if (!existingParticipant && p.userId) {
-                    existingParticipant = transaction.participants.find(ep => ep.userId === p.userId);
+                if (!existingParticipant && userId) {
+                    existingParticipant = transaction.participants.find(ep => ep.userId === userId);
                 }
 
                 if (existingParticipant) {

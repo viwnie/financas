@@ -640,9 +640,22 @@ export class TransactionsService {
                 let shareAmount = p.amount !== undefined ? Number(p.amount) : Number(existing.shareAmount);
                 let sharePercent = p.percent !== undefined ? Number(p.percent) : Number(existing.sharePercent);
 
-                const isCriticalParticipantUpdate =
-                    shareAmount !== Number(existing.shareAmount) ||
-                    sharePercent !== Number(existing.sharePercent);
+                // Compare against baseShareAmount/Percent if available, as shareAmount might be dynamically adjusted
+                const oldAmount = existing.baseShareAmount !== null ? Number(existing.baseShareAmount) : Number(existing.shareAmount);
+                const oldPercent = existing.baseSharePercent !== null ? Number(existing.baseSharePercent) : Number(existing.sharePercent);
+
+                console.log(`[Update Debug] Processing participant ${existing.userId || existing.placeholderName}`);
+                console.log(`[Update Debug] New Amount: ${shareAmount}, Old Base Amount: ${oldAmount}`);
+                console.log(`[Update Debug] New Percent: ${sharePercent}, Old Base Percent: ${oldPercent}`);
+
+                // Use epsilon for float comparison to avoid precision issues
+                const isAmountChanged = Math.abs(shareAmount - oldAmount) > 0.001;
+                const isPercentChanged = Math.abs(sharePercent - oldPercent) > 0.001;
+
+                const isCriticalParticipantUpdate = isAmountChanged || isPercentChanged;
+
+                console.log(`[Update Debug] isAmountChanged: ${isAmountChanged}, isPercentChanged: ${isPercentChanged}`);
+                console.log(`[Update Debug] isCriticalUpdate (Global): ${isCriticalUpdate}, isCriticalParticipantUpdate: ${isCriticalParticipantUpdate}`);
 
                 const shouldResetStatus = isCriticalUpdate || isCriticalParticipantUpdate;
 
@@ -651,6 +664,7 @@ export class TransactionsService {
                 if (existing.userId) {
                     // Registered User: Reset to PENDING on critical updates
                     if (shouldResetStatus) {
+                        console.log(`[Update Debug] Resetting status to PENDING for user ${existing.userId}`);
                         newStatus = ParticipantStatus.PENDING;
                     }
                 } else {

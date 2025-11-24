@@ -52,12 +52,21 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             });
             // Construct avatar URL if user has one (assuming backend serves it at /users/:id/avatar)
             // We can use a timestamp to bust cache
-            setAvatarPreview(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}/avatar?t=${Date.now()}`);
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+            setAvatarPreview(`${apiUrl}/users/${user.id}/avatar?t=${Date.now()}`);
         }
     }, [user, open]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+
+        if (name === 'name') {
+            // Only allow letters, spaces, and accents
+            if (!/^[a-zA-Z\u00C0-\u00FF ]*$/.test(value)) {
+                return; // Ignore invalid input
+            }
+        }
+
         setFormData((prev) => ({ ...prev, [name]: value }));
 
         if (name === 'username') {
@@ -76,7 +85,8 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                 .find((row) => row.startsWith('token='))
                 ?.split('=')[1];
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-username?username=${username}`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+            const res = await fetch(`${apiUrl}/users/check-username?username=${username}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -138,7 +148,8 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             if (formData.avatar) data.append('avatar', formData.avatar);
             if (formData.removeAvatar) data.append('removeAvatar', 'true');
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+            const res = await fetch(`${apiUrl}/users/me`, {
                 method: 'PATCH',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -153,24 +164,17 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
 
             const updatedUser = await res.json();
 
-            // Update local user state
-            // We need to construct the user object as expected by the store
-            // Assuming the response returns the full user object
-            // We might need to refresh the token if critical info changed, but for now just update store
-            // Re-login to update store (or create a specific update action in store)
-            // Since login takes the user object directly in the current implementation (based on auth.service.ts login response structure), 
-            // we might need to be careful. The backend `update` returns the user.
-            // Let's assume we can just merge it.
+            // Update local user state in the store
+            const userForStore = {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                username: updatedUser.username,
+                email: updatedUser.email
+            };
 
-            // Actually, useAuthStore.getState().login might expect the full login response { access_token, user }.
-            // But here we just have the user. We should probably just update the user part.
-            // Since I can't see the store implementation details fully, I'll assume I can just reload the page or rely on a fetchUser if it exists.
-            // But `login` usually sets the user.
-
-            // Let's try to manually update the user in the store if possible, or just reload.
-            // Reloading is safer to get fresh state.
-
-            window.location.reload();
+            if (token) {
+                login(userForStore, token);
+            }
 
             toast.success('Profile updated successfully');
             setOpen(false);
@@ -181,6 +185,14 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             setLoading(false);
         }
     };
+
+    const hasChanges =
+        formData.name !== user?.name ||
+        formData.username !== user?.username ||
+        formData.email !== user?.email ||
+        formData.password !== '' ||
+        formData.avatar !== null ||
+        formData.removeAvatar;
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -195,7 +207,9 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     <div className="flex flex-col items-center gap-4">
                         <Avatar className="h-24 w-24 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                            <AvatarImage src={avatarPreview || ''} className="object-cover" onError={(e) => { e.currentTarget.src = '' }} />
+                            {avatarPreview && (
+                                <AvatarImage src={avatarPreview} className="object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            )}
                             <AvatarFallback className="text-2xl">{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex gap-2">
@@ -286,7 +300,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                         />
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={loading || usernameAvailable === false}>
+                        <Button type="submit" disabled={loading || usernameAvailable === false || !hasChanges}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save changes
                         </Button>

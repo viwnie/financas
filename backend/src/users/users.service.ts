@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { Buffer } from 'buffer';
 import { PrismaService } from '../prisma.service';
 import { User, Prisma } from '@prisma/client';
@@ -79,18 +79,45 @@ export class UsersService {
             delete updateData['removeAvatar'];
         }
 
-        // Check for uniqueness if username or email is being updated
+        // Capitalize Name (Title Case)
+        if (data.name) {
+            updateData.name = data.name
+                .toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        // Capitalize username first letter
         if (data.username) {
-            const existingUser = await this.findByUsernameInsensitive(data.username);
+            updateData.username = data.username.charAt(0).toUpperCase() + data.username.slice(1);
+        }
+
+        // Check for uniqueness if username or email is being updated
+        if (updateData.username) {
+            const existingUser = await this.findByUsernameInsensitive(updateData.username as string);
             if (existingUser && existingUser.id !== id) {
-                throw new Error('Username already exists');
+                throw new BadRequestException('Username already exists');
             }
         }
 
         if (data.email) {
-            const existingUser = await this.findByEmail(data.email);
+            // Normalize email to lowercase
+            data.email = data.email.toLowerCase();
+            updateData.email = data.email;
+
+            // Check email case-insensitively
+            const existingUser = await this.prisma.user.findFirst({
+                where: {
+                    email: {
+                        equals: data.email,
+                        mode: 'insensitive'
+                    }
+                }
+            });
+
             if (existingUser && existingUser.id !== id) {
-                throw new Error('Email already exists');
+                throw new BadRequestException('Email already exists');
             }
         }
 

@@ -1,9 +1,10 @@
 import { Controller, Get, Query, UseGuards, Request, Patch, Body, UseInterceptors, UploadedFile, BadRequestException, Res, Param } from '@nestjs/common';
+import { Buffer } from 'buffer';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -30,7 +31,7 @@ export class UsersController {
         },
     }))
     async updateProfile(@Request() req, @Body() updateUserDto: UpdateUserDto, @UploadedFile() file: Express.Multer.File) {
-        const data = { ...updateUserDto };
+        const data: any = { ...updateUserDto };
         if (file) {
             data['avatar'] = file.buffer;
             data['avatarMimeType'] = file.mimetype;

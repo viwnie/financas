@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Buffer } from 'buffer';
 import { PrismaService } from '../prisma.service';
 import { User, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -115,7 +116,7 @@ export class UsersService {
         }
 
         return {
-            buffer: user.avatar,
+            buffer: Buffer.from(user.avatar),
             mimeType: user.avatarMimeType || 'image/jpeg',
         };
     }

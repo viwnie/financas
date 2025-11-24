@@ -553,7 +553,8 @@ export class TransactionsService {
         const isCriticalUpdate =
             (amount !== undefined && Number(amount) !== Number(transaction.amount)) ||
             (date !== undefined && new Date(date).getTime() !== transaction.date.getTime()) ||
-            (dto.description !== undefined && dto.description !== transaction.description);
+            (dto.description !== undefined && dto.description !== transaction.description) ||
+            (finalCategoryId !== transaction.categoryId); // Category change is critical
 
         // Update Transaction Basic Info
         await this.prisma.transaction.update({
@@ -644,7 +645,22 @@ export class TransactionsService {
                     sharePercent !== Number(existing.sharePercent);
 
                 const shouldResetStatus = isCriticalUpdate || isCriticalParticipantUpdate;
-                const newStatus = shouldResetStatus ? ParticipantStatus.PENDING : existing.status;
+
+                let newStatus = existing.status;
+
+                if (existing.userId) {
+                    // Registered User: Reset to PENDING on critical updates
+                    if (shouldResetStatus) {
+                        newStatus = ParticipantStatus.PENDING;
+                    }
+                } else {
+                    // External User: Should NEVER be PENDING. 
+                    // If they are PENDING (e.g. from previous bug), auto-fix to ACCEPTED.
+                    if (newStatus === ParticipantStatus.PENDING) {
+                        newStatus = ParticipantStatus.ACCEPTED;
+                    }
+                    // If they are ACCEPTED or EXITED, keep current status.
+                }
 
                 await this.prisma.transactionParticipant.update({
                     where: { id: existing.id },
@@ -705,12 +721,13 @@ export class TransactionsService {
             // If participants list wasn't sent but critical info changed, reset all existing participants
             const participantsToReset = transaction.participants.filter(p => p.userId !== userId);
             for (const p of participantsToReset) {
-                await this.prisma.transactionParticipant.update({
-                    where: { id: p.id },
-                    data: { status: ParticipantStatus.PENDING }
-                });
-
+                // Only reset registered users
                 if (p.userId) {
+                    await this.prisma.transactionParticipant.update({
+                        where: { id: p.id },
+                        data: { status: ParticipantStatus.PENDING }
+                    });
+
                     await this.notificationsService.create(
                         p.userId,
                         'transaction_update',

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ConfirmationModal } from '@/components/confirmation-modal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Edit } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Transaction {
     id: string;
@@ -380,10 +381,22 @@ export default function TransactionsPage() {
                                                                             p.status === 'EXITED' ? 'text-gray-500' :
                                                                                 'text-yellow-600';
 
+                                                                const username = p.user?.username;
+
                                                                 return (
-                                                                    <span key={idx} className={`text-xs font-medium ${statusColor}`}>
-                                                                        {name}
-                                                                    </span>
+                                                                    <div key={idx} className="flex items-center gap-2">
+                                                                        <Avatar className="h-6 w-6">
+                                                                            <AvatarImage
+                                                                                src={username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${username}` : undefined}
+                                                                                alt={name}
+                                                                                className="object-cover"
+                                                                            />
+                                                                            <AvatarFallback className="text-[10px]">{name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                                        </Avatar>
+                                                                        <span className={`text-xs font-medium ${statusColor}`}>
+                                                                            {name}
+                                                                        </span>
+                                                                    </div>
                                                                 );
                                                             })}
                                                             {t.participants.filter(p => p.userId !== t.creatorId).length === 0 && <span className="text-xs text-muted-foreground">No other participants</span>}

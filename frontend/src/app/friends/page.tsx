@@ -18,6 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Friend {
     name: string;
@@ -389,11 +390,21 @@ export default function FriendsPage() {
                                                 {searchResults.map((user) => (
                                                     <li
                                                         key={user.username}
-                                                        className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex justify-between items-center"
+                                                        className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex items-center gap-3"
                                                         onClick={() => handleSelectUser(user.username)}
                                                     >
-                                                        <span>{user.name}</span>
-                                                        <span className="text-xs text-muted-foreground">@{user.username}</span>
+                                                        <Avatar className="h-8 w-8">
+                                                            <AvatarImage
+                                                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${user.username}`}
+                                                                alt={user.name}
+                                                                className="object-cover"
+                                                            />
+                                                            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex flex-col">
+                                                            <span>{user.name}</span>
+                                                            <span className="text-xs text-muted-foreground">@{user.username}</span>
+                                                        </div>
                                                     </li>
                                                 ))}
                                                 {searchResults.length === 0 && (
@@ -422,9 +433,14 @@ export default function FriendsPage() {
                                 <CardContent className="space-y-4">
                                     {receivedMergeRequests.map((req) => (
                                         <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                                            <div>
-                                                <p className="font-medium">From: {req.requester.name}</p>
-                                                <p className="text-sm text-muted-foreground">Link with: {req.placeholderName}</p>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarFallback>{req.requester.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">From: {req.requester.name}</p>
+                                                    <p className="text-sm text-muted-foreground">Link with: {req.placeholderName}</p>
+                                                </div>
                                             </div>
                                             <Button
                                                 size="sm"
@@ -449,9 +465,19 @@ export default function FriendsPage() {
                                 <CardContent className="space-y-4">
                                     {requests.map((req) => (
                                         <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                                            <div>
-                                                <p className="font-medium">{req.requester.name}</p>
-                                                <p className="text-sm text-muted-foreground">@{req.requester.username}</p>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarImage
+                                                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${req.requester.username}`}
+                                                        alt={req.requester.name}
+                                                        className="object-cover"
+                                                    />
+                                                    <AvatarFallback>{req.requester.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">{req.requester.name}</p>
+                                                    <p className="text-sm text-muted-foreground">@{req.requester.username}</p>
+                                                </div>
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button
@@ -482,14 +508,24 @@ export default function FriendsPage() {
                                 <CardContent className="space-y-4">
                                     {sentRequests.map((req) => (
                                         <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-medium">{req.addressee.name}</p>
-                                                    <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-medium">
-                                                        Pending
-                                                    </span>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarImage
+                                                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${req.addressee.username}`}
+                                                        alt={req.addressee.name}
+                                                        className="object-cover"
+                                                    />
+                                                    <AvatarFallback>{req.addressee.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium">{req.addressee.name}</p>
+                                                        <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-medium">
+                                                            Pending
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">@{req.addressee.username}</p>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">@{req.addressee.username}</p>
                                             </div>
                                             <Button
                                                 size="sm"
@@ -522,9 +558,19 @@ export default function FriendsPage() {
                                     <div className="space-y-4">
                                         {friends.map((friend) => (
                                             <div key={friend.username} className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                                                <div>
-                                                    <p className="font-medium">{friend.name}</p>
-                                                    <p className="text-sm text-muted-foreground">@{friend.username}</p>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10">
+                                                        <AvatarImage
+                                                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${friend.username}`}
+                                                            alt={friend.name}
+                                                            className="object-cover"
+                                                        />
+                                                        <AvatarFallback>{friend.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-medium">{friend.name}</p>
+                                                        <p className="text-sm text-muted-foreground">@{friend.username}</p>
+                                                    </div>
                                                 </div>
                                                 <Button
                                                     size="sm"
@@ -555,9 +601,14 @@ export default function FriendsPage() {
                                     <div className="space-y-4">
                                         {externalFriends.map((friend, idx) => (
                                             <div key={idx} className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                                                <div>
-                                                    <p className="font-medium">{friend.name}</p>
-                                                    <p className="text-sm text-muted-foreground">Ad-hoc participant</p>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10">
+                                                        <AvatarFallback>{friend.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-medium">{friend.name}</p>
+                                                        <p className="text-sm text-muted-foreground">Ad-hoc participant</p>
+                                                    </div>
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <Button

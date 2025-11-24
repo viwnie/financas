@@ -18,6 +18,7 @@ import { CalendarIcon, Plus, X, Search, UserPlus, Clock, Check } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/use-debounce';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const participantSchema = z.object({
     id: z.string().optional(),
@@ -575,6 +576,14 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                             }}
                                         >
                                             <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage
+                                                        src={result.username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${result.username}` : undefined}
+                                                        alt={result.name}
+                                                        className="object-cover"
+                                                    />
+                                                    <AvatarFallback>{result.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{result.name}</span>
                                                     {result.username && <span className="text-xs text-muted-foreground">@{result.username}</span>}
@@ -627,10 +636,20 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                 <Label>Participantes Selecionados</Label>
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="flex items-center gap-3 bg-background p-3 rounded border">
-                                        <div className="flex-1 font-medium">
-                                            {field.name}
-                                            {!field.username && !field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
-                                            {field.status === 'PENDING' && transactionId && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
+                                        <div className="flex-1 font-medium flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage
+                                                    src={field.username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${field.username}` : undefined}
+                                                    alt={field.name}
+                                                    className="object-cover"
+                                                />
+                                                <AvatarFallback>{field.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                {field.name}
+                                                {!field.username && !field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
+                                                {field.status === 'PENDING' && transactionId && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center gap-2">

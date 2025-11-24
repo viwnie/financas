@@ -147,4 +147,20 @@ export class UsersService {
             mimeType: user.avatarMimeType || 'image/jpeg',
         };
     }
+
+    async getAvatarByUsername(username: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+        const user = await this.prisma.user.findUnique({
+            where: { username },
+            select: { avatar: true, avatarMimeType: true },
+        });
+
+        if (!user || !user.avatar) {
+            return null;
+        }
+
+        return {
+            buffer: Buffer.from(user.avatar),
+            mimeType: user.avatarMimeType || 'image/jpeg',
+        };
+    }
 }

@@ -54,4 +54,14 @@ export class UsersController {
         res.setHeader('Content-Type', avatar.mimeType);
         res.send(avatar.buffer);
     }
+
+    @Get('avatar/:username')
+    async getAvatarByUsername(@Param('username') username: string, @Res() res: Response) {
+        const avatar = await this.usersService.getAvatarByUsername(username);
+        if (!avatar) {
+            return res.status(404).send('Avatar not found');
+        }
+        res.setHeader('Content-Type', avatar.mimeType);
+        res.send(avatar.buffer);
+    }
 }

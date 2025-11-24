@@ -16,6 +16,8 @@ import {
 import { Moon, Sun, Globe, LogOut, Wallet, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from 'react';
+import { UserProfileModal } from '@/components/user-profile-modal';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function Navbar() {
     const pathname = usePathname();
@@ -120,6 +122,20 @@ export function Navbar() {
                                 <DropdownMenuItem onClick={() => setLocale("en")}>English</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <UserProfileModal>
+                            <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage
+                                        src={user ? `${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}/avatar?t=${Date.now()}` : ''}
+                                        alt={user?.name || 'User'}
+                                        className="object-cover"
+                                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.src = '' }}
+                                    />
+                                    <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </UserProfileModal>
 
                         <Button variant="ghost" size="icon" onClick={handleLogout} title={t('nav.logout')}>
                             <LogOut className="h-[1.2rem] w-[1.2rem]" />

@@ -64,4 +64,59 @@ export class UsersService {
             }
         });
     }
+
+    async update(id: string, data: any): Promise<User> {
+        const updateData: Prisma.UserUpdateInput = { ...data };
+
+        if (data.password) {
+            updateData.password = await bcrypt.hash(data.password, 10);
+        }
+
+        if (data.removeAvatar) {
+            updateData.avatar = null;
+            updateData.avatarMimeType = null;
+            delete updateData['removeAvatar'];
+        }
+
+        // Check for uniqueness if username or email is being updated
+        if (data.username) {
+            const existingUser = await this.findByUsernameInsensitive(data.username);
+            if (existingUser && existingUser.id !== id) {
+                throw new Error('Username already exists');
+            }
+        }
+
+        if (data.email) {
+            const existingUser = await this.findByEmail(data.email);
+            if (existingUser && existingUser.id !== id) {
+                throw new Error('Email already exists');
+            }
+        }
+
+        return this.prisma.user.update({
+            where: { id },
+            data: updateData,
+        });
+    }
+
+    async checkUsernameAvailability(username: string): Promise<boolean> {
+        const user = await this.findByUsernameInsensitive(username);
+        return !user;
+    }
+
+    async getAvatar(id: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: { avatar: true, avatarMimeType: true },
+        });
+
+        if (!user || !user.avatar) {
+            return null;
+        }
+
+        return {
+            buffer: user.avatar,
+            mimeType: user.avatarMimeType || 'image/jpeg',
+        };
+    }
 }

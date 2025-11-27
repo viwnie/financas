@@ -29,6 +29,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
     const [checkingUsername, setCheckingUsername] = useState(false);
     const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [showPasswordError, setShowPasswordError] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
@@ -36,6 +37,8 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
         username: '',
         email: '',
         password: '',
+        confirmNewPassword: '',
+        currentPassword: '',
         avatar: null as File | null,
         removeAvatar: false,
     });
@@ -47,6 +50,8 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                 username: user.username || '',
                 email: user.email || '',
                 password: '',
+                confirmNewPassword: '',
+                currentPassword: '',
                 avatar: null,
                 removeAvatar: false,
             });
@@ -54,11 +59,13 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             // We can use a timestamp to bust cache
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
             setAvatarPreview(`${apiUrl}/users/${user.id}/avatar?t=${Date.now()}`);
+            setShowPasswordError(false);
         }
     }, [user, open]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        setShowPasswordError(false);
 
         if (name === 'name') {
             // Only allow letters, spaces, and accents
@@ -101,6 +108,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setShowPasswordError(false);
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
@@ -125,6 +133,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
     const handleRemoveAvatar = () => {
         setFormData((prev) => ({ ...prev, avatar: null, removeAvatar: true }));
         setAvatarPreview(null);
+        setShowPasswordError(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -144,7 +153,23 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             if (formData.name !== user?.name) data.append('name', formData.name);
             if (formData.username !== user?.username) data.append('username', formData.username);
             if (formData.email !== user?.email) data.append('email', formData.email);
-            if (formData.password) data.append('password', formData.password);
+            if (formData.password) {
+                if (formData.password !== formData.confirmNewPassword) {
+                    toast.error('New passwords do not match');
+                    setLoading(false);
+                    return;
+                }
+                data.append('password', formData.password);
+            }
+
+            if (!formData.currentPassword) {
+                toast.error('Current password is required to save changes');
+                setShowPasswordError(true);
+                setLoading(false);
+                return;
+            }
+            data.append('currentPassword', formData.currentPassword);
+
             if (formData.avatar) data.append('avatar', formData.avatar);
             if (formData.removeAvatar) data.append('removeAvatar', 'true');
 
@@ -197,7 +222,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[550px]">
                 <DialogHeader>
                     <DialogTitle>Edit Profile</DialogTitle>
                     <DialogDescription>
@@ -234,7 +259,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
+                        <Label htmlFor="name" className="text-right whitespace-nowrap">
                             Name
                         </Label>
                         <Input
@@ -246,7 +271,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="username" className="text-right">
+                        <Label htmlFor="username" className="text-right whitespace-nowrap">
                             Username
                         </Label>
                         <div className="col-span-3 relative">
@@ -273,7 +298,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                         </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4 mt-2">
-                        <Label htmlFor="email" className="text-right">
+                        <Label htmlFor="email" className="text-right whitespace-nowrap">
                             Email
                         </Label>
                         <Input
@@ -286,7 +311,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="password" className="text-right">
+                        <Label htmlFor="password" className="text-right whitespace-nowrap">
                             Password
                         </Label>
                         <Input
@@ -299,6 +324,46 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                             className="col-span-3"
                         />
                     </div>
+                    {formData.password && (
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="confirmNewPassword" className="text-right whitespace-nowrap">
+                                Confirm Password
+                            </Label>
+                            <Input
+                                id="confirmNewPassword"
+                                name="confirmNewPassword"
+                                type="password"
+                                placeholder="Re-enter new password"
+                                value={formData.confirmNewPassword}
+                                onChange={handleChange}
+                                className="col-span-3"
+                            />
+                        </div>
+                    )}
+                    {hasChanges && (
+                        <div className={`grid grid-cols-4 items-center gap-4 border-t pt-4 mt-4 ${showPasswordError && !formData.currentPassword ? "mb-6" : ""}`}>
+                            <Label htmlFor="currentPassword" className="text-right font-bold whitespace-nowrap">
+                                Current Password
+                            </Label>
+                            <div className="col-span-3 relative">
+                                <Input
+                                    id="currentPassword"
+                                    name="currentPassword"
+                                    type="password"
+                                    placeholder="Required to save changes"
+                                    value={formData.currentPassword}
+                                    onChange={(e) => {
+                                        handleChange(e);
+                                        if (e.target.value) setShowPasswordError(false);
+                                    }}
+                                    className={showPasswordError && !formData.currentPassword ? "border-red-300" : ""}
+                                />
+                                {showPasswordError && !formData.currentPassword && (
+                                    <p className="text-xs text-red-500 absolute -bottom-5 left-0">Please enter your current password to confirm changes.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     <DialogFooter>
                         <Button type="submit" disabled={loading || usernameAvailable === false || !hasChanges}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

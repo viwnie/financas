@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { Buffer } from 'buffer';
 import { PrismaService } from '../prisma.service';
 import { User, Prisma } from '@prisma/client';
@@ -68,6 +68,23 @@ export class UsersService {
 
     async update(id: string, data: any): Promise<User> {
         const updateData: Prisma.UserUpdateInput = { ...data };
+
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        if (data.currentPassword) {
+            const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password);
+            if (!isPasswordValid) {
+                throw new UnauthorizedException('Invalid current password');
+            }
+        } else if (data.password || data.email !== user.email || data.username !== user.username) {
+            // Require current password for sensitive changes
+            // For now, let's enforce it for ANY update to be safe, or at least for password changes
+            // The requirement was "ask for user password to update info OR change password"
+            throw new UnauthorizedException('Current password is required to update profile');
+        }
 
         if (data.password) {
             updateData.password = await bcrypt.hash(data.password, 10);

@@ -24,6 +24,11 @@ export class UpdateUserDto {
     password?: string;
 
     @IsOptional()
+    @IsString()
+    @MinLength(6)
+    currentPassword?: string;
+
+    @IsOptional()
     @Transform(({ value }) => value === 'true' || value === true)
     @IsBoolean()
     removeAvatar?: boolean;

@@ -18,6 +18,10 @@ const registerSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters'),
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(6, 'Password confirmation is required'),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -90,6 +94,11 @@ export default function RegisterPage() {
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" type="password" {...register('password')} />
                             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm Password</Label>
+                            <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
+                            {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
                         </div>
                         {error && <p className="text-sm text-red-500">{error}</p>}
                         <Button type="submit" className="w-full" disabled={mutation.isPending}>

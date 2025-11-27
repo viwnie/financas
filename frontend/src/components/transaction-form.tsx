@@ -36,6 +36,7 @@ const transactionSchema = z.object({
     description: z.string().optional(),
     date: z.date(),
     categoryName: z.string().min(1, 'Category is required'),
+    categoryColor: z.string().optional(),
     isFixed: z.boolean().optional(),
     installmentsCount: z.coerce.number().optional(),
     isShared: z.boolean().optional(),
@@ -73,6 +74,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             description: initialData?.description || '',
             date: initialData ? new Date(initialData.date) : new Date(),
             categoryName: initialData?.category?.name || '',
+            categoryColor: initialData?.category?.color || initialData?.categoryColor || '#e2e8f0',
             isFixed: initialData?.isFixed || false,
             installmentsCount: initialData?.installmentsCount || 1,
             isShared: initialData?.isShared || false,
@@ -128,6 +130,9 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             // Auto-fill if category is empty OR if it was previously auto-filled and user hasn't changed it manually
             if (!categoryName || isAutoFilled) {
                 setValue('categoryName', prediction.category.name);
+                if (prediction.category.color) {
+                    setValue('categoryColor', prediction.category.color);
+                }
                 setAutoFilledCategory(prediction.category.name);
                 setIsAutoFilled(true);
                 toast.info(`Categoria sugerida: ${prediction.category.name}`, {
@@ -463,54 +468,78 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             <div className="flex flex-wrap gap-4 items-start">
                 <div className="flex-1 min-w-[200px] space-y-2">
                     <Label>Categoria</Label>
-                    <div className="relative">
-                        <Input
-                            {...register('categoryName')}
-                            placeholder="Ex: Alimentação, Aluguel"
-                            autoComplete="off"
-                            onFocus={() => setShowCategorySuggestions(true)}
-                            onBlur={() => {
-                                // Delay hiding to allow click on suggestion
-                                setTimeout(() => setShowCategorySuggestions(false), 200);
-                            }}
-                            onChange={(e) => {
-                                setValue('categoryName', e.target.value);
-                                setIsAutoFilled(false); // User manually typing
-                                setShowCategorySuggestions(true);
-                            }}
-                        />
-                        {isAutoFilled && (
-                            <div className="absolute right-2 top-2.5 text-xs text-purple-600 flex items-center bg-purple-50 px-2 rounded-full pointer-events-none">
-                                <span className="mr-1">✨</span> Sugerido
-                            </div>
-                        )}
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Input
+                                {...register('categoryName')}
+                                placeholder="Ex: Alimentação, Aluguel"
+                                autoComplete="off"
+                                onFocus={() => setShowCategorySuggestions(true)}
+                                onBlur={() => {
+                                    // Delay hiding to allow click on suggestion
+                                    setTimeout(() => setShowCategorySuggestions(false), 200);
+                                }}
+                                onChange={(e) => {
+                                    setValue('categoryName', e.target.value);
+                                    setIsAutoFilled(false); // User manually typing
+                                    setShowCategorySuggestions(true);
+                                }}
+                            />
+                            {isAutoFilled && (
+                                <div className="absolute right-2 top-2.5 text-xs text-purple-600 flex items-center bg-purple-50 px-2 rounded-full pointer-events-none">
+                                    <span className="mr-1">✨</span> Sugerido
+                                </div>
+                            )}
 
-                        {showCategorySuggestions && categorySuggestions.length > 0 && (
-                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                                {categorySuggestions.map((cat: any) => (
-                                    <div
-                                        key={cat.id}
-                                        className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
-                                        onClick={() => {
-                                            setValue('categoryName', cat.name);
-                                            setIsAutoFilled(false);
-                                            setShowCategorySuggestions(false);
-                                            // Trigger learning immediately on selection if description exists
-                                            if (description) {
-                                                learnMutation.mutate({ description, categoryId: cat.id });
-                                            }
-                                        }}
-                                    >
-                                        <span>{cat.name}</span>
-                                        {cat.score > 0 && (
-                                            <span className="text-xs text-muted-foreground">
-                                                {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                            {showCategorySuggestions && categorySuggestions.length > 0 && (
+                                <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                                    {categorySuggestions.map((cat: any) => (
+                                        <div
+                                            key={cat.id}
+                                            className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
+                                            onClick={() => {
+                                                setValue('categoryName', cat.name);
+                                                if (cat.color) {
+                                                    setValue('categoryColor', cat.color);
+                                                }
+                                                setIsAutoFilled(false);
+                                                setShowCategorySuggestions(false);
+                                                // Trigger learning immediately on selection if description exists
+                                                if (description) {
+                                                    learnMutation.mutate({ description, categoryId: cat.id });
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {cat.color && (
+                                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                )}
+                                                <span>{cat.name}</span>
+                                            </div>
+                                            {cat.score > 0 && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="relative">
+                            <div
+                                className="w-9 h-9 rounded-full border cursor-pointer shadow-sm flex items-center justify-center transition-transform active:scale-95"
+                                style={{ backgroundColor: watch('categoryColor') || '#e2e8f0' }}
+                                onClick={() => document.getElementById('category-color-picker')?.click()}
+                                title="Escolher cor da categoria"
+                            />
+                            <input
+                                id="category-color-picker"
+                                type="color"
+                                className="absolute opacity-0 w-0 h-0"
+                                {...register('categoryColor')}
+                            />
+                        </div>
                     </div>
                     {errors.categoryName && <p className="text-xs text-red-500">{errors.categoryName.message}</p>}
                 </div>

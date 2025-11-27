@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma.service';
 @Module({
   controllers: [CategoriesController],
   providers: [CategoriesService, PrismaService],
+  exports: [CategoriesService],
 })
 export class CategoriesModule implements OnModuleInit {
   constructor(private categoriesService: CategoriesService) { }

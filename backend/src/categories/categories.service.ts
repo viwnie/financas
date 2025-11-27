@@ -17,13 +17,39 @@ export class CategoriesService {
     }
 
     async findAll(userId: string) {
-        return this.prisma.category.findMany({
+        const categories = await this.prisma.category.findMany({
             where: {
                 OR: [
                     { isSystem: true },
                     { userId },
                 ],
             },
+            include: {
+                userSettings: {
+                    where: { userId }
+                }
+            }
+        });
+
+        return categories.map(cat => ({
+            ...cat,
+            color: cat.userSettings[0]?.color || null
+        }));
+    }
+
+    async updateColor(userId: string, categoryId: string, color: string) {
+        return this.prisma.userCategorySetting.upsert({
+            where: {
+                userId_categoryId: { userId, categoryId }
+            },
+            create: {
+                userId,
+                categoryId,
+                color
+            },
+            update: {
+                color
+            }
         });
     }
 
@@ -73,11 +99,23 @@ export class CategoriesService {
                 textPattern: { contains: normalizedDesc, mode: 'insensitive' }
             },
             orderBy: { weight: 'desc' },
-            include: { category: true }
+            include: {
+                category: {
+                    include: {
+                        userSettings: {
+                            where: { userId }
+                        }
+                    }
+                }
+            }
         });
 
         if (override) {
-            return { category: override.category, confidence: 0.95, source: 'OVERRIDE' };
+            const category = {
+                ...override.category,
+                color: override.category.userSettings[0]?.color || null
+            };
+            return { category, confidence: 0.95, source: 'OVERRIDE' };
         }
 
         // 2. Personal History
@@ -94,8 +132,21 @@ export class CategoriesService {
         });
 
         if (history.length > 0) {
-            const category = await this.prisma.category.findUnique({ where: { id: history[0].categoryId } });
-            if (category) return { category, confidence: 0.8, source: 'HISTORY' };
+            const categoryData = await this.prisma.category.findUnique({
+                where: { id: history[0].categoryId },
+                include: {
+                    userSettings: {
+                        where: { userId }
+                    }
+                }
+            });
+            if (categoryData) {
+                const category = {
+                    ...categoryData,
+                    color: categoryData.userSettings[0]?.color || null
+                };
+                return { category, confidence: 0.8, source: 'HISTORY' };
+            }
         }
 
         // 3. Semantic Match (Keywords)
@@ -104,7 +155,15 @@ export class CategoriesService {
             where: {
                 keyword: { in: words, mode: 'insensitive' }
             },
-            include: { category: true }
+            include: {
+                category: {
+                    include: {
+                        userSettings: {
+                            where: { userId }
+                        }
+                    }
+                }
+            }
         });
 
         if (keywordMatches.length > 0) {
@@ -117,7 +176,7 @@ export class CategoriesService {
             }
 
             // Find top score
-            let topMatch = null;
+            let topMatch: any = null;
             let maxScore = 0;
             for (const item of scores.values()) {
                 if (item.score > maxScore) {
@@ -126,7 +185,13 @@ export class CategoriesService {
                 }
             }
 
-            if (topMatch) return { category: topMatch, confidence: 0.7, source: 'SEMANTIC' };
+            if (topMatch) {
+                const category = {
+                    ...topMatch,
+                    color: topMatch.userSettings?.[0]?.color || null
+                };
+                return { category, confidence: 0.7, source: 'SEMANTIC' };
+            }
         }
 
         // 4. Global Stats (Pre-computed)
@@ -134,7 +199,15 @@ export class CategoriesService {
             where: {
                 keyword: { in: words, mode: 'insensitive' }
             },
-            include: { category: true }
+            include: {
+                category: {
+                    include: {
+                        userSettings: {
+                            where: { userId }
+                        }
+                    }
+                }
+            }
         });
 
         if (globalStats.length > 0) {
@@ -146,7 +219,7 @@ export class CategoriesService {
                 scores.set(stat.categoryId, current);
             }
 
-            let topMatch = null;
+            let topMatch: any = null;
             let maxCount = 0;
             for (const item of scores.values()) {
                 if (item.count > maxCount) {
@@ -155,7 +228,13 @@ export class CategoriesService {
                 }
             }
 
-            if (topMatch) return { category: topMatch, confidence: 0.6, source: 'GLOBAL' };
+            if (topMatch) {
+                const category = {
+                    ...topMatch,
+                    color: topMatch.userSettings?.[0]?.color || null
+                };
+                return { category, confidence: 0.6, source: 'GLOBAL' };
+            }
         }
 
         return null;
@@ -197,13 +276,23 @@ export class CategoriesService {
             where: {
                 name: { contains: query, mode: 'insensitive' },
                 OR: [{ userId }, { isSystem: true }]
+            },
+            include: {
+                userSettings: {
+                    where: { userId }
+                }
             }
         });
 
-        if (!context) return categories;
+        const categoriesWithColor = categories.map(cat => ({
+            ...cat,
+            color: cat.userSettings[0]?.color || null
+        }));
+
+        if (!context) return categoriesWithColor;
 
         // 2. Context Scoring
-        const scored = await Promise.all(categories.map(async (cat) => {
+        const scored = await Promise.all(categoriesWithColor.map(async (cat) => {
             let score = 0;
 
             // Name Match Score (Base)

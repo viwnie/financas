@@ -5,17 +5,19 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionType, InstallmentStatus, ParticipantStatus, Prisma } from '@prisma/client';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CategoriesService } from '../categories/categories.service';
 
 @Injectable()
 export class TransactionsService {
     constructor(
         private prisma: PrismaService,
         private notificationsGateway: NotificationsGateway,
-        private notificationsService: NotificationsService
+        private notificationsService: NotificationsService,
+        private categoriesService: CategoriesService
     ) { }
 
     async create(userId: string, dto: CreateTransactionDto) {
-        const { amount, date, installmentsCount, participants, categoryName, categoryId, isFixed, ...rest } = dto;
+        const { amount, date, installmentsCount, participants, categoryName, categoryId, categoryColor, isFixed, ...rest } = dto;
         const transactionDate = new Date(date);
 
         let finalCategoryId = categoryId;
@@ -46,6 +48,10 @@ export class TransactionsService {
 
         if (!finalCategoryId) {
             throw new BadRequestException('Category is required (either id or name)');
+        }
+
+        if (categoryColor) {
+            await this.categoriesService.updateColor(userId, finalCategoryId, categoryColor);
         }
 
         // 1. Create the main transaction
@@ -271,22 +277,42 @@ export class TransactionsService {
             });
         }
 
-        return this.prisma.transaction.findMany({
+        const transactions = await this.prisma.transaction.findMany({
             where,
             include: {
-                category: true,
+                category: {
+                    include: {
+                        userSettings: {
+                            where: { userId }
+                        }
+                    }
+                },
                 installments: true,
                 participants: { include: { user: { select: { name: true, username: true } } } }
             },
             orderBy: { date: 'desc' }
         });
+
+        return transactions.map(t => ({
+            ...t,
+            category: {
+                ...t.category,
+                color: t.category.userSettings[0]?.color || null
+            }
+        }));
     }
 
     async findOne(id: string, userId: string) {
         const transaction = await this.prisma.transaction.findUnique({
             where: { id },
             include: {
-                category: true,
+                category: {
+                    include: {
+                        userSettings: {
+                            where: { userId }
+                        }
+                    }
+                },
                 installments: true,
                 participants: { include: { user: { select: { name: true, username: true } } } },
                 creator: { select: { name: true } }
@@ -301,7 +327,13 @@ export class TransactionsService {
             throw new NotFoundException('Transaction not found');
         }
 
-        return transaction;
+        return {
+            ...transaction,
+            category: {
+                ...transaction.category,
+                color: transaction.category.userSettings[0]?.color || null
+            }
+        };
     }
 
     async remove(id: string, userId: string) {

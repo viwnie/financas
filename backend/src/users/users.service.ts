@@ -138,6 +138,9 @@ export class UsersService {
             }
         }
 
+        delete updateData['currentPassword'];
+        delete updateData['removeAvatar'];
+
         return this.prisma.user.update({
             where: { id },
             data: updateData,

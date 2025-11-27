@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Upload, X, Loader2, Check, AlertCircle } from 'lucide-react';
+import { User, Upload, X, Loader2, Check, AlertCircle, Undo } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -30,6 +30,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
     const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [showPasswordError, setShowPasswordError] = useState(false);
+    const [hasDbAvatar, setHasDbAvatar] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
@@ -59,6 +60,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             // We can use a timestamp to bust cache
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
             setAvatarPreview(`${apiUrl}/users/${user.id}/avatar?t=${Date.now()}`);
+            setHasDbAvatar(false); // Reset and let onLoad determine if it exists
             setShowPasswordError(false);
         }
     }, [user, open]);
@@ -133,6 +135,16 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
     const handleRemoveAvatar = () => {
         setFormData((prev) => ({ ...prev, avatar: null, removeAvatar: true }));
         setAvatarPreview(null);
+        setShowPasswordError(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleRevertAvatar = () => {
+        setFormData((prev) => ({ ...prev, avatar: null, removeAvatar: false }));
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        setAvatarPreview(`${apiUrl}/users/${user?.id}/avatar?t=${Date.now()}`);
         setShowPasswordError(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -232,22 +244,49 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
                     <div className="flex flex-col items-center gap-4">
                         <Avatar className="h-24 w-24 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                            {avatarPreview && (
-                                <AvatarImage src={avatarPreview} className="object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                            {avatarPreview ? (
+                                <>
+                                    <AvatarImage
+                                        src={avatarPreview}
+                                        className="object-cover"
+                                        onLoad={() => {
+                                            if (!formData.avatar && !formData.removeAvatar) {
+                                                setHasDbAvatar(true);
+                                            }
+                                        }}
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            if (!formData.avatar && !formData.removeAvatar) {
+                                                setHasDbAvatar(false);
+                                            }
+                                        }}
+                                    />
+                                    <AvatarFallback className="text-2xl">
+                                        {(formData.name || user?.name || '?').charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </>
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-2xl">
+                                    {(formData.name || user?.name || '?').charAt(0).toUpperCase()}
+                                </div>
                             )}
-                            <AvatarFallback className="text-2xl">{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex gap-2">
                             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                                 <Upload className="mr-2 h-4 w-4" />
                                 Change Photo
                             </Button>
-                            {(avatarPreview) && (
+                            {(formData.avatar || formData.removeAvatar) ? (
+                                <Button type="button" variant="outline" size="sm" onClick={handleRevertAvatar}>
+                                    <Undo className="mr-2 h-4 w-4" />
+                                    Reverter
+                                </Button>
+                            ) : hasDbAvatar ? (
                                 <Button type="button" variant="destructive" size="sm" onClick={handleRemoveAvatar}>
                                     <X className="mr-2 h-4 w-4" />
-                                    Remove
+                                    Remover
                                 </Button>
-                            )}
+                            ) : null}
                         </div>
                         <input
                             type="file"

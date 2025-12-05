@@ -18,17 +18,19 @@ A modern, scalable, and secure personal and shared financial management applicat
 2.  **Start Backend:**
     ```bash
     cd backend
-    npm install
-    npx prisma generate
-    npx prisma db push
-    npm run start:dev
+    cd backend
+    bun install
+    bunx prisma generate
+    bunx prisma db push
+    bun run start:dev
     ```
 
 3.  **Start Frontend:**
     ```bash
     cd frontend
-    npm install
-    npm run dev
+    cd frontend
+    bun install
+    bun run dev
     ```
 
 ## Documentation

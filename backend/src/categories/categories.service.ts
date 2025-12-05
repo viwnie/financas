@@ -1,15 +1,88 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { TranslationService } from '../common/translation.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class CategoriesService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private translationService: TranslationService
+    ) { }
 
-    async create(userId: string, name: string) {
+    async create(userId: string, name: string, language: string = 'pt') {
+        const normalizedName = name.trim().toLowerCase();
+        const langField = `name_${language}`; // e.g. name_pt
+
+        // 1. Direct Search
+        // Check if exists in the specific language column
+        // We check both system categories and user's categories
+        let existing = await this.prisma.category.findFirst({
+            where: {
+                [langField]: normalizedName,
+                OR: [
+                    { isSystem: true },
+                    { userId }
+                ]
+            }
+        });
+
+        if (existing) return existing;
+
+        // 2. Translate
+        const languages = ['pt', 'en', 'es'];
+        const translations: Record<string, string> = {};
+
+        // Initialize with the provided name/language
+        translations[language] = normalizedName;
+
+        // Translate to other languages
+        for (const targetLang of languages) {
+            if (targetLang !== language) {
+                translations[targetLang] = await this.translationService.translate(normalizedName, language, targetLang);
+                // Normalize translation just in case
+                translations[targetLang] = translations[targetLang].toLowerCase().trim();
+            }
+        }
+
+        // 3. Reverse Search (Deduplication)
+        // Check if any of the translations exist in their respective columns
+        const whereConditions = languages.map(lang => ({
+            [`name_${lang}`]: translations[lang],
+            OR: [{ isSystem: true }, { userId }]
+        }));
+
+        existing = await this.prisma.category.findFirst({
+            where: { OR: whereConditions }
+        });
+
+        if (existing) {
+            // Update missing translations
+            const updateData: any = {};
+            for (const lang of languages) {
+                const field = `name_${lang}`;
+                // If the field is empty in DB but we have a translation, update it
+                if (!existing[field] && translations[lang]) {
+                    updateData[field] = translations[lang];
+                }
+            }
+
+            if (Object.keys(updateData).length > 0) {
+                return this.prisma.category.update({
+                    where: { id: existing.id },
+                    data: updateData
+                });
+            }
+            return existing;
+        }
+
+        // 4. Create New
         return this.prisma.category.create({
             data: {
-                name,
+                name: normalizedName, // Fallback
+                name_pt: translations['pt'],
+                name_en: translations['en'],
+                name_es: translations['es'],
                 userId,
                 isSystem: false,
             },

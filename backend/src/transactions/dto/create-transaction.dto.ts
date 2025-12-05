@@ -30,6 +30,10 @@ export class CreateTransactionDto {
     categoryColor?: string;
 
     @IsOptional()
+    @IsString()
+    language?: string;
+
+    @IsOptional()
     @IsBoolean()
     isFixed?: boolean;
 

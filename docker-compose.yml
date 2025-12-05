@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d finance_db"]
+      test: [ "CMD-SHELL", "pg_isready -U admin -d finance_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,11 +28,34 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  libretranslate:
+    image: libretranslate/libretranslate
+    container_name: finance_libretranslate
+    restart: always
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: [ "CMD-SHELL", "./venv/bin/python scripts/healthcheck.py" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    user: root
+    environment:
+      - LT_UPDATE_MODELS=false
+      - LT_LOAD_ONLY=en,pt,pt-BR,es
+      - PYTHONWARNINGS=ignore
+    volumes:
+      - libretranslate_data:/home/libretranslate/.local/share/argos-translate
+      - libretranslate_cache:/home/libretranslate/.local/cache/argos-translate
+
 volumes:
   postgres_data:
   redis_data:
+  libretranslate_data:
+  libretranslate_cache:

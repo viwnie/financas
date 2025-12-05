@@ -115,6 +115,9 @@ model Friendship {
 model Category {
   id        String   @id @default(uuid())
   name      String
+  name_pt   String?
+  name_en   String?
+  name_es   String?
   isSystem  Boolean  @default(false) // If true, available to everyone
   userId    String?  // If null and isSystem=false, it's an error. If null and isSystem=true, it's global.
   createdAt DateTime @default(now())
@@ -126,6 +129,10 @@ model Category {
   globalStats  GlobalCategoryStats[]
   personalOverrides PersonalCategoryOverride[]
   userSettings UserCategorySetting[]
+
+  @@index([name_pt])
+  @@index([name_en])
+  @@index([name_es])
 }
 
 model UserCategorySetting {

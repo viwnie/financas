@@ -8,8 +8,8 @@ export class CategoriesController {
     constructor(private readonly categoriesService: CategoriesService) { }
 
     @Post()
-    create(@Request() req, @Body('name') name: string) {
-        return this.categoriesService.create(req.user.userId, name);
+    create(@Request() req, @Body('name') name: string, @Body('language') language?: string) {
+        return this.categoriesService.create(req.user.userId, name, language);
     }
 
     @Get()

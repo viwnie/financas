@@ -13,12 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { CalendarIcon, Plus, X, Search, UserPlus, Clock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/use-debounce';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useLanguage } from '@/contexts/language-context';
 
 const participantSchema = z.object({
     id: z.string().optional(),
@@ -47,6 +48,7 @@ type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
     const { token, user } = useAuthStore();
+    const { locale } = useLanguage();
     const queryClient = useQueryClient();
     const [error, setError] = useState('');
     const [friendSearch, setFriendSearch] = useState('');
@@ -320,7 +322,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             }
         }
 
-        mutation.mutate(data);
+        mutation.mutate({ ...data, language: locale } as any);
     };
 
     const distributeEqually = (currentFields: any[]) => {
@@ -395,8 +397,20 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         return creatorBaseShare;
     };
 
+    // Helper to get translated name
+    const getCategoryName = (cat: any) => {
+        if (locale === 'pt' && cat.name_pt) return cat.name_pt;
+        if (locale === 'en' && cat.name_en) return cat.name_en;
+        if (locale === 'es' && cat.name_es) return cat.name_es;
+        return cat.name;
+    };
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" >
+            {/* ... (previous JSX) ... */}
+            {/* I need to be careful not to replace the whole form */}
+            {/* I will target the specific suggestion map block */}
+
             <div className="flex flex-wrap gap-4 items-start">
                 <div className="flex-1 min-w-[200px] space-y-2">
                     <Label>Descrição</Label>
@@ -493,36 +507,39 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
                             {showCategorySuggestions && categorySuggestions.length > 0 && (
                                 <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                                    {categorySuggestions.map((cat: any) => (
-                                        <div
-                                            key={cat.id}
-                                            className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
-                                            onClick={() => {
-                                                setValue('categoryName', cat.name);
-                                                if (cat.color) {
-                                                    setValue('categoryColor', cat.color);
-                                                }
-                                                setIsAutoFilled(false);
-                                                setShowCategorySuggestions(false);
-                                                // Trigger learning immediately on selection if description exists
-                                                if (description) {
-                                                    learnMutation.mutate({ description, categoryId: cat.id });
-                                                }
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                {cat.color && (
-                                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                    {categorySuggestions.map((cat: any) => {
+                                        const displayName = getCategoryName(cat);
+                                        return (
+                                            <div
+                                                key={cat.id}
+                                                className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
+                                                onClick={() => {
+                                                    setValue('categoryName', displayName);
+                                                    if (cat.color) {
+                                                        setValue('categoryColor', cat.color);
+                                                    }
+                                                    setIsAutoFilled(false);
+                                                    setShowCategorySuggestions(false);
+                                                    // Trigger learning immediately on selection if description exists
+                                                    if (description) {
+                                                        learnMutation.mutate({ description, categoryId: cat.id });
+                                                    }
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {cat.color && (
+                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                    )}
+                                                    <span>{displayName}</span>
+                                                </div>
+                                                {cat.score > 0 && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
+                                                    </span>
                                                 )}
-                                                <span>{cat.name}</span>
                                             </div>
-                                            {cat.score > 0 && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             )}
                         </div>

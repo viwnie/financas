@@ -2,6 +2,8 @@
 node_modules/
 .pnp
 .pnp.js
+.npm
+jspm_packages/
 
 # Testing
 coverage/
@@ -11,16 +13,24 @@ dist/
 build/
 .next/
 out/
+.vercel
 
 # Misc
 .DS_Store
 *.pem
+Thumbs.db
+*.tmp
+*.temp
 
-# Debug
+# Debug & Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+*_log.txt
+*_output.txt
+*_output_*.txt
 
 # Local env files
 .env
@@ -37,6 +47,12 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+*.tsbuildinfo
+.eslintcache
+.node_repl_history
 
 # Docker
 docker-data/
+
+# AI Models
+*.gguf

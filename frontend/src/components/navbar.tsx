@@ -43,7 +43,7 @@ export function Navbar() {
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-14 items-center px-4 md:px-8">
+            <div className="w-full flex h-14 items-center px-4 md:px-8">
                 <div className="mr-4 hidden md:flex">
                     <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
                         <Wallet className="h-6 w-6" />
@@ -120,6 +120,7 @@ export function Navbar() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setLocale("pt")}>Português (BR)</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setLocale("en")}>English</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setLocale("es")}>Español</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 

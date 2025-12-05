@@ -2,16 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type Locale = 'en' | 'pt';
+type Locale = 'en' | 'pt' | 'es';
 
-type LanguageContextType = {
-    locale: Locale;
-    setLocale: (locale: Locale) => void;
-    t: (key: string) => string;
-};
+// ...
 
 const translations = {
     en: {
+        // ... (existing en)
         'dashboard.welcome': 'Welcome',
         'dashboard.transactions': 'Transactions',
         'dashboard.friends': 'Friends',
@@ -40,6 +37,7 @@ const translations = {
         'notifications.invitationUpdated': 'Invitation updated',
     },
     pt: {
+        // ... (existing pt)
         'dashboard.welcome': 'Bem-vindo',
         'dashboard.transactions': 'Transações',
         'dashboard.friends': 'Amigos',
@@ -66,6 +64,34 @@ const translations = {
         'notifications.reject': 'Rejeitar',
         'notifications.friendRequestUpdated': 'Solicitação de amizade atualizada',
         'notifications.invitationUpdated': 'Convite atualizado',
+    },
+    es: {
+        'dashboard.welcome': 'Bienvenido',
+        'dashboard.transactions': 'Transacciones',
+        'dashboard.friends': 'Amigos',
+        'dashboard.invitations': 'Invitaciones',
+        'dashboard.logout': 'Cerrar sesión',
+        'dashboard.totalIncome': 'Ingresos Totales',
+        'dashboard.totalExpense': 'Gastos Totales',
+        'dashboard.balance': 'Saldo',
+        'dashboard.expensesByCategory': 'Gastos por Categoría',
+        'dashboard.evolution': 'Evolución Financiera',
+        'dashboard.noExpenses': 'Sin gastos aún',
+        'common.loading': 'Cargando...',
+        'common.error': 'Error',
+        'nav.dashboard': 'Tablero',
+        'nav.transactions': 'Transacciones',
+        'nav.friends': 'Amigos',
+        'nav.logout': 'Cerrar sesión',
+        'notifications.title': 'Notificaciones',
+        'notifications.empty': 'No hay notificaciones nuevas',
+        'notifications.friendRequests': 'Solicitudes de Amistad',
+        'notifications.transactionInvites': 'Invitaciones de Transacción',
+        'notifications.invitedYou': 'te invitó a dividir:',
+        'notifications.accept': 'Aceptar',
+        'notifications.reject': 'Rechazar',
+        'notifications.friendRequestUpdated': 'Solicitud de amistad actualizada',
+        'notifications.invitationUpdated': 'Invitación actualizada',
     }
 };
 

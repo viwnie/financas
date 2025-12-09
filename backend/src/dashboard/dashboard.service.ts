@@ -80,9 +80,12 @@ export class DashboardService {
 
         // Enrich with category names
         const categoryStats = await Promise.all(Array.from(categoryMap.entries()).map(async ([categoryId, amount]) => {
-            const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
+            const category = await this.prisma.category.findUnique({
+                where: { id: categoryId },
+                include: { translations: true }
+            });
             return {
-                category: category?.name || 'Unknown',
+                category: category?.translations?.[0]?.name || 'Unknown',
                 amount: amount,
             };
         }));

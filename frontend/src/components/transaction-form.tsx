@@ -105,7 +105,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         queryKey: ['predictCategory', debouncedDescription],
         queryFn: async () => {
             if (!debouncedDescription || debouncedDescription.length < 3) return null;
-            const res = await fetch(`http://localhost:3000/categories/predict?description=${encodeURIComponent(debouncedDescription)}`, {
+            const res = await fetch(`http://localhost:3000/categories/predict?description=${encodeURIComponent(debouncedDescription)}&language=${locale}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) return null;
@@ -399,6 +399,21 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
     // Helper to get translated name
     const getCategoryName = (cat: any) => {
+        if (cat.translations && cat.translations.length > 0) {
+            const exact = cat.translations.find((t: any) => t.language === locale);
+            if (exact) return exact.name;
+
+            const group = cat.translations.find((t: any) => t.language.startsWith(locale.split('-')[0]));
+            if (group) return group.name;
+
+            // Fallback to English or first
+            const en = cat.translations.find((t: any) => t.language === 'en');
+            if (en) return en.name;
+
+            return cat.translations[0].name;
+        }
+
+        // Legacy fallback
         if (locale === 'pt' && cat.name_pt) return cat.name_pt;
         if (locale === 'en' && cat.name_en) return cat.name_en;
         if (locale === 'es' && cat.name_es) return cat.name_es;

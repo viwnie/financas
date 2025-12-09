@@ -18,8 +18,8 @@ export class CategoriesController {
     }
 
     @Get('predict')
-    predict(@Request() req, @Query('description') description: string) {
-        return this.categoriesService.predictCategory(req.user.userId, description);
+    predict(@Request() req, @Query('description') description: string, @Query('language') language?: string) {
+        return this.categoriesService.predictCategory(req.user.userId, description, language);
     }
 
     @Get('search')

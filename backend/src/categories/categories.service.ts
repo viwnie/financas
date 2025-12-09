@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { TranslationService } from '../common/translation.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CategoriesService {
@@ -12,79 +13,82 @@ export class CategoriesService {
 
     async create(userId: string, name: string, language: string = 'pt') {
         const normalizedName = name.trim().toLowerCase();
-        const langField = `name_${language}`; // e.g. name_pt
 
-        // 1. Direct Search
-        // Check if exists in the specific language column
-        // We check both system categories and user's categories
-        let existing = await this.prisma.category.findFirst({
+        // 1. Database Search (Direct)
+        // Check if a translation exists with this name for system or user
+        const existingTranslation = await this.prisma.categoryTranslation.findFirst({
             where: {
-                [langField]: normalizedName,
-                OR: [
-                    { isSystem: true },
-                    { userId }
-                ]
-            }
+                name: { equals: normalizedName, mode: 'insensitive' as Prisma.QueryMode },
+                category: {
+                    OR: [
+                        { isSystem: true },
+                        { userId }
+                    ]
+                }
+            },
+            include: { category: true }
         });
 
-        if (existing) return existing;
+        if (existingTranslation) return existingTranslation.category;
 
         // 2. Translate
         const languages = ['pt', 'en', 'es'];
-        const translations: Record<string, string> = {};
+        const translations: Record<string, string> = { [language]: normalizedName };
 
-        // Initialize with the provided name/language
-        translations[language] = normalizedName;
-
-        // Translate to other languages
         for (const targetLang of languages) {
             if (targetLang !== language) {
-                translations[targetLang] = await this.translationService.translate(normalizedName, language, targetLang);
-                // Normalize translation just in case
-                translations[targetLang] = translations[targetLang].toLowerCase().trim();
+                const translated = await this.translationService.translate(normalizedName, language, targetLang);
+                translations[targetLang] = translated.toLowerCase().trim();
             }
         }
 
-        // 3. Reverse Search (Deduplication)
-        // Check if any of the translations exist in their respective columns
-        const whereConditions = languages.map(lang => ({
-            [`name_${lang}`]: translations[lang],
-            OR: [{ isSystem: true }, { userId }]
+        // 3. Reverse Search (Deduplication via other languages)
+        const conditions: Prisma.CategoryTranslationWhereInput[] = Object.entries(translations).map(([lang, val]) => ({
+            language: lang,
+            name: { equals: val, mode: 'insensitive' as Prisma.QueryMode },
+            category: { OR: [{ isSystem: true }, { userId }] }
         }));
 
-        existing = await this.prisma.category.findFirst({
-            where: { OR: whereConditions }
+        const existingMatch = await this.prisma.categoryTranslation.findFirst({
+            where: { OR: conditions },
+            include: { category: true }
         });
 
-        if (existing) {
-            // Update missing translations
-            const updateData: any = {};
-            for (const lang of languages) {
-                const field = `name_${lang}`;
-                // If the field is empty in DB but we have a translation, update it
-                if (!existing[field] && translations[lang]) {
-                    updateData[field] = translations[lang];
-                }
-            }
+        if (existingMatch) {
+            // Found a match via another language.
+            const catId = existingMatch.categoryId;
+            const hasLang = await this.prisma.categoryTranslation.findFirst({
+                where: { categoryId: catId, language }
+            });
 
-            if (Object.keys(updateData).length > 0) {
-                return this.prisma.category.update({
-                    where: { id: existing.id },
-                    data: updateData
+            if (!hasLang) {
+                await this.prisma.categoryTranslation.create({
+                    data: {
+                        categoryId: catId,
+                        language,
+                        name: normalizedName
+                    }
                 });
             }
-            return existing;
+            return existingMatch.category;
         }
 
-        // 4. Create New
+        // 4. Create New Public/Private Category
+        // Logic: If the user is trying to create a category that doesn't exist publicly,
+        // we create a PRIVATE category for them.
+        // NOTE: The previous logic seemed to default to private (isSystem: false).
+        const createTranslations = Object.entries(translations).map(([lang, val]) => ({
+            language: lang,
+            name: val
+        }));
+
         return this.prisma.category.create({
             data: {
-                name: normalizedName, // Fallback
-                name_pt: translations['pt'],
-                name_en: translations['en'],
-                name_es: translations['es'],
                 userId,
                 isSystem: false,
+                translations: {
+                    create: createTranslations
+                }
             },
         });
     }
@@ -100,12 +104,15 @@ export class CategoriesService {
             include: {
                 userSettings: {
                     where: { userId }
-                }
+                },
+                translations: true
             }
         });
 
         return categories.map(cat => ({
             ...cat,
+            // Provide a default 'name' for backward compatibility if possible, pick user's lang or first
+            name: cat.translations[0]?.name || 'Unnamed',
             color: cat.userSettings[0]?.color || null
         }));
     }
@@ -129,9 +136,24 @@ export class CategoriesService {
     async initSystemCategories() {
         const systemCategories = ['Food', 'Transport', 'Housing', 'Utilities', 'Entertainment', 'Health', 'Shopping', 'Salary', 'Investment'];
         for (const name of systemCategories) {
-            let category = await this.prisma.category.findFirst({ where: { name, isSystem: true } });
+            let category = await this.prisma.category.findFirst({
+                where: {
+                    translations: { some: { name: { equals: name, mode: 'insensitive' } } },
+                    isSystem: true
+                }
+            });
+
             if (!category) {
-                category = await this.prisma.category.create({ data: { name, isSystem: true } });
+                // Initialize with English name.
+                // In a real app we'd want translations for all system cats immediately, but simpler here.
+                category = await this.prisma.category.create({
+                    data: {
+                        isSystem: true,
+                        translations: {
+                            create: { language: 'en', name }
+                        }
+                    }
+                });
             }
 
             // Seed keywords
@@ -160,12 +182,33 @@ export class CategoriesService {
         }
     }
 
-    async predictCategory(userId: string, description: string) {
+    private resolveCategoryName(category: any, language: string = 'en') {
+        if (!category.translations || category.translations.length === 0) return 'Unnamed';
+
+        const targetLang = language.toLowerCase();
+        const baseLang = targetLang.split('-')[0];
+
+        // 1. Exact match
+        const exact = category.translations.find((t: any) => t.language.toLowerCase() === targetLang);
+        if (exact) return exact.name;
+
+        // 2. Base language match
+        const base = category.translations.find((t: any) => t.language.toLowerCase() === baseLang);
+        if (base) return base.name;
+
+        // 3. English fallback
+        const en = category.translations.find((t: any) => t.language === 'en');
+        if (en) return en.name;
+
+        // 4. First available
+        return category.translations[0].name;
+    }
+
+    async predictCategory(userId: string, description: string, language: string = 'en') {
         if (!description) return null;
         const normalizedDesc = description.toLowerCase().trim();
 
         // 1. Personal Override (Adaptive Learning)
-        // Check for exact or close pattern match
         const override = await this.prisma.personalCategoryOverride.findFirst({
             where: {
                 userId,
@@ -175,9 +218,8 @@ export class CategoriesService {
             include: {
                 category: {
                     include: {
-                        userSettings: {
-                            where: { userId }
-                        }
+                        userSettings: { where: { userId } },
+                        translations: true
                     }
                 }
             }
@@ -186,13 +228,13 @@ export class CategoriesService {
         if (override) {
             const category = {
                 ...override.category,
+                name: this.resolveCategoryName(override.category, language),
                 color: override.category.userSettings[0]?.color || null
             };
             return { category, confidence: 0.95, source: 'OVERRIDE' };
         }
 
         // 2. Personal History
-        // Find recent transactions with similar description
         const history = await this.prisma.transaction.groupBy({
             by: ['categoryId'],
             where: {
@@ -208,14 +250,14 @@ export class CategoriesService {
             const categoryData = await this.prisma.category.findUnique({
                 where: { id: history[0].categoryId },
                 include: {
-                    userSettings: {
-                        where: { userId }
-                    }
+                    userSettings: { where: { userId } },
+                    translations: true
                 }
             });
             if (categoryData) {
                 const category = {
                     ...categoryData,
+                    name: this.resolveCategoryName(categoryData, language),
                     color: categoryData.userSettings[0]?.color || null
                 };
                 return { category, confidence: 0.8, source: 'HISTORY' };
@@ -231,16 +273,14 @@ export class CategoriesService {
             include: {
                 category: {
                     include: {
-                        userSettings: {
-                            where: { userId }
-                        }
+                        userSettings: { where: { userId } },
+                        translations: true
                     }
                 }
             }
         });
 
         if (keywordMatches.length > 0) {
-            // Aggregate weights by category
             const scores = new Map<string, { category: any, score: number }>();
             for (const match of keywordMatches) {
                 const current = scores.get(match.categoryId) || { category: match.category, score: 0 };
@@ -248,7 +288,6 @@ export class CategoriesService {
                 scores.set(match.categoryId, current);
             }
 
-            // Find top score
             let topMatch: any = null;
             let maxScore = 0;
             for (const item of scores.values()) {
@@ -261,13 +300,14 @@ export class CategoriesService {
             if (topMatch) {
                 const category = {
                     ...topMatch,
+                    name: this.resolveCategoryName(topMatch, language),
                     color: topMatch.userSettings?.[0]?.color || null
                 };
                 return { category, confidence: 0.7, source: 'SEMANTIC' };
             }
         }
 
-        // 4. Global Stats (Pre-computed)
+        // 4. Global Stats
         const globalStats = await this.prisma.globalCategoryStats.findMany({
             where: {
                 keyword: { in: words, mode: 'insensitive' }
@@ -275,16 +315,14 @@ export class CategoriesService {
             include: {
                 category: {
                     include: {
-                        userSettings: {
-                            where: { userId }
-                        }
+                        userSettings: { where: { userId } },
+                        translations: true
                     }
                 }
             }
         });
 
         if (globalStats.length > 0) {
-            // Aggregate usage counts
             const scores = new Map<string, { category: any, count: number }>();
             for (const stat of globalStats) {
                 const current = scores.get(stat.categoryId) || { category: stat.category, count: 0 };
@@ -304,6 +342,7 @@ export class CategoriesService {
             if (topMatch) {
                 const category = {
                     ...topMatch,
+                    name: this.resolveCategoryName(topMatch, language),
                     color: topMatch.userSettings?.[0]?.color || null
                 };
                 return { category, confidence: 0.6, source: 'GLOBAL' };
@@ -347,28 +386,39 @@ export class CategoriesService {
         // 1. Basic Search
         const categories = await this.prisma.category.findMany({
             where: {
-                name: { contains: query, mode: 'insensitive' },
+                translations: {
+                    some: {
+                        name: { contains: query, mode: 'insensitive' }
+                    }
+                },
                 OR: [{ userId }, { isSystem: true }]
             },
             include: {
                 userSettings: {
                     where: { userId }
-                }
+                },
+                translations: true
             }
         });
 
-        const categoriesWithColor = categories.map(cat => ({
-            ...cat,
-            color: cat.userSettings[0]?.color || null
-        }));
+        const categoriesWithColor = categories.map(cat => {
+            // Find the matching translation
+            const matchingTranslation = cat.translations.find(t => t.name.toLowerCase().includes(query.toLowerCase())) || cat.translations[0];
+            return {
+                ...cat,
+                name: matchingTranslation?.name || 'Unnamed',
+                color: cat.userSettings[0]?.color || null
+            };
+        });
 
         if (!context) return categoriesWithColor;
 
         // 2. Context Scoring
-        const scored = await Promise.all(categoriesWithColor.map(async (cat) => {
+        const scored = await Promise.all(categoriesWithColor.map(async (cat: any) => {
             let score = 0;
 
             // Name Match Score (Base)
+            // 'cat.name' is now available because we mapped it above
             if (cat.name.toLowerCase().startsWith(query.toLowerCase())) score += 50;
             else score += 20;
 

@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum TransactionType {
@@ -114,10 +113,6 @@ model Friendship {
 
 model Category {
   id        String   @id @default(uuid())
-  name      String
-  name_pt   String?
-  name_en   String?
-  name_es   String?
   isSystem  Boolean  @default(false) // If true, available to everyone
   userId    String?  // If null and isSystem=false, it's an error. If null and isSystem=true, it's global.
   createdAt DateTime @default(now())
@@ -126,13 +121,24 @@ model Category {
   user         User?         @relation(fields: [userId], references: [id])
   transactions Transaction[]
   keywords     CategoryKeyword[]
+  translations CategoryTranslation[]
   globalStats  GlobalCategoryStats[]
   personalOverrides PersonalCategoryOverride[]
   userSettings UserCategorySetting[]
+}
 
-  @@index([name_pt])
-  @@index([name_en])
-  @@index([name_es])
+model CategoryTranslation {
+  id         String   @id @default(uuid())
+  categoryId String
+  language   String   // e.g. 'pt-BR', 'en'
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([name])
+  @@index([language])
 }
 
 model UserCategorySetting {

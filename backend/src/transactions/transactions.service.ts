@@ -119,7 +119,8 @@ export class TransactionsService {
                     include: {
                         userSettings: {
                             where: { userId }
-                        }
+                        },
+                        translations: true
                     }
                 },
                 installments: true,
@@ -132,7 +133,8 @@ export class TransactionsService {
             ...t,
             category: {
                 ...t.category,
-                color: t.category.userSettings[0]?.color || null
+                color: t.category.userSettings[0]?.color || null,
+                name: t.category.translations[0]?.name || 'Unnamed' // Fallback
             }
         }));
     }
@@ -145,7 +147,8 @@ export class TransactionsService {
                     include: {
                         userSettings: {
                             where: { userId }
-                        }
+                        },
+                        translations: true
                     }
                 },
                 installments: true,
@@ -166,7 +169,8 @@ export class TransactionsService {
             ...transaction,
             category: {
                 ...transaction.category,
-                color: transaction.category.userSettings[0]?.color || null
+                color: transaction.category.userSettings[0]?.color || null,
+                name: transaction.category.translations[0]?.name || 'Unnamed'
             }
         };
     }
@@ -199,7 +203,7 @@ export class TransactionsService {
             // Actually, let's check if I should add it to UpdateTransactionDto.
             // For now, I'll just pass 'pt' as default or undefined to let service handle it.
             // But wait, resolveCategory signature changed.
-             finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId || transaction.categoryId, categoryName, undefined, (dto as any).language);
+            finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId || transaction.categoryId, categoryName, undefined, (dto as any).language);
         }
 
         const transactionDate = date ? new Date(date) : transaction.date;

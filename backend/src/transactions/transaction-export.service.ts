@@ -13,7 +13,11 @@ export class TransactionExportService {
                     { participants: { some: { userId } } }
                 ]
             },
-            include: { category: true },
+            include: {
+                category: {
+                    include: { translations: true }
+                }
+            },
             orderBy: { date: 'desc' },
         });
 
@@ -22,7 +26,7 @@ export class TransactionExportService {
             Description: t.description,
             Amount: t.amount,
             Type: t.type,
-            Category: t.category.name,
+            Category: t.category.translations?.[0]?.name || 'Unnamed',
             Shared: t.isShared ? 'Yes' : 'No',
         }));
 

@@ -157,7 +157,13 @@ async function main() {
                 }
             },
             category: {
-                create: { name: 'Test Category', userId: dbUserA.id }
+                create: {
+                    translations: {
+                        create: { language: 'pt', name: 'Test Category' }
+                    },
+                    userId: dbUserA.id,
+                    isSystem: false
+                }
             }
         }
     });

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguage } from '@/contexts/language-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
@@ -43,6 +44,23 @@ export default function TransactionsPage() {
     const { token, user } = useAuthStore();
     const router = useRouter();
     const queryClient = useQueryClient();
+    const { locale } = useLanguage();
+
+    const getCategoryDisplayName = (category: any) => {
+        if (category.translations && category.translations.length > 0) {
+            // Try exact match first (e.g. 'pt-BR' or 'pt')
+            const exact = category.translations.find((t: any) => t.language === locale);
+            if (exact) return exact.name;
+
+            // Try language group (e.g. 'pt' matching 'pt-BR')
+            const group = category.translations.find((t: any) => t.language.startsWith(locale.split('-')[0]));
+            if (group) return group.name;
+
+            // Fallback
+            return category.translations[0].name;
+        }
+        return category.name;
+    };
 
     const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
     const [year, setYear] = useState<string>(String(new Date().getFullYear()));
@@ -322,7 +340,7 @@ export default function TransactionsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                                        {t.category.name}
+                                                        {getCategoryDisplayName(t.category)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">

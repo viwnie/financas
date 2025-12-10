@@ -133,13 +133,15 @@ export class TransactionParticipantsService {
         await this.transactionSharesService.recalculateDynamicShares(transaction.id, tx);
     }
 
-    async handleParticipantsUpdate(transaction: any, participants: any[] | undefined, isCriticalUpdate: boolean, tx?: Prisma.TransactionClient) {
+    async handleParticipantsUpdate(transaction: any, participants: any[] | undefined, totalAmount: number, isCriticalUpdate: boolean, tx?: Prisma.TransactionClient) {
         if (participants) {
             const client = tx || this.prisma;
             const dbParticipants = transaction.participants.filter((p: any) => p.userId !== transaction.creatorId);
             const keptParticipantIds = new Set<string>();
             const participantsToUpdate: any[] = [];
             const participantsToCreate: any[] = [];
+
+            let totalOthersAmount = 0;
 
             for (const p of participants) {
                 let userId = p.userId;
@@ -193,6 +195,8 @@ export class TransactionParticipantsService {
                 let shareAmount = p.amount !== undefined ? Number(p.amount) : Number(existing.shareAmount);
                 let sharePercent = p.percent !== undefined ? Number(p.percent) : Number(existing.sharePercent);
 
+                totalOthersAmount += shareAmount;
+
                 const oldAmount = existing.baseShareAmount !== null ? Number(existing.baseShareAmount) : Number(existing.shareAmount);
                 const oldPercent = existing.baseSharePercent !== null ? Number(existing.baseSharePercent) : Number(existing.sharePercent);
 
@@ -235,6 +239,8 @@ export class TransactionParticipantsService {
                 const newShareAmount = Number(p.amount);
                 const newSharePercent = Number(p.percent);
 
+                totalOthersAmount += newShareAmount;
+
                 await client.transactionParticipant.create({
                     data: {
                         transactionId: transaction.id,
@@ -257,6 +263,27 @@ export class TransactionParticipantsService {
                         { transactionId: transaction.id }
                     );
                 }
+            }
+
+            // Update Creator Share
+            if (totalOthersAmount > totalAmount + 0.01) {
+                throw new BadRequestException('Total participant shares exceed transaction amount');
+            }
+
+            const creatorNewAmount = Math.max(0, totalAmount - totalOthersAmount);
+            const creatorNewPercent = (creatorNewAmount / totalAmount) * 100;
+
+            const creatorParticipant = transaction.participants.find((p: any) => p.userId === transaction.creatorId);
+            if (creatorParticipant) {
+                await client.transactionParticipant.update({
+                    where: { id: creatorParticipant.id },
+                    data: {
+                        shareAmount: creatorNewAmount,
+                        sharePercent: creatorNewPercent,
+                        baseShareAmount: creatorNewAmount,
+                        baseSharePercent: creatorNewPercent
+                    }
+                });
             }
 
             await this.transactionSharesService.recalculateDynamicShares(transaction.id, tx);

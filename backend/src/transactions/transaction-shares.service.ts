@@ -58,7 +58,13 @@ export class TransactionSharesService {
         console.log(`[recalculateDynamicShares] Total Amount: ${totalAmount}, Total Active Base Amount: ${totalActiveBaseAmount}`);
 
         // 3. Distribute proportionally
-        if (totalActiveBaseAmount > 0) {
+        // If base amounts are effectively equal (diff <= 0.01), force equal split to avoid "penny amplification" (e.g. 333.33 vs 333.34 -> 499.99 vs 500.01)
+        const baseAmounts = activeWithBase.map(p => p.baseAmount);
+        const maxBase = Math.max(...baseAmounts);
+        const minBase = Math.min(...baseAmounts);
+        const isEffectivelyEqual = (maxBase - minBase) <= 0.01;
+
+        if (totalActiveBaseAmount > 0 && !isEffectivelyEqual) {
             let remainingAmount = totalAmount;
 
             for (let i = 0; i < activeWithBase.length; i++) {

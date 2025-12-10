@@ -167,10 +167,7 @@ export class ExternalFriendsService {
     private async mergeExternalFriend(requesterId: string, placeholderName: string, realUserId: string, requestId: string) {
         return this.prisma.$transaction(async (tx) => {
             // 1. Create Friendship (requester <-> realUser)
-            // Need to check both directions but created friendship usually has specific direction initially or consistent direction?
-            // Assuming uniqueness constraint is on (requesterId, addresseeId).
-            // But we might want to check both directions.
-            const existing = await tx.friendship.findFirst({
+            const existingFriendship = await tx.friendship.findFirst({
                 where: {
                     OR: [
                         { requesterId: requesterId, addresseeId: realUserId },
@@ -180,9 +177,7 @@ export class ExternalFriendsService {
                 }
             });
 
-            if (!existing) {
-                // Determine direction? Requester initiated merge so Requester -> RealUser.
-                // Status ACCEPTED immediately since it is a merge of an existing "friend".
+            if (!existingFriendship) {
                 await tx.friendship.create({
                     data: {
                         requesterId: requesterId,
@@ -192,19 +187,68 @@ export class ExternalFriendsService {
                 });
             }
 
-            // 2. Update Transactions
-            await tx.transactionParticipant.updateMany({
+            // 2. Update Transactions (Handle formatting/merging logic)
+            // Find all participant entries for this placeholder created by requester
+            const placeholderParticipants = await tx.transactionParticipant.findMany({
                 where: {
                     transaction: { creatorId: requesterId },
                     placeholderName: placeholderName,
                     userId: null
                 },
-                data: {
-                    placeholderName: null,
-                    userId: realUserId,
-                    status: 'PENDING'
-                }
+                include: { transaction: true }
             });
+
+            for (const p of placeholderParticipants) {
+                // Check if the real user is *already* in this specific transaction
+                const existingRealUserParticipant = await tx.transactionParticipant.findFirst({
+                    where: {
+                        transactionId: p.transactionId,
+                        userId: realUserId
+                    }
+                });
+
+                if (existingRealUserParticipant) {
+                    // MERGE: Update existing user's share and delete the placeholder entry
+                    const newAmount = Number(existingRealUserParticipant.shareAmount) + Number(p.shareAmount);
+                    const newPercent = Number(existingRealUserParticipant.sharePercent) + Number(p.sharePercent);
+
+                    // We also merge base amounts if they exist, or fallback to current
+                    const baseAmount = Number(existingRealUserParticipant.baseShareAmount || existingRealUserParticipant.shareAmount) +
+                        Number(p.baseShareAmount || p.shareAmount);
+                    const basePercent = Number(existingRealUserParticipant.baseSharePercent || existingRealUserParticipant.sharePercent) +
+                        Number(p.baseSharePercent || p.sharePercent);
+
+                    await tx.transactionParticipant.update({
+                        where: { id: existingRealUserParticipant.id },
+                        data: {
+                            shareAmount: newAmount,
+                            sharePercent: newPercent,
+                            baseShareAmount: baseAmount,
+                            baseSharePercent: basePercent,
+                            // If the existing user was already ACCEPTED, they stay ACCEPTED? 
+                            // Or should they go to PENDING because the amount changed? 
+                            // Usually pending is safer for changes.
+                            status: 'PENDING'
+                        }
+                    });
+
+                    // Delete the placeholder entry since its value is now in the real user's entry
+                    await tx.transactionParticipant.delete({
+                        where: { id: p.id }
+                    });
+
+                } else {
+                    // NO COLLISION: Just update the placeholder entry to be the real user
+                    await tx.transactionParticipant.update({
+                        where: { id: p.id },
+                        data: {
+                            placeholderName: null,
+                            userId: realUserId,
+                            status: 'PENDING'
+                        }
+                    });
+                }
+            }
 
             // 3. Delete External Friend Entry
             const extFriend = await tx.externalFriend.findFirst({

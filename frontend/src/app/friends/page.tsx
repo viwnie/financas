@@ -21,6 +21,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Friend {
+    id: string;
     name: string;
     username: string;
 }
@@ -223,8 +224,8 @@ export default function FriendsPage() {
     });
 
     const removeFriendMutation = useMutation({
-        mutationFn: async (username: string) => {
-            const res = await fetch(`http://localhost:3000/friends/${username}`, {
+        mutationFn: async (id: string) => {
+            const res = await fetch(`http://localhost:3000/friends/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -658,7 +659,7 @@ export default function FriendsPage() {
                             variant="destructive"
                             onClick={() => {
                                 if (friendToRemove) {
-                                    removeFriendMutation.mutate(friendToRemove.username);
+                                    removeFriendMutation.mutate(friendToRemove.id);
                                     setFriendToRemove(null);
                                 }
                             }}

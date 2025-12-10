@@ -29,22 +29,27 @@ export class FriendsController {
         return this.friendRequestsService.sendRequest(req.user.userId, username);
     }
 
-    @Get('requests/pending')
+    @Get('pending')
     getPendingRequests(@Request() req) {
         return this.friendRequestsService.getPendingRequests(req.user.userId);
     }
 
-    @Get('requests/sent')
+    @Get('sent')
     getSentRequests(@Request() req) {
         return this.friendRequestsService.getSentRequests(req.user.userId);
     }
 
-    @Get('requests/declined')
+    @Get('declined')
     getDeclinedRequests(@Request() req) {
         return this.friendRequestsService.getDeclinedRequests(req.user.userId);
     }
 
-    @Patch('request/:id')
+    @Delete('declined/:id')
+    deleteDeclinedRequest(@Request() req, @Param('id') id: string) {
+        return this.friendRequestsService.deleteDeclinedRequest(req.user.userId, id);
+    }
+
+    @Patch('respond/:id')
     respondToRequest(@Request() req, @Param('id') id: string, @Body('status') status: 'ACCEPTED' | 'DECLINED') {
         return this.friendRequestsService.respondToRequest(req.user.userId, id, status);
     }
@@ -70,17 +75,22 @@ export class FriendsController {
         return this.externalFriendsService.deleteExternalFriend(req.user.userId, id);
     }
 
-    @Post('external/merge')
-    createMergeRequest(@Request() req, @Body() data: { externalFriendId: string, internalUserEmail: string }) {
-        return this.externalFriendsService.createMergeRequest(req.user.userId, data.externalFriendId, data.internalUserEmail);
+    @Post('merge')
+    createMergeRequest(@Request() req, @Body() data: { placeholderName: string, targetUsername: string }) {
+        return this.externalFriendsService.createMergeRequest(req.user.userId, data.placeholderName, data.targetUsername);
     }
 
-    @Get('merge-requests')
+    @Get('merge/received')
     getMergeRequests(@Request() req) {
         return this.externalFriendsService.getReceivedMergeRequests(req.user.userId);
     }
 
-    @Patch('merge-request/:id')
+    @Get('merge/:id/details')
+    getMergeRequestDetails(@Request() req, @Param('id') id: string) {
+        return this.externalFriendsService.getMergeRequestDetails(req.user.userId, id);
+    }
+
+    @Patch('merge/:id/respond')
     respondToMergeRequest(@Request() req, @Param('id') id: string, @Body('status') status: 'ACCEPTED' | 'REJECTED') {
         return this.externalFriendsService.respondToMergeRequest(req.user.userId, id, status);
     }

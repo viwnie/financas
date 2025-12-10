@@ -261,8 +261,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
         // 4. Global Users (Not friends)
         const globalMatches = searchResults.filter((u: any) =>
-            !internalMatches.some((f: any) => f.id === u.id) &&
-            !pendingMatches.some((p: any) => p.id === u.id) &&
+            !internalMatches.some((f: any) => f.id === u.id || f.username === u.username) &&
+            !pendingMatches.some((p: any) => p.id === u.id || p.username === u.username) &&
             !addedUsernames.has(u.username) &&
             u.id !== user?.id // Exclude self
         ).map((u: any) => ({ ...u, type: 'GLOBAL' }));
@@ -306,6 +306,17 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         },
     });
 
+    // Auto-recalculate shares when total amount changes
+    useEffect(() => {
+        if (totalAmount && fields.length > 0) {
+            const distributedFields = distributeEqually(fields);
+            // Only replace if values are actually different to avoid loops (though replace handles it reasonably well)
+            // But strict check prevents potential loops if we add more dependencies
+            replace(distributedFields);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [totalAmount]); // Only depend on totalAmount to trigger this recalculation logic
+
     const onSubmit = (data: TransactionFormValues) => {
         setError('');
 
@@ -322,7 +333,10 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             }
         }
 
-        mutation.mutate({ ...data, language: locale } as any);
+        const cleanedParticipants = data.participants?.map(({ status, ...p }) => p);
+        const cleanedData = { ...data, participants: cleanedParticipants };
+
+        mutation.mutate({ ...cleanedData, language: locale } as any);
     };
 
     const distributeEqually = (currentFields: any[]) => {
@@ -385,16 +399,29 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         }
     };
 
-    // Calculate "You Pay"
+    // Calculate "You Pay" (Effective Share)
     const calculateMyShare = () => {
         if (!totalAmount) return 0;
 
         const participantsList = watch('participants') || [];
         const totalParticipantsAmount = participantsList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
-        // Creator's proposed base share
+        // 1. Creator's Proposed Base Share
         const creatorBaseShare = Math.max(0, totalAmount - totalParticipantsAmount);
-        return creatorBaseShare;
+
+        // 2. Simulate Backend Dynamic Redistribution (Effective Share)
+        // Active = Status ACCEPTED (External/Ad-hoc usually ACCEPTED) or Creator
+        const activeParticipants = participantsList.filter(p => !p.status || p.status === 'ACCEPTED');
+
+        const totalActiveBase = creatorBaseShare + activeParticipants.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+        if (totalActiveBase === 0) {
+            // If everyone else is PENDING, Creator pays 100% temporarily
+            return totalAmount;
+        }
+
+        // Proportional Redistribution among Active
+        return (creatorBaseShare / totalActiveBase) * totalAmount;
     };
 
     // Helper to get translated name

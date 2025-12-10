@@ -151,7 +151,7 @@ export class TransactionsService {
     }
 
     async update(id: string, userId: string, dto: UpdateTransactionDto) {
-        const { amount, date, participants, categoryName, categoryId, isFixed, installmentsCount, ...rest } = dto;
+        const { amount, date, participants, categoryName, categoryId, isFixed, installmentsCount, categoryColor, language, ...rest } = dto;
         const transaction = await this.findOne(id, userId);
 
         if (transaction.creatorId !== userId) {
@@ -160,7 +160,7 @@ export class TransactionsService {
 
         let finalCategoryId = transaction.categoryId;
         if (categoryName || categoryId) {
-            finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId || transaction.categoryId, categoryName, undefined, (dto as any).language);
+            finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId || transaction.categoryId, categoryName, categoryColor, language);
         }
 
         const transactionDate = date ? new Date(date) : transaction.date;
@@ -184,7 +184,7 @@ export class TransactionsService {
                 }
             });
 
-            await this.transactionParticipantsService.handleParticipantsUpdate(transaction, participants, isCriticalUpdate, tx);
+            await this.transactionParticipantsService.handleParticipantsUpdate(transaction, participants, newAmount, isCriticalUpdate, tx);
 
             return this.findOne(id, userId, tx);
         });

@@ -34,27 +34,26 @@ export class TransactionsService {
 
         const finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId, categoryName, categoryColor, language);
 
+        return this.prisma.$transaction(async (tx) => {
+            const transaction = await tx.transaction.create({
+                data: {
+                    ...rest,
+                    amount,
+                    date: transactionDate,
+                    creatorId: userId,
+                    categoryId: finalCategoryId,
+                    isShared: !!(participants && participants.length > 0),
+                    isFixed: !!isFixed,
+                },
+                include: { creator: { select: { name: true } } }
+            });
 
-        const transaction = await this.prisma.transaction.create({
-            data: {
-                ...rest,
-                amount,
-                date: transactionDate,
-                creatorId: userId,
-                categoryId: finalCategoryId,
-                isShared: !!(participants && participants.length > 0),
-                isFixed: !!isFixed,
-            },
-            include: { creator: { select: { name: true } } }
+            await this.transactionInstallmentsService.createInstallments(transaction.id, amount, installmentsCount, transactionDate, tx);
+
+            await this.transactionParticipantsService.handleParticipantsCreation(transaction, participants, amount, transactionDate, tx);
+
+            return transaction;
         });
-
-
-        await this.transactionInstallmentsService.createInstallments(transaction.id, amount, installmentsCount, transactionDate);
-
-
-        await this.transactionParticipantsService.handleParticipantsCreation(transaction, participants, amount, transactionDate);
-
-        return transaction;
     }
 
     async findAll(userId: string, filters?: { month?: number; year?: number; type?: TransactionType }) {
@@ -139,8 +138,62 @@ export class TransactionsService {
         }));
     }
 
-    async findOne(id: string, userId: string) {
-        const transaction = await this.prisma.transaction.findUnique({
+    async remove(id: string, userId: string) {
+        const transaction = await this.findOne(id, userId);
+        if (transaction.creatorId !== userId) {
+            throw new NotFoundException('Only creator can delete');
+        }
+        return this.prisma.transaction.delete({ where: { id } });
+    }
+
+    async exportToCsv(userId: string) {
+        return this.transactionExportService.exportToCsv(userId);
+    }
+
+    async update(id: string, userId: string, dto: UpdateTransactionDto) {
+        const { amount, date, participants, categoryName, categoryId, isFixed, installmentsCount, ...rest } = dto;
+        const transaction = await this.findOne(id, userId);
+
+        if (transaction.creatorId !== userId) {
+            throw new NotFoundException('Only creator can update');
+        }
+
+        let finalCategoryId = transaction.categoryId;
+        if (categoryName || categoryId) {
+            finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId || transaction.categoryId, categoryName, undefined, (dto as any).language);
+        }
+
+        const transactionDate = date ? new Date(date) : transaction.date;
+        const newAmount = amount !== undefined ? Number(amount) : Number(transaction.amount);
+        const isCriticalUpdate =
+            (amount !== undefined && Number(amount) !== Number(transaction.amount)) ||
+            (date !== undefined && new Date(date).getTime() !== transaction.date.getTime()) ||
+            (dto.description !== undefined && dto.description !== transaction.description) ||
+            (finalCategoryId !== transaction.categoryId);
+
+        return this.prisma.$transaction(async (tx) => {
+            await tx.transaction.update({
+                where: { id },
+                data: {
+                    ...rest,
+                    amount: newAmount,
+                    date: transactionDate,
+                    categoryId: finalCategoryId,
+                    isFixed: isFixed !== undefined ? isFixed : transaction.isFixed,
+                    isShared: participants && participants.length > 0 ? true : (participants ? false : transaction.isShared)
+                }
+            });
+
+            await this.transactionParticipantsService.handleParticipantsUpdate(transaction, participants, isCriticalUpdate, tx);
+
+            return this.findOne(id, userId, tx);
+        });
+    }
+
+    // Overload findOne to accept tx
+    async findOne(id: string, userId: string, tx?: Prisma.TransactionClient) {
+        const client = tx || this.prisma;
+        const transaction = await client.transaction.findUnique({
             where: { id },
             include: {
                 category: {
@@ -173,63 +226,5 @@ export class TransactionsService {
                 name: transaction.category.translations[0]?.name || 'Unnamed'
             }
         };
-    }
-
-    async remove(id: string, userId: string) {
-        const transaction = await this.findOne(id, userId);
-        if (transaction.creatorId !== userId) {
-            throw new NotFoundException('Only creator can delete');
-        }
-        return this.prisma.transaction.delete({ where: { id } });
-    }
-
-    async exportToCsv(userId: string) {
-        return this.transactionExportService.exportToCsv(userId);
-    }
-
-    async update(id: string, userId: string, dto: UpdateTransactionDto) {
-        const { amount, date, participants, categoryName, categoryId, isFixed, installmentsCount, ...rest } = dto;
-        const transaction = await this.findOne(id, userId);
-
-        if (transaction.creatorId !== userId) {
-            throw new NotFoundException('Only creator can update');
-        }
-
-        let finalCategoryId = transaction.categoryId;
-        if (categoryName || categoryId) {
-            // Note: Update DTO doesn't have language yet, but we can default to 'pt' or add it to UpdateDto if needed.
-            // For now, let's assume 'pt' or if we want to support it in update, we need to add it to UpdateTransactionDto.
-            // Since the user didn't explicitly ask for update support, I'll default to 'pt' or check if dto has it (if I add it there too).
-            // Actually, let's check if I should add it to UpdateTransactionDto.
-            // For now, I'll just pass 'pt' as default or undefined to let service handle it.
-            // But wait, resolveCategory signature changed.
-            finalCategoryId = await this.transactionCategoryHelperService.resolveCategory(userId, categoryId || transaction.categoryId, categoryName, undefined, (dto as any).language);
-        }
-
-        const transactionDate = date ? new Date(date) : transaction.date;
-        const newAmount = amount !== undefined ? Number(amount) : Number(transaction.amount);
-        const isCriticalUpdate =
-            (amount !== undefined && Number(amount) !== Number(transaction.amount)) ||
-            (date !== undefined && new Date(date).getTime() !== transaction.date.getTime()) ||
-            (dto.description !== undefined && dto.description !== transaction.description) ||
-            (finalCategoryId !== transaction.categoryId);
-
-
-        await this.prisma.transaction.update({
-            where: { id },
-            data: {
-                ...rest,
-                amount: newAmount,
-                date: transactionDate,
-                categoryId: finalCategoryId,
-                isFixed: isFixed !== undefined ? isFixed : transaction.isFixed,
-                isShared: participants && participants.length > 0 ? true : (participants ? false : transaction.isShared)
-            }
-        });
-
-
-        await this.transactionParticipantsService.handleParticipantsUpdate(transaction, participants, isCriticalUpdate);
-
-        return this.findOne(id, userId);
     }
 }

@@ -3,18 +3,11 @@ import { CategoriesService } from './categories.service';
 import { CategoriesController } from './categories.controller';
 import { PrismaService } from '../prisma.service';
 import { TranslationService } from '../common/translation.service';
+import { CategoryPredictionService } from './category-prediction.service';
 
 @Module({
   controllers: [CategoriesController],
-  providers: [CategoriesService, PrismaService, TranslationService],
-  exports: [CategoriesService],
+  providers: [CategoriesService, PrismaService, TranslationService, CategoryPredictionService],
+  exports: [CategoriesService, CategoryPredictionService],
 })
-export class CategoriesModule implements OnModuleInit {
-  constructor(private categoriesService: CategoriesService) { }
-
-  async onModuleInit() {
-    console.log('CategoriesModule: Initializing system categories...');
-    // await this.categoriesService.initSystemCategories();
-    console.log('CategoriesModule: System categories initialized.');
-  }
-}
+export class CategoriesModule { }

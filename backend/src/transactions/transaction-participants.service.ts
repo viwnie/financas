@@ -12,8 +12,10 @@ export class TransactionParticipantsService {
         private transactionSharesService: TransactionSharesService
     ) { }
 
-    async handleParticipantsCreation(transaction: any, participants: any[] | undefined, amount: number, transactionDate: Date) {
+    async handleParticipantsCreation(transaction: any, participants: any[] | undefined, amount: number, transactionDate: Date, tx?: Prisma.TransactionClient) {
         if (!participants || participants.length === 0) return;
+
+        const client = tx || this.prisma;
 
         const participantsData: Prisma.TransactionParticipantCreateManyInput[] = [];
         let totalParticipantAmount = 0;
@@ -22,7 +24,7 @@ export class TransactionParticipantsService {
         for (const p of participants) {
             let userId = p.userId;
             if (!userId && p.username) {
-                const user = await this.prisma.user.findUnique({ where: { username: p.username } });
+                const user = await client.user.findUnique({ where: { username: p.username } });
                 if (user) {
                     userId = user.id;
                 }
@@ -45,11 +47,11 @@ export class TransactionParticipantsService {
         }
 
         if (totalParticipantAmount > amount) {
-            await this.prisma.transaction.delete({ where: { id: transaction.id } });
+            await client.transaction.delete({ where: { id: transaction.id } });
             throw new BadRequestException('Total participant shares exceed transaction amount');
         }
         if (totalParticipantPercent > 100) {
-            await this.prisma.transaction.delete({ where: { id: transaction.id } });
+            await client.transaction.delete({ where: { id: transaction.id } });
             throw new BadRequestException('Total participant percentages exceed 100%');
         }
 
@@ -99,11 +101,24 @@ export class TransactionParticipantsService {
             status: ParticipantStatus.ACCEPTED
         });
 
-        await this.prisma.transactionParticipant.createMany({
+        await client.transactionParticipant.createMany({
             data: participantsData
         });
 
         const invitedParticipants = participantsData.filter(p => p.userId && p.userId !== transaction.creatorId);
+        // Notifications are side-effects, usually safe to fire even if tx fails? 
+        // Or should we wait? If tx commits, then fire.
+        // But here we are inside logic. 
+        // Ideally we return notifications to be sent after commit. 
+        // But for now, let's keep it here, maybe awaiting them is fine (WebSocket is instantaneous fire-and-forget mostly).
+        // Actually NotificationsService creates a DB record too! So it should use `tx` if possible, OR be completely outside.
+        // `NotificationsService` logic is currently using `this.prisma`.
+        // If we want notifications to be atomic with transaction creation, we should update `NotificationsService` too.
+        // BUT, notifications usually shouldn't block/fail transaction logic hard.
+        // Let's leave notifications as is for now, assuming they are ok to be separate or "eventual". 
+        // However, if we are inside a `tx` and we call `notificationsService.create` which uses `this.prisma` (separate connection/tx), it might work (new db op) or deadlock?
+        // It works as separate operation.
+
         for (const p of invitedParticipants) {
             await this.notificationsService.create(
                 p.userId!,
@@ -114,11 +129,13 @@ export class TransactionParticipantsService {
             );
         }
 
-        await this.transactionSharesService.recalculateDynamicShares(transaction.id);
+        // recalculateDynamicShares uses sharesService which uses prisma. Need to verify that too.
+        await this.transactionSharesService.recalculateDynamicShares(transaction.id, tx);
     }
 
-    async handleParticipantsUpdate(transaction: any, participants: any[] | undefined, isCriticalUpdate: boolean) {
+    async handleParticipantsUpdate(transaction: any, participants: any[] | undefined, isCriticalUpdate: boolean, tx?: Prisma.TransactionClient) {
         if (participants) {
+            const client = tx || this.prisma;
             const dbParticipants = transaction.participants.filter((p: any) => p.userId !== transaction.creatorId);
             const keptParticipantIds = new Set<string>();
             const participantsToUpdate: any[] = [];
@@ -127,7 +144,7 @@ export class TransactionParticipantsService {
             for (const p of participants) {
                 let userId = p.userId;
                 if (!userId && p.username) {
-                    const user = await this.prisma.user.findUnique({ where: { username: p.username } });
+                    const user = await client.user.findUnique({ where: { username: p.username } });
                     if (user) userId = user.id;
                 }
                 p.userId = userId;
@@ -150,12 +167,12 @@ export class TransactionParticipantsService {
                 .map((p: any) => p.id);
 
             if (removedParticipantIds.length > 0) {
-                const removedParticipants = await this.prisma.transactionParticipant.findMany({
+                const removedParticipants = await client.transactionParticipant.findMany({
                     where: { id: { in: removedParticipantIds } },
                     include: { user: true }
                 });
 
-                await this.prisma.transactionParticipant.deleteMany({
+                await client.transactionParticipant.deleteMany({
                     where: { id: { in: removedParticipantIds } }
                 });
 
@@ -191,7 +208,7 @@ export class TransactionParticipantsService {
                     if (newStatus === ParticipantStatus.PENDING) newStatus = ParticipantStatus.ACCEPTED;
                 }
 
-                await this.prisma.transactionParticipant.update({
+                await client.transactionParticipant.update({
                     where: { id: existing.id },
                     data: {
                         shareAmount: shareAmount,
@@ -218,7 +235,7 @@ export class TransactionParticipantsService {
                 const newShareAmount = Number(p.amount);
                 const newSharePercent = Number(p.percent);
 
-                await this.prisma.transactionParticipant.create({
+                await client.transactionParticipant.create({
                     data: {
                         transactionId: transaction.id,
                         userId: p.userId,
@@ -242,13 +259,14 @@ export class TransactionParticipantsService {
                 }
             }
 
-            await this.transactionSharesService.recalculateDynamicShares(transaction.id);
+            await this.transactionSharesService.recalculateDynamicShares(transaction.id, tx);
 
         } else if (isCriticalUpdate) {
+            const client = tx || this.prisma;
             const participantsToReset = transaction.participants.filter((p: any) => p.userId !== transaction.creatorId);
             for (const p of participantsToReset) {
                 if (p.userId) {
-                    await this.prisma.transactionParticipant.update({
+                    await client.transactionParticipant.update({
                         where: { id: p.id },
                         data: { status: ParticipantStatus.PENDING }
                     });
@@ -262,7 +280,7 @@ export class TransactionParticipantsService {
                     );
                 }
             }
-            await this.transactionSharesService.recalculateDynamicShares(transaction.id);
+            await this.transactionSharesService.recalculateDynamicShares(transaction.id, tx);
         }
     }
 

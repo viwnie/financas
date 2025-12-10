@@ -134,114 +134,25 @@ export class ExternalFriendsService {
     async respondToMergeRequest(userId: string, requestId: string, status: 'ACCEPTED' | 'REJECTED') {
         const request = await this.prisma.mergeRequest.findUnique({
             where: { id: requestId },
-            include: { targetUser: true }
+            include: { requester: true, targetUser: true }
         });
 
-        if (!request) throw new NotFoundException('Request not found');
-        if (request.targetUserId !== userId) throw new BadRequestException('Not authorized');
+        if (!request) throw new NotFoundException('Merge request not found');
+        if (request.targetUserId !== userId) throw new BadRequestException('Not authorized to respond to this request');
+        if (request.status !== 'PENDING') throw new BadRequestException('Merge request is not pending');
 
-        const updatedRequest = await this.prisma.mergeRequest.update({
-            where: { id: requestId },
-            data: { status }
-        });
+        let updatedRequest;
 
         if (status === 'ACCEPTED') {
-            const externalFriend = await this.prisma.externalFriend.findFirst({
-                where: {
-                    userId: request.requesterId,
-                    name: request.placeholderName
-                }
-            });
+            // ACCEPTED -> Merge
+            // 1. Create real friendship
+            // 2. Update all transactions using externalFriendId to use real userId
+            // 3. Delete external friend? Or keep marked as merged? usually delete or mark.
+            // Current logic deletes it.
 
-            if (externalFriend) {
-                await this.prisma.externalFriend.delete({ where: { id: externalFriend.id } });
-            }
-
-            const existingFriendship = await this.prisma.friendship.findFirst({
-                where: {
-                    OR: [
-                        { requesterId: request.requesterId, addresseeId: userId },
-                        { requesterId: userId, addresseeId: request.requesterId }
-                    ]
-                }
-            });
-
-            if (!existingFriendship) {
-                await this.prisma.friendship.create({
-                    data: {
-                        requesterId: request.requesterId,
-                        addresseeId: userId,
-                        status: 'ACCEPTED'
-                    }
-                });
-            } else if (existingFriendship.status !== 'ACCEPTED') {
-                await this.prisma.friendship.update({
-                    where: { id: existingFriendship.id },
-                    data: { status: 'ACCEPTED' }
-                });
-            }
-
-            const affectedTransactions = await this.prisma.transaction.findMany({
-                where: {
-                    creatorId: request.requesterId,
-                    participants: {
-                        some: {
-                            placeholderName: request.placeholderName,
-                            userId: null
-                        }
-                    }
-                },
-                include: {
-                    participants: true
-                }
-            });
-
-            for (const transaction of affectedTransactions) {
-                const externalParticipant = transaction.participants.find(p =>
-                    p.placeholderName === request.placeholderName && p.userId === null
-                );
-
-                if (!externalParticipant) continue;
-
-                const existingTargetParticipant = transaction.participants.find(p => p.userId === userId);
-
-                if (existingTargetParticipant) {
-                    const newShareAmount = Number(existingTargetParticipant.shareAmount) + Number(externalParticipant.shareAmount);
-                    const newSharePercent = Number(existingTargetParticipant.sharePercent) + Number(externalParticipant.sharePercent);
-                    const newBaseAmount = (existingTargetParticipant.baseShareAmount !== null ? Number(existingTargetParticipant.baseShareAmount) : Number(existingTargetParticipant.shareAmount)) +
-                        (externalParticipant.baseShareAmount !== null ? Number(externalParticipant.baseShareAmount) : Number(externalParticipant.shareAmount));
-                    const newBasePercent = (existingTargetParticipant.baseSharePercent !== null ? Number(existingTargetParticipant.baseSharePercent) : Number(existingTargetParticipant.sharePercent)) +
-                        (externalParticipant.baseSharePercent !== null ? Number(externalParticipant.baseSharePercent) : Number(externalParticipant.sharePercent));
-
-                    await this.prisma.transactionParticipant.update({
-                        where: { id: existingTargetParticipant.id },
-                        data: {
-                            shareAmount: newShareAmount,
-                            sharePercent: newSharePercent,
-                            baseShareAmount: newBaseAmount,
-                            baseSharePercent: newBasePercent
-                        }
-                    });
-
-                    await this.prisma.transactionParticipant.delete({
-                        where: { id: externalParticipant.id }
-                    });
-
-                } else {
-                    await this.prisma.transactionParticipant.update({
-                        where: { id: externalParticipant.id },
-                        data: {
-                            userId: userId,
-                            placeholderName: null,
-                            status: 'ACCEPTED'
-                        }
-                    });
-                }
-            }
+            updatedRequest = await this.mergeExternalFriend(request.requesterId, request.placeholderName, userId, requestId);
 
             this.notificationsGateway.sendNotification(request.requesterId, 'merge_request_accepted', {
-                message: `${request.targetUser.name} accepted the merge for "${request.placeholderName}"`,
-                requestId: request.id
             });
         } else {
             this.notificationsGateway.sendNotification(request.requesterId, 'merge_request_rejected', {
@@ -251,5 +162,63 @@ export class ExternalFriendsService {
         }
 
         return updatedRequest;
+    }
+
+    private async mergeExternalFriend(requesterId: string, placeholderName: string, realUserId: string, requestId: string) {
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Create Friendship (requester <-> realUser)
+            // Need to check both directions but created friendship usually has specific direction initially or consistent direction?
+            // Assuming uniqueness constraint is on (requesterId, addresseeId).
+            // But we might want to check both directions.
+            const existing = await tx.friendship.findFirst({
+                where: {
+                    OR: [
+                        { requesterId: requesterId, addresseeId: realUserId },
+                        { requesterId: realUserId, addresseeId: requesterId }
+                    ],
+                    status: 'ACCEPTED'
+                }
+            });
+
+            if (!existing) {
+                // Determine direction? Requester initiated merge so Requester -> RealUser.
+                // Status ACCEPTED immediately since it is a merge of an existing "friend".
+                await tx.friendship.create({
+                    data: {
+                        requesterId: requesterId,
+                        addresseeId: realUserId,
+                        status: 'ACCEPTED'
+                    }
+                });
+            }
+
+            // 2. Update Transactions
+            await tx.transactionParticipant.updateMany({
+                where: {
+                    transaction: { creatorId: requesterId },
+                    placeholderName: placeholderName,
+                    userId: null
+                },
+                data: {
+                    placeholderName: null,
+                    userId: realUserId,
+                    status: 'PENDING'
+                }
+            });
+
+            // 3. Delete External Friend Entry
+            const extFriend = await tx.externalFriend.findFirst({
+                where: { userId: requesterId, name: placeholderName }
+            });
+            if (extFriend) {
+                await tx.externalFriend.delete({ where: { id: extFriend.id } });
+            }
+
+            // 4. Update Request
+            return tx.mergeRequest.update({
+                where: { id: requestId },
+                data: { status: 'ACCEPTED' }
+            });
+        });
     }
 }

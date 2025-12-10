@@ -1,6 +1,8 @@
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
     cors: {
@@ -11,9 +13,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     @WebSocketServer()
     server: Server;
 
+    private readonly logger = new Logger(NotificationsGateway.name);
     private userSockets = new Map<string, string>(); // userId -> socketId
 
-    constructor(private jwtService: JwtService) { }
+    constructor(
+        private jwtService: JwtService,
+        private configService: ConfigService
+    ) { }
 
     async handleConnection(client: Socket) {
         try {
@@ -22,9 +28,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 client.disconnect();
                 return;
             }
-            const payload = this.jwtService.verify(token, { secret: process.env.JWT_SECRET });
+            const payload = this.jwtService.verify(token, { secret: this.configService.get<string>('JWT_SECRET') });
             this.userSockets.set(payload.sub, client.id);
-            console.log(`User connected: ${payload.sub}`);
+            this.logger.log(`User connected: ${payload.sub}`);
         } catch (e) {
             client.disconnect();
         }

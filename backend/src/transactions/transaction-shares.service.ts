@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { ParticipantStatus } from '@prisma/client';
+import { ParticipantStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class TransactionSharesService {
     constructor(private prisma: PrismaService) { }
 
-    async recalculateDynamicShares(transactionId: string) {
+    async recalculateDynamicShares(transactionId: string, tx?: Prisma.TransactionClient) {
+        const client = tx || this.prisma;
+
         console.log(`[recalculateDynamicShares] Starting for transaction ${transactionId}`);
-        const transaction = await this.prisma.transaction.findUnique({
+        const transaction = await client.transaction.findUnique({
             where: { id: transactionId },
             include: { participants: { include: { user: true } } }
         });
@@ -29,7 +31,7 @@ export class TransactionSharesService {
             const baseAmount = p.baseShareAmount !== null ? p.baseShareAmount : p.shareAmount;
             const basePercent = p.baseSharePercent !== null ? p.baseSharePercent : p.sharePercent;
 
-            await this.prisma.transactionParticipant.update({
+            await client.transactionParticipant.update({
                 where: { id: p.id },
                 data: {
                     shareAmount: 0,
@@ -78,7 +80,7 @@ export class TransactionSharesService {
 
                 console.log(`[recalculateDynamicShares] Updating ${p.user?.name || p.placeholderName} (Base: ${p.baseAmount}) -> New: ${share} (${percent}%)`);
 
-                await this.prisma.transactionParticipant.update({
+                await client.transactionParticipant.update({
                     where: { id: p.id },
                     data: {
                         shareAmount: share,
@@ -104,7 +106,7 @@ export class TransactionSharesService {
                 }
                 const percent = Number(((share / totalAmount) * 100).toFixed(2));
 
-                await this.prisma.transactionParticipant.update({
+                await client.transactionParticipant.update({
                     where: { id: p.id },
                     data: { shareAmount: share, sharePercent: percent }
                 });

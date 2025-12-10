@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { ParticipantStatus } from '@prisma/client';
 
@@ -6,6 +6,8 @@ import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class SharedTransactionsService {
+    private readonly logger = new Logger(SharedTransactionsService.name);
+
     constructor(
         private prisma: PrismaService,
         private notificationsGateway: NotificationsGateway
@@ -44,6 +46,8 @@ export class SharedTransactionsService {
         if (participant.userId !== userId) {
             throw new BadRequestException('This invitation is not for you');
         }
+
+        this.logger.log(`User ${userId} responded to invitation ${participantId} with status ${status}`);
 
         return this.prisma.transactionParticipant.update({
             where: { id: participantId },

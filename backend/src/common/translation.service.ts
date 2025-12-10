@@ -1,9 +1,14 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TranslationService implements OnModuleInit {
     private readonly logger = new Logger(TranslationService.name);
-    private readonly apiUrl = process.env.LIBRETRANSLATE_URL || 'http://127.0.0.1:5000';
+    private readonly apiUrl: string;
+
+    constructor(private configService: ConfigService) {
+        this.apiUrl = this.configService.get<string>('LIBRETRANSLATE_URL') || 'http://127.0.0.1:5000';
+    }
 
     onModuleInit() {
         this.logger.log(`Translation service initialized (Using Offline LibreTranslate at ${this.apiUrl}).`);

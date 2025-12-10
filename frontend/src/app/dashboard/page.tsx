@@ -79,7 +79,7 @@ export default function DashboardPage() {
                                 <CardTitle className="text-sm font-medium">{t('dashboard.totalIncome')}</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-green-500">+${stats.totalIncome.toFixed(2)}</div>
+                                <div className="text-2xl font-bold text-green-500">+${stats.income.total.toFixed(2)}</div>
                             </CardContent>
                         </Card>
                         <Card>
@@ -87,7 +87,7 @@ export default function DashboardPage() {
                                 <CardTitle className="text-sm font-medium">{t('dashboard.totalExpense')}</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-red-500">-${stats.totalExpense.toFixed(2)}</div>
+                                <div className="text-2xl font-bold text-red-500">-${stats.expense.total.toFixed(2)}</div>
                             </CardContent>
                         </Card>
                         <Card>
@@ -95,8 +95,8 @@ export default function DashboardPage() {
                                 <CardTitle className="text-sm font-medium">{t('dashboard.balance')}</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className={`text-2xl font-bold ${stats.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                    ${stats.balance.toFixed(2)}
+                                <div className={`text-2xl font-bold ${stats.balance.total >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    ${stats.balance.total.toFixed(2)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -147,20 +147,20 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="h-[300px] w-full">
-                                {stats && stats.categoryStats.length > 0 ? (
+                                {stats && stats.expensesByCategory.length > 0 ? (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
-                                                data={stats.categoryStats}
+                                                data={stats.expensesByCategory}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={60}
                                                 outerRadius={80}
                                                 paddingAngle={5}
                                                 dataKey="amount"
-                                                nameKey="category"
+                                                nameKey="name"
                                             >
-                                                {stats.categoryStats.map((entry: any, index: number) => (
+                                                {stats.expensesByCategory.map((entry: any, index: number) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>

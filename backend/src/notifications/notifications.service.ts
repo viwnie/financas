@@ -1,16 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { NotificationsGateway } from './notifications.gateway';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class NotificationsService {
+    private readonly logger = new Logger(NotificationsService.name);
+
     constructor(
         private prisma: PrismaService,
         private notificationsGateway: NotificationsGateway
     ) { }
 
     async create(userId: string, type: string, title: string, message: string, data?: any) {
-        console.log(`[NotificationsService] Creating notification for user ${userId}: ${title}`);
+        this.logger.log(`Creating notification for user ${userId}: ${title}`);
         const notification = await this.prisma.notification.create({
             data: {
                 userId,
@@ -26,25 +29,28 @@ export class NotificationsService {
     }
 
     async findAll(userId: string) {
-        const twelveMonthsAgo = new Date();
-        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-
-        // Delete notifications older than 12 months
-        await this.prisma.notification.deleteMany({
-            where: {
-                userId,
-                createdAt: {
-                    lt: twelveMonthsAgo,
-                },
-            },
-        });
-
         return this.prisma.notification.findMany({
             where: {
                 userId,
             },
             orderBy: { createdAt: 'desc' },
         });
+    }
+
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    async handleCleanup() {
+        this.logger.log('Running notifications cleanup...');
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+        const result = await this.prisma.notification.deleteMany({
+            where: {
+                createdAt: {
+                    lt: twelveMonthsAgo,
+                },
+            },
+        });
+        this.logger.log(`Deleted ${result.count} old notifications.`);
     }
 
     async markAsRead(userId: string, notificationId: string) {

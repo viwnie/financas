@@ -6,7 +6,7 @@ import { InstallmentStatus, Prisma } from '@prisma/client';
 export class TransactionInstallmentsService {
     constructor(private prisma: PrismaService) { }
 
-    async createInstallments(transactionId: string, amount: number, installmentsCount: number | undefined, transactionDate: Date) {
+    async createInstallments(transactionId: string, amount: number, installmentsCount: number | undefined, transactionDate: Date, tx?: Prisma.TransactionClient) {
         if (installmentsCount && installmentsCount > 1) {
             const installmentAmount = amount / installmentsCount;
             const installmentsData: Prisma.InstallmentCreateManyInput[] = [];
@@ -24,7 +24,8 @@ export class TransactionInstallmentsService {
                 });
             }
 
-            await this.prisma.installment.createMany({
+            const client = tx || this.prisma;
+            await client.installment.createMany({
                 data: installmentsData,
             });
         }

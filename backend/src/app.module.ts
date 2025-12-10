@@ -9,11 +9,14 @@ import { CategoriesModule } from './categories/categories.module';
 import { SharedTransactionsModule } from './shared-transactions/shared-transactions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { NotificationsModule } from './notifications/notifications.module';
-
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,

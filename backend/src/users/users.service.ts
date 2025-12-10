@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
 import { Buffer } from 'buffer';
 import { PrismaService } from '../prisma.service';
 import { User, Prisma } from '@prisma/client';
@@ -6,9 +6,12 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
+    private readonly logger = new Logger(UsersService.name);
+
     constructor(private prisma: PrismaService) { }
 
     async create(data: Prisma.UserCreateInput): Promise<User> {
+        this.logger.log(`Creating new user: ${data.username}`);
         const hashedPassword = await bcrypt.hash(data.password, 10);
         return this.prisma.user.create({
             data: {
@@ -67,16 +70,19 @@ export class UsersService {
     }
 
     async update(id: string, data: any): Promise<User> {
+        this.logger.log(`Updating user profile for ID: ${id}`);
         const updateData: Prisma.UserUpdateInput = { ...data };
 
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) {
+            this.logger.warn(`User update failed: User not found for ID ${id}`);
             throw new BadRequestException('User not found');
         }
 
         if (data.currentPassword) {
             const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password);
             if (!isPasswordValid) {
+                this.logger.warn(`User update failed: Invalid current password for user ${user.username}`);
                 throw new UnauthorizedException('Invalid current password');
             }
         } else if (data.password || data.email !== user.email || data.username !== user.username) {
@@ -122,6 +128,11 @@ export class UsersService {
             // Normalize email to lowercase
             data.email = data.email.toLowerCase();
             updateData.email = data.email;
+            updateData.email = data.email; // Redundant line in original code? No, wait. 
+            // In original code:
+            // data.email = data.email.toLowerCase();
+            // updateData.email = data.email;
+            // It seems fine.
 
             // Check email case-insensitively
             const existingUser = await this.prisma.user.findFirst({
@@ -141,10 +152,13 @@ export class UsersService {
         delete updateData['currentPassword'];
         delete updateData['removeAvatar'];
 
-        return this.prisma.user.update({
+        const updatedUser = await this.prisma.user.update({
             where: { id },
             data: updateData,
         });
+        
+        this.logger.log(`User updated successfully: ${updatedUser.username}`);
+        return updatedUser;
     }
 
     async checkUsernameAvailability(username: string): Promise<boolean> {

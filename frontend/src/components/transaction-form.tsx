@@ -114,7 +114,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         enabled: !!token && !!debouncedDescription && debouncedDescription.length >= 3,
     });
 
-    const { data: categorySuggestions = [] } = useQuery({
+    const { data: categorySuggestions = [], isLoading: isLoadingSuggestions } = useQuery({
         queryKey: ['searchCategories', debouncedCategoryName, debouncedDescription],
         queryFn: async () => {
             if (!debouncedCategoryName || debouncedCategoryName.length < 1) return [];
@@ -520,41 +520,51 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                 </div>
                             )}
 
-                            {showCategorySuggestions && categorySuggestions.length > 0 && (
+                            {showCategorySuggestions && (debouncedCategoryName || categorySuggestions.length > 0) && (
                                 <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                                    {categorySuggestions.map((cat: any) => {
-                                        const displayName = getCategoryName(cat);
-                                        return (
-                                            <div
-                                                key={cat.id}
-                                                className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
-                                                onClick={() => {
-                                                    setValue('categoryName', displayName);
-                                                    if (cat.color) {
-                                                        setValue('categoryColor', cat.color);
-                                                    }
-                                                    setIsAutoFilled(false);
-                                                    setShowCategorySuggestions(false);
-                                                    // Trigger learning immediately on selection if description exists
-                                                    if (description) {
-                                                        learnMutation.mutate({ description, categoryId: cat.id });
-                                                    }
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    {cat.color && (
-                                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                    {isLoadingSuggestions ? (
+                                        <div className="p-2 text-sm text-center text-muted-foreground">
+                                            Buscando...
+                                        </div>
+                                    ) : categorySuggestions.length > 0 ? (
+                                        categorySuggestions.map((cat: any) => {
+                                            const displayName = getCategoryName(cat);
+                                            return (
+                                                <div
+                                                    key={cat.id}
+                                                    className="px-4 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
+                                                    onClick={() => {
+                                                        setValue('categoryName', displayName);
+                                                        if (cat.color) {
+                                                            setValue('categoryColor', cat.color);
+                                                        }
+                                                        setIsAutoFilled(false);
+                                                        setShowCategorySuggestions(false);
+                                                        // Trigger learning immediately on selection if description exists
+                                                        if (description) {
+                                                            learnMutation.mutate({ description, categoryId: cat.id });
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        {cat.color && (
+                                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                        )}
+                                                        <span>{displayName}</span>
+                                                    </div>
+                                                    {cat.score > 0 && (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
+                                                        </span>
                                                     )}
-                                                    <span>{displayName}</span>
                                                 </div>
-                                                {cat.score > 0 && (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })
+                                    ) : (
+                                        <div className="p-2 text-sm text-center text-muted-foreground">
+                                            Nenhuma categoria encontrada
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

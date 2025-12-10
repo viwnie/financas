@@ -386,12 +386,32 @@ export class CategoriesService {
         // 1. Basic Search
         const categories = await this.prisma.category.findMany({
             where: {
-                translations: {
-                    some: {
-                        name: { contains: query, mode: 'insensitive' }
+                AND: [
+                    {
+                        OR: [
+                            { userId },
+                            { isSystem: true }
+                        ]
+                    },
+                    {
+                        OR: [
+                            {
+                                translations: {
+                                    some: {
+                                        name: { contains: query, mode: 'insensitive' }
+                                    }
+                                }
+                            },
+                            {
+                                keywords: {
+                                    some: {
+                                        keyword: { contains: query, mode: 'insensitive' }
+                                    }
+                                }
+                            }
+                        ]
                     }
-                },
-                OR: [{ userId }, { isSystem: true }]
+                ]
             },
             include: {
                 userSettings: {

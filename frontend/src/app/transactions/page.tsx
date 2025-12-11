@@ -18,6 +18,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Edit } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { pt, es, enUS } from 'date-fns/locale';
+
+const dateLocales: Record<string, any> = { pt, es, en: enUS };
 
 interface Transaction {
     id: string;
@@ -357,7 +360,7 @@ export default function TransactionsPage() {
                                         return (
                                             <tr key={transaction.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
-                                                    {format(new Date(transaction.date), 'MMM d, yyyy')}
+                                                    {format(new Date(transaction.date), 'MMM d, yyyy', { locale: dateLocales[locale] || enUS })}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {transaction.description || '-'}
@@ -372,7 +375,7 @@ export default function TransactionsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`font-bold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {transaction.type}
+                                                        {t(`transactions.type.${transaction.type}`)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 font-bold">

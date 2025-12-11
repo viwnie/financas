@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
 import { format } from 'date-fns';
 import { Trash2, Filter } from 'lucide-react';
+import { getCategoryDisplayName } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,23 +60,9 @@ export default function TransactionsPage() {
     const { token, user } = useAuthStore();
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { locale } = useLanguage();
+    const { locale, t } = useLanguage();
 
-    const getCategoryDisplayName = (category: any) => {
-        if (category.translations && category.translations.length > 0) {
-            // Try exact match first (e.g. 'pt-BR' or 'pt')
-            const exact = category.translations.find((t: any) => t.language === locale);
-            if (exact) return exact.name;
-
-            // Try language group (e.g. 'pt' matching 'pt-BR')
-            const group = category.translations.find((t: any) => t.language.startsWith(locale.split('-')[0]));
-            if (group) return group.name;
-
-            // Fallback
-            return category.translations[0].name;
-        }
-        return category.name;
-    };
+    // Removed local getCategoryDisplayName as it is now imported
 
     const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
     const [year, setYear] = useState<string>(String(new Date().getFullYear()));
@@ -156,7 +143,7 @@ export default function TransactionsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            toast.success('Todas as convites foram respondidos.');
+            toast.success(t('notifications.allDeleted')); // Reusing for consistency or new key? "All invitations responded"
         },
     });
 
@@ -200,18 +187,18 @@ export default function TransactionsPage() {
 
         switch (type) {
             case 'DELETE':
-                title = 'Apagar Transação';
-                description = 'Tem certeza que deseja apagar esta transação? Esta ação não pode ser desfeita.';
+                title = t('transactions.confirmDeleteTitle');
+                description = t('transactions.confirmDeleteDesc');
                 variant = 'destructive';
                 break;
             case 'LEAVE':
-                title = 'Sair da Transação';
-                description = 'Tem certeza que deseja sair desta transação compartilhada?';
+                title = t('transactions.confirmLeaveTitle');
+                description = t('transactions.confirmLeaveDesc');
                 variant = 'destructive';
                 break;
             case 'REJECT':
-                title = 'Recusar Convite';
-                description = 'Tem certeza que deseja recusar o convite para esta transação?';
+                title = t('transactions.confirmRejectTitle');
+                description = t('transactions.confirmRejectDesc');
                 variant = 'destructive';
                 break;
         }
@@ -226,20 +213,10 @@ export default function TransactionsPage() {
         });
     };
 
-    const months = [
-        { value: '1', label: 'January' },
-        { value: '2', label: 'February' },
-        { value: '3', label: 'March' },
-        { value: '4', label: 'April' },
-        { value: '5', label: 'May' },
-        { value: '6', label: 'June' },
-        { value: '7', label: 'July' },
-        { value: '8', label: 'August' },
-        { value: '9', label: 'September' },
-        { value: '10', label: 'October' },
-        { value: '11', label: 'November' },
-        { value: '12', label: 'December' },
-    ];
+    const months = Array.from({ length: 12 }, (_, i) => ({
+        value: String(i + 1),
+        label: new Date(2024, i).toLocaleString(locale, { month: 'long' })
+    }));
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 5 }, (_, i) => String(currentYear - 2 + i));
@@ -249,20 +226,20 @@ export default function TransactionsPage() {
             <Navbar />
             <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h1 className="text-3xl font-bold">Transactions</h1>
+                    <h1 className="text-3xl font-bold">{t('transactions.title')}</h1>
                     <div className="flex gap-2">
                         {transactions.some(t => t.participants.some(p => p.userId === user?.id && p.status === 'PENDING')) && (
                             <>
                                 <Button size="sm" onClick={() => respondAllMutation.mutate('ACCEPTED')} className="bg-green-600 hover:bg-green-700 text-white">
-                                    Aceitar Todos
+                                    {t('transactions.acceptAll')}
                                 </Button>
                                 <Button size="sm" variant="destructive" onClick={() => respondAllMutation.mutate('REJECTED')}>
-                                    Recusar Todos
+                                    {t('transactions.rejectAll')}
                                 </Button>
                             </>
                         )}
                         <Button variant="outline" onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}>
-                            Export CSV
+                            {t('transactions.exportCSV')}
                         </Button>
                     </div>
                 </div>
@@ -270,7 +247,7 @@ export default function TransactionsPage() {
                 {/* Inline Creation Form */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Adicionar Nova Transação</CardTitle>
+                        <CardTitle>{t('transactions.addTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <TransactionForm onSuccess={() => { }} />
@@ -281,23 +258,23 @@ export default function TransactionsPage() {
                 <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-lg border">
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Filters:</span>
+                        <span className="font-medium">{t('transactions.filters')}</span>
                     </div>
 
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                         <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Type" />
+                            <SelectValue placeholder={t('transactions.type')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Types</SelectItem>
-                            <SelectItem value="INCOME">Income</SelectItem>
-                            <SelectItem value="EXPENSE">Expense</SelectItem>
+                            <SelectItem value="ALL">{t('transactions.allTypes')}</SelectItem>
+                            <SelectItem value="INCOME">{t('transactions.income')}</SelectItem>
+                            <SelectItem value="EXPENSE">{t('transactions.expense')}</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Select value={month} onValueChange={setMonth}>
                         <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Month" />
+                            <SelectValue placeholder={t('transactions.month')} />
                         </SelectTrigger>
                         <SelectContent>
                             {months.map((m) => (
@@ -308,7 +285,7 @@ export default function TransactionsPage() {
 
                     <Select value={year} onValueChange={setYear}>
                         <SelectTrigger className="w-[100px]">
-                            <SelectValue placeholder="Year" />
+                            <SelectValue placeholder={t('transactions.year')} />
                         </SelectTrigger>
                         <SelectContent>
                             {years.map((y) => (
@@ -326,7 +303,7 @@ export default function TransactionsPage() {
                             setYear(String(now.getFullYear()));
                         }}
                     >
-                        Today
+                        {t('transactions.today')}
                     </Button>
                 </div>
 
@@ -336,32 +313,32 @@ export default function TransactionsPage() {
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
                                 <tr>
-                                    <th className="px-6 py-3">Date</th>
-                                    <th className="px-6 py-3">Description</th>
-                                    <th className="px-6 py-3">Category</th>
-                                    <th className="px-6 py-3">Type</th>
-                                    <th className="px-6 py-3">Amount</th>
-                                    <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Users</th>
-                                    <th className="px-6 py-3 text-right">Actions</th>
+                                    <th className="px-6 py-3">{t('transactions.table.date')}</th>
+                                    <th className="px-6 py-3">{t('transactions.table.description')}</th>
+                                    <th className="px-6 py-3">{t('transactions.table.category')}</th>
+                                    <th className="px-6 py-3">{t('transactions.table.type')}</th>
+                                    <th className="px-6 py-3">{t('transactions.table.amount')}</th>
+                                    <th className="px-6 py-3">{t('transactions.table.status')}</th>
+                                    <th className="px-6 py-3">{t('transactions.table.users')}</th>
+                                    <th className="px-6 py-3 text-right">{t('transactions.table.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {transactions.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="px-6 py-4 text-center text-muted-foreground">
-                                            No transactions found for the selected filters.
+                                            {t('transactions.noTransactions')}
                                         </td>
                                     </tr>
                                 ) : (
-                                    transactions.map((t) => {
-                                        const isCreator = t.creatorId === user?.id;
-                                        const myParticipant = t.participants.find(p => p.userId === user?.id);
+                                    transactions.map((transaction) => {
+                                        const isCreator = transaction.creatorId === user?.id;
+                                        const myParticipant = transaction.participants.find(p => p.userId === user?.id);
 
-                                        let displayAmount = parseFloat(t.amount);
+                                        let displayAmount = parseFloat(transaction.amount);
                                         let shareLabel = "";
 
-                                        if (t.isShared && myParticipant) {
+                                        if (transaction.isShared && myParticipant) {
                                             // If pending, show the proposed amount (baseShareAmount)
                                             // If accepted, show the effective amount (shareAmount)
                                             const amountToShow = myParticipant.status === 'PENDING'
@@ -369,39 +346,39 @@ export default function TransactionsPage() {
                                                 : myParticipant.shareAmount;
 
                                             displayAmount = parseFloat(amountToShow);
-                                            shareLabel = "(My Share)";
+                                            shareLabel = `(${t('transactions.myShare')})`;
                                         }
 
-                                        const acceptedCount = t.participants.filter(p => p.status === 'ACCEPTED' && p.userId !== t.creatorId).length;
-                                        const totalInvited = t.participants.filter(p => p.userId !== t.creatorId).length;
+                                        const acceptedCount = transaction.participants.filter(p => p.status === 'ACCEPTED' && p.userId !== transaction.creatorId).length;
+                                        const totalInvited = transaction.participants.filter(p => p.userId !== transaction.creatorId).length;
 
-                                        const catColor = t.category.color;
+                                        const catColor = transaction.category.color;
 
                                         return (
-                                            <tr key={t.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                                            <tr key={transaction.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
-                                                    {format(new Date(t.date), 'MMM d, yyyy')}
+                                                    {format(new Date(transaction.date), 'MMM d, yyyy')}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {t.description || '-'}
+                                                    {transaction.description || '-'}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${!catColor ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}`}
                                                         style={catColor ? { backgroundColor: catColor, color: getContrastColor(catColor) } : undefined}
                                                     >
-                                                        {getCategoryDisplayName(t.category)}
+                                                        {getCategoryDisplayName(transaction.category, locale)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`font-bold ${t.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {t.type}
+                                                    <span className={`font-bold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {transaction.type}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 font-bold">
                                                     <div className="flex flex-col">
-                                                        <span>${parseFloat(t.amount).toFixed(2)} {t.isShared && <span className="text-xs font-normal text-muted-foreground">(Total)</span>}</span>
-                                                        {t.isShared && (
+                                                        <span>${parseFloat(transaction.amount).toFixed(2)} {transaction.isShared && <span className="text-xs font-normal text-muted-foreground">({t('transactions.total')})</span>}</span>
+                                                        {transaction.isShared && (
                                                             <span className="text-xs text-primary font-medium">
                                                                 ${displayAmount.toFixed(2)} <span className="text-muted-foreground font-normal">{shareLabel}</span>
                                                             </span>
@@ -410,17 +387,17 @@ export default function TransactionsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col gap-1">
-                                                        {t.isShared && (
+                                                        {transaction.isShared && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 w-fit">
-                                                                Shared
+                                                                {t('transactions.shared')}
                                                             </span>
                                                         )}
-                                                        {t.isFixed && (
+                                                        {transaction.isFixed && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 w-fit">
-                                                                Fixed
+                                                                {t('transactions.fixed')}
                                                             </span>
                                                         )}
-                                                        {isCreator && t.isShared && (
+                                                        {isCreator && transaction.isShared && (
                                                             <span className="text-xs text-muted-foreground">
                                                                 {acceptedCount}/{totalInvited} Accepted
                                                             </span>
@@ -430,17 +407,17 @@ export default function TransactionsPage() {
                                                                 myParticipant.status === 'ACCEPTED' ? 'text-green-600' :
                                                                     'text-red-600'
                                                                 }`}>
-                                                                Status: {myParticipant.status}
+                                                                {t('transactions.table.status')}: {myParticipant.status}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {t.isShared ? (
+                                                    {transaction.isShared ? (
                                                         <div className="flex flex-col gap-1">
-                                                            {t.participants.map((p, idx) => {
+                                                            {transaction.participants.map((p, idx) => {
                                                                 const name = p.user?.name || p.placeholderName || 'Unknown';
-                                                                const isCreatorParticipant = p.userId === t.creatorId;
+                                                                const isCreatorParticipant = p.userId === transaction.creatorId;
                                                                 if (isCreatorParticipant) return null;
 
                                                                 const statusColor =
@@ -468,7 +445,7 @@ export default function TransactionsPage() {
                                                                     </div>
                                                                 );
                                                             })}
-                                                            {t.participants.filter(p => p.userId !== t.creatorId).length === 0 && <span className="text-xs text-muted-foreground">No other participants</span>}
+                                                            {transaction.participants.filter(p => p.userId !== transaction.creatorId).length === 0 && <span className="text-xs text-muted-foreground">No other participants</span>}
                                                         </div>
                                                     ) : (
                                                         <span className="text-muted-foreground">-</span>
@@ -482,7 +459,7 @@ export default function TransactionsPage() {
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                                    onClick={() => setEditTransaction(t)}
+                                                                    onClick={() => setEditTransaction(transaction)}
                                                                 >
                                                                     <Edit className="h-4 w-4" />
                                                                 </Button>
@@ -490,7 +467,7 @@ export default function TransactionsPage() {
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-8 w-8 text-muted-foreground hover:text-red-600"
-                                                                    onClick={() => openConfirmation('DELETE', t.id)}
+                                                                    onClick={() => openConfirmation('DELETE', transaction.id)}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
@@ -498,12 +475,12 @@ export default function TransactionsPage() {
                                                         )}
                                                         {!isCreator && myParticipant?.status === 'PENDING' && (
                                                             <>
-                                                                <Button size="sm" variant="default" onClick={() => respondMutation.mutate({ id: t.id, status: 'ACCEPTED' })}>Accept</Button>
-                                                                <Button size="sm" variant="destructive" onClick={() => openConfirmation('REJECT', t.id)}>Reject</Button>
+                                                                <Button size="sm" variant="default" onClick={() => respondMutation.mutate({ id: transaction.id, status: 'ACCEPTED' })}>{t('notifications.accept')}</Button>
+                                                                <Button size="sm" variant="destructive" onClick={() => openConfirmation('REJECT', transaction.id)}>{t('notifications.reject')}</Button>
                                                             </>
                                                         )}
                                                         {!isCreator && myParticipant?.status === 'ACCEPTED' && (
-                                                            <Button size="sm" variant="outline" onClick={() => openConfirmation('LEAVE', t.id)}>Leave</Button>
+                                                            <Button size="sm" variant="outline" onClick={() => openConfirmation('LEAVE', transaction.id)}>Leave</Button>
                                                         )}
                                                     </div>
                                                 </td>
@@ -527,7 +504,7 @@ export default function TransactionsPage() {
                 <Dialog open={!!editTransaction} onOpenChange={(open) => !open && setEditTransaction(null)}>
                     <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>Editar Transação</DialogTitle>
+                            <DialogTitle>{t('transactions.editTitle')}</DialogTitle>
                         </DialogHeader>
                         {editTransaction && (
                             <TransactionForm

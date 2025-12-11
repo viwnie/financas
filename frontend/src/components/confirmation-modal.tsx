@@ -9,6 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/language-context";
 
 interface ConfirmationModalProps {
     open: boolean;
@@ -28,11 +29,15 @@ export function ConfirmationModal({
     onConfirm,
     title,
     description,
-    confirmText = "Confirmar",
-    cancelText = "Cancelar",
+    confirmText,
+    cancelText,
     variant = "default",
     isLoading = false,
 }: ConfirmationModalProps) {
+    const { t } = useLanguage();
+
+    const actualConfirmText = confirmText || t('common.confirm');
+    const actualCancelText = cancelText || t('common.cancel');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
@@ -48,14 +53,14 @@ export function ConfirmationModal({
                         onClick={() => onOpenChange(false)}
                         disabled={isLoading}
                     >
-                        {cancelText}
+                        {actualCancelText}
                     </Button>
                     <Button
                         variant={variant}
                         onClick={onConfirm}
                         disabled={isLoading}
                     >
-                        {isLoading ? "Processando..." : confirmText}
+                        {isLoading ? t('common.processing') : actualConfirmText}
                     </Button>
                 </DialogFooter>
             </DialogContent>

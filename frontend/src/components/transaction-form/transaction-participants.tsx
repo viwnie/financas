@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, Clock, Plus, X } from 'lucide-react';
 import { UseFormRegister } from 'react-hook-form';
 import { TransactionFormValues } from './use-transaction-form';
+import { useLanguage } from '@/contexts/language-context';
 
 interface TransactionParticipantsProps {
     isShared: boolean;
@@ -37,16 +38,18 @@ export function TransactionParticipants({
     register,
     transactionId,
 }: TransactionParticipantsProps) {
+    const { t } = useLanguage();
+
     if (!isShared) return null;
 
     return (
         <div className="space-y-4 border p-4 rounded-md bg-muted/20">
             <div className="space-y-2">
-                <Label>Adicionar Participantes</Label>
+                <Label>{t('transactions.addParticipants')}</Label>
                 <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar amigo ou digitar nome..."
+                        placeholder={t('transactions.searchFriendsPlaceholder')}
                         value={friendSearch}
                         onChange={(e) => setFriendSearch(e.target.value)}
                         className="pl-8"
@@ -78,31 +81,35 @@ export function TransactionParticipants({
                                         <span className="font-medium">{result.name}</span>
                                         {result.username && <span className="text-xs text-muted-foreground">@{result.username}</span>}
                                     </div>
-                                    {result.type === 'FRIEND' && <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">Friend</span>}
-                                    {result.type === 'EXTERNAL' && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">External</span>}
+                                    {result.type === 'FRIEND' && <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">{t('transactions.friend')}</span>}
+                                    {result.type === 'EXTERNAL' && <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">{t('transactions.external')}</span>}
                                 </div>
 
-                                {result.type === 'GLOBAL' && (
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 px-2"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            addFriendMutation.mutate(result.username);
-                                        }}
-                                    >
-                                        <UserPlus className="h-4 w-4 mr-1" />
-                                        Add Friend
-                                    </Button>
-                                )}
+                                {
+                                    result.type === 'GLOBAL' && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 px-2"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                addFriendMutation.mutate(result.username);
+                                            }}
+                                        >
+                                            <UserPlus className="h-4 w-4 mr-1" />
+                                            {t('transactions.addFriendButton')}
+                                        </Button>
+                                    )
+                                }
 
-                                {result.type === 'PENDING' && (
-                                    <span className="flex items-center text-xs text-muted-foreground">
-                                        <Clock className="h-3 w-3 mr-1" />
-                                        Request Sent
-                                    </span>
-                                )}
+                                {
+                                    result.type === 'PENDING' && (
+                                        <span className="flex items-center text-xs text-muted-foreground">
+                                            <Clock className="h-3 w-3 mr-1" />
+                                            {t('transactions.requestSent')}
+                                        </span>
+                                    )
+                                }
 
                                 {(result.type === 'FRIEND' || result.type === 'EXTERNAL') && (
                                     <Plus className="h-4 w-4 text-muted-foreground" />
@@ -115,94 +122,96 @@ export function TransactionParticipants({
                             onClick={handleAddAdHoc}
                         >
                             <Plus className="h-4 w-4" />
-                            Add "{friendSearch}" (Non-registered)
+                            {t('transactions.add')} "{friendSearch}" {t('transactions.nonRegistered')}
                         </div>
                     </div>
                 )}
             </div>
 
-            {fields.length > 0 && (
-                <div className="space-y-3">
-                    <Label>Participantes Selecionados</Label>
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-center gap-3 bg-background p-3 rounded border">
-                            <div className="flex-1 font-medium flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage
-                                        src={field.hasAvatar && field.username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${field.username}` : undefined}
-                                        alt={field.name}
-                                        className="object-cover"
-                                    />
-                                    <AvatarFallback>{field.name?.charAt(0).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    {field.name}
-                                    {!field.username && !field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
-                                    {field.status === 'PENDING' && transactionId && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
-                                    {field.status === 'REJECTED' && <span className="ml-2 text-xs text-red-600 bg-red-100 px-1 rounded">Rejeitado</span>}
+            {
+                fields.length > 0 && (
+                    <div className="space-y-3">
+                        <Label>{t('transactions.selectedParticipants')}</Label>
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-3 bg-background p-3 rounded border">
+                                <div className="flex-1 font-medium flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage
+                                            src={field.hasAvatar && field.username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${field.username}` : undefined}
+                                            alt={field.name}
+                                            className="object-cover"
+                                        />
+                                        <AvatarFallback>{field.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        {field.name}
+                                        {!field.username && !field.userId && <span className="ml-2 text-xs text-muted-foreground">({t('transactions.external')})</span>}
+                                        {field.status === 'PENDING' && transactionId && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">{t('transactions.pending')}</span>}
+                                        {field.status === 'REJECTED' && <span className="ml-2 text-xs text-red-600 bg-red-100 px-1 rounded">{t('transactions.rejected')}</span>}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {field.status === 'REJECTED' ? (
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleReinvite(index)}
-                                        className="text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
-                                    >
-                                        Re-convidar
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => handleRemoveParticipant(index)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    <div className="relative w-[100px]">
-                                        <span className="absolute left-2 top-2.5 text-xs text-muted-foreground">R$</span>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            className="pl-6 h-9"
-                                            {...register(`participants.${index}.amount`)}
-                                            onChange={(e) => handleSplitChange(index, 'amount', e.target.value)}
-                                        />
+                                {field.status === 'REJECTED' ? (
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleReinvite(index)}
+                                            className="text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                                        >
+                                            {t('transactions.reinvite')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleRemoveParticipant(index)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <div className="relative w-[80px]">
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="%"
-                                            className="pr-6 h-9"
-                                            {...register(`participants.${index}.percent`)}
-                                            onChange={(e) => handleSplitChange(index, 'percent', e.target.value)}
-                                        />
-                                        <span className="absolute right-2 top-2.5 text-xs text-muted-foreground">%</span>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative w-[100px]">
+                                            <span className="absolute left-2 top-2.5 text-xs text-muted-foreground">R$</span>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                                className="pl-6 h-9"
+                                                {...register(`participants.${index}.amount`)}
+                                                onChange={(e) => handleSplitChange(index, 'amount', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="relative w-[80px]">
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="%"
+                                                className="pr-6 h-9"
+                                                {...register(`participants.${index}.percent`)}
+                                                onChange={(e) => handleSplitChange(index, 'percent', e.target.value)}
+                                            />
+                                            <span className="absolute right-2 top-2.5 text-xs text-muted-foreground">%</span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => handleRemoveParticipant(index)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => handleRemoveParticipant(index)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
+        </div >
     );
 }

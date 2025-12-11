@@ -1,7 +1,9 @@
+import { getCategoryDisplayName } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { UseFormReturn } from 'react-hook-form';
 import { TransactionFormValues } from './use-transaction-form';
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/language-context';
 
 interface TransactionCategoryInputProps {
     form: UseFormReturn<TransactionFormValues>;
@@ -14,7 +16,6 @@ interface TransactionCategoryInputProps {
     description: string;
     locale: string;
 }
-
 export function TransactionCategoryInput({
     form,
     categorySuggestions,
@@ -28,36 +29,16 @@ export function TransactionCategoryInput({
 }: TransactionCategoryInputProps) {
     const { register, setValue, watch, formState: { errors } } = form;
     const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+    const { t } = useLanguage();
 
-    // Helper to get translated name
-    const getCategoryName = (cat: any) => {
-        if (cat.translations && cat.translations.length > 0) {
-            const exact = cat.translations.find((t: any) => t.language === locale);
-            if (exact) return exact.name;
-
-            const group = cat.translations.find((t: any) => t.language.startsWith(locale.split('-')[0]));
-            if (group) return group.name;
-
-            // Fallback to English or first
-            const en = cat.translations.find((t: any) => t.language === 'en');
-            if (en) return en.name;
-
-            return cat.translations[0].name;
-        }
-
-        // Legacy fallback
-        if (locale === 'pt' && cat.name_pt) return cat.name_pt;
-        if (locale === 'en' && cat.name_en) return cat.name_en;
-        if (locale === 'es' && cat.name_es) return cat.name_es;
-        return cat.name;
-    };
+    // Removed local getCategoryName
 
     return (
         <div className="flex items-center gap-2">
             <div className="relative flex-1">
                 <Input
                     {...register('categoryName')}
-                    placeholder="Ex: Alimentação, Aluguel"
+                    placeholder={t('transactions.categoryInputPlaceholder')}
                     autoComplete="off"
                     onFocus={() => setShowCategorySuggestions(true)}
                     onBlur={() => {
@@ -72,7 +53,7 @@ export function TransactionCategoryInput({
                 />
                 {isAutoFilled && (
                     <div className="absolute right-2 top-2.5 text-xs text-purple-600 flex items-center bg-purple-50 px-2 rounded-full pointer-events-none">
-                        <span className="mr-1">✨</span> Sugerido
+                        <span className="mr-1">✨</span> {t('transactions.suggested')}
                     </div>
                 )}
 
@@ -80,11 +61,11 @@ export function TransactionCategoryInput({
                     <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
                         {isLoadingSuggestions ? (
                             <div className="p-2 text-sm text-center text-muted-foreground">
-                                Buscando...
+                                {t('transactions.searching')}
                             </div>
                         ) : categorySuggestions.length > 0 ? (
                             categorySuggestions.map((cat: any) => {
-                                const displayName = getCategoryName(cat);
+                                const displayName = getCategoryDisplayName(cat, locale);
                                 return (
                                     <div
                                         key={cat.id}
@@ -110,7 +91,7 @@ export function TransactionCategoryInput({
                                         </div>
                                         {cat.score > 0 && (
                                             <span className="text-xs text-muted-foreground">
-                                                {cat.matchType === 'CONTEXT' ? 'Relevante' : ''}
+                                                {cat.matchType === 'CONTEXT' ? t('transactions.relevant') : ''}
                                             </span>
                                         )}
                                     </div>
@@ -118,7 +99,7 @@ export function TransactionCategoryInput({
                             })
                         ) : (
                             <div className="p-2 text-sm text-center text-muted-foreground">
-                                Nenhuma categoria encontrada
+                                {t('transactions.noCategoriesFound')}
                             </div>
                         )}
                     </div>
@@ -129,7 +110,7 @@ export function TransactionCategoryInput({
                     className="w-9 h-9 rounded-full border cursor-pointer shadow-sm flex items-center justify-center transition-transform active:scale-95"
                     style={{ backgroundColor: watch('categoryColor') || '#e2e8f0' }}
                     onClick={() => document.getElementById('category-color-picker')?.click()}
-                    title="Escolher cor da categoria"
+                    title={t('transactions.chooseColor')}
                 />
                 <input
                     id="category-color-picker"

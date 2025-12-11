@@ -11,8 +11,10 @@ import { useTransactionForm } from './transaction-form/use-transaction-form';
 import { TransactionCategoryInput } from './transaction-form/transaction-category-input';
 import { TransactionDatePicker } from './transaction-form/transaction-date-picker';
 import { TransactionParticipants } from './transaction-form/transaction-participants';
+import { useLanguage } from '@/contexts/language-context';
 
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
+    const { t } = useLanguage();
     const {
         form,
         fields,
@@ -52,17 +54,17 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         <form onSubmit={onSubmit} className="space-y-4" >
             <div className="flex flex-wrap gap-4 items-start">
                 <div className="flex-1 min-w-[200px] space-y-2">
-                    <Label>Descrição</Label>
-                    <Input {...register('description')} placeholder="Descrição da transação" />
+                    <Label>{t('transactions.description')}</Label>
+                    <Input {...register('description')} placeholder={t('transactions.descriptionPlaceholder')} />
                 </div>
 
                 <div className="w-[140px] space-y-2">
-                    <Label>Valor</Label>
+                    <Label>{t('transactions.amount')}</Label>
                     <Input type="number" step="0.01" {...register('amount')} placeholder="0,00" />
                     {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
                     {isShared && (totalAmount || 0) > 0 && (
                         <div className="text-xs text-muted-foreground mt-1">
-                            Você paga: <span className="font-medium text-primary">
+                            {t('transactions.youPay')} <span className="font-medium text-primary">
                                 R$ {calculateMyShare().toFixed(2)}
                             </span>
                         </div>
@@ -70,20 +72,20 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                 </div>
 
                 <div className="w-[140px] space-y-2">
-                    <Label>Tipo</Label>
+                    <Label>{t('transactions.type')}</Label>
                     <Select onValueChange={(val) => setValue('type', val as 'INCOME' | 'EXPENSE')} defaultValue={type}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
+                            <SelectValue placeholder={t('transactions.select')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="INCOME">Receita</SelectItem>
-                            <SelectItem value="EXPENSE">Despesa</SelectItem>
+                            <SelectItem value="INCOME">{t('transactions.income')}</SelectItem>
+                            <SelectItem value="EXPENSE">{t('transactions.expense')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="w-[160px] space-y-2 flex flex-col">
-                    <Label>Data</Label>
+                    <Label>{t('transactions.date')}</Label>
                     <TransactionDatePicker
                         date={watch('date')}
                         onSelect={(date) => {
@@ -95,7 +97,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
             <div className="flex flex-wrap gap-4 items-start">
                 <div className="flex-1 min-w-[200px] space-y-2">
-                    <Label>Categoria</Label>
+                    <Label>{t('transactions.category')}</Label>
                     <TransactionCategoryInput
                         form={form}
                         categorySuggestions={categorySuggestions}
@@ -112,7 +114,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
                 {type === 'EXPENSE' && (
                     <div className="w-[100px] space-y-2">
-                        <Label>Parcelas</Label>
+                        <Label>{t('transactions.installments')}</Label>
                         <Input type="number" min="1" {...register('installmentsCount')} placeholder="1" />
                     </div>
                 )}
@@ -124,7 +126,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                             checked={watch('isFixed')}
                             onCheckedChange={(checked) => setValue('isFixed', checked as boolean)}
                         />
-                        <Label htmlFor={`isFixed-${transactionId || 'new'}`}>Fixo mensal</Label>
+                        <Label htmlFor={`isFixed-${transactionId || 'new'}`}>{t('transactions.monthlyFixed')}</Label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -138,7 +140,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                 }
                             }}
                         />
-                        <Label htmlFor={`isShared-${transactionId || 'new'}`}>Compartilhar com amigos</Label>
+                        <Label htmlFor={`isShared-${transactionId || 'new'}`}>{t('transactions.shareWithFriends')}</Label>
                     </div>
                 </div>
             </div>
@@ -174,11 +176,11 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                         className="text-muted-foreground hover:text-destructive"
                     >
                         {transactionId ? <RotateCcw className="w-4 h-4 mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                        {transactionId ? 'Reverter alterações' : 'Limpar'}
+                        {transactionId ? t('transactions.revert') : t('transactions.clear')}
                     </Button>
                 )}
                 <Button type="submit" className="w-[150px]" disabled={mutation.isPending}>
-                    {mutation.isPending ? (transactionId ? 'Alterando...' : 'Salvando...') : (transactionId ? 'Alterar' : 'Salvar')}
+                    {mutation.isPending ? (transactionId ? t('transactions.updating') : t('transactions.saving')) : (transactionId ? t('transactions.update') : t('transactions.save'))}
                 </Button>
             </div>
         </form >

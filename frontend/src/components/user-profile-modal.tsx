@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useAuthStore } from '@/store/auth-store';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,224 +11,37 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { User, Upload, X, Loader2, Check, AlertCircle, Undo } from 'lucide-react';
-import { toast } from 'sonner';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2 } from 'lucide-react';
+import { useProfileManager } from './profile/use-profile-manager';
+import { ProfileAvatarUpload } from './profile/profile-avatar-upload';
+import { ProfileFormFields } from './profile/profile-form-fields';
+import { ProfilePasswordFields } from './profile/profile-password-fields';
 
 interface UserProfileModalProps {
     children: React.ReactNode;
 }
 
 export function UserProfileModal({ children }: UserProfileModalProps) {
-    const { user, login } = useAuthStore();
     const [open, setOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [checkingUsername, setCheckingUsername] = useState(false);
-    const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-    const [showPasswordError, setShowPasswordError] = useState(false);
-    const [hasDbAvatar, setHasDbAvatar] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const [formData, setFormData] = useState({
-        name: '',
-        username: '',
-        email: '',
-        password: '',
-        confirmNewPassword: '',
-        currentPassword: '',
-        avatar: null as File | null,
-        removeAvatar: false,
-    });
-
-    useEffect(() => {
-        if (user && open) {
-            setFormData({
-                name: user.name || '',
-                username: user.username || '',
-                email: user.email || '',
-                password: '',
-                confirmNewPassword: '',
-                currentPassword: '',
-                avatar: null,
-                removeAvatar: false,
-            });
-            // Construct avatar URL if user has one (assuming backend serves it at /users/:id/avatar)
-            // We can use a timestamp to bust cache
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-            setAvatarPreview(`${apiUrl}/users/${user.id}/avatar?t=${Date.now()}`);
-            setHasDbAvatar(false); // Reset and let onLoad determine if it exists
-            setShowPasswordError(false);
-        }
-    }, [user, open]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setShowPasswordError(false);
-
-        if (name === 'name') {
-            // Only allow letters, spaces, and accents
-            if (!/^[a-zA-Z\u00C0-\u00FF ]*$/.test(value)) {
-                return; // Ignore invalid input
-            }
-        }
-
-        setFormData((prev) => ({ ...prev, [name]: value }));
-
-        if (name === 'username') {
-            setUsernameAvailable(null);
-            if (value && value !== user?.username) {
-                checkUsername(value);
-            }
-        }
-    };
-
-    const checkUsername = async (username: string) => {
-        setCheckingUsername(true);
-        try {
-            const token = document.cookie
-                .split('; ')
-                .find((row) => row.startsWith('token='))
-                ?.split('=')[1];
-
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-            const res = await fetch(`${apiUrl}/users/check-username?username=${username}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            const data = await res.json();
-            setUsernameAvailable(data.available);
-        } catch (error) {
-            console.error('Error checking username:', error);
-        } finally {
-            setCheckingUsername(false);
-        }
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setShowPasswordError(false);
-        const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error('Image must be less than 5MB');
-                return;
-            }
-            // Basic mime type check
-            if (!file.type.startsWith('image/') && !file.name.endsWith('.heic')) {
-                toast.error('Only image files are allowed');
-                return;
-            }
-
-            setFormData((prev) => ({ ...prev, avatar: file, removeAvatar: false }));
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setAvatarPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRemoveAvatar = () => {
-        setFormData((prev) => ({ ...prev, avatar: null, removeAvatar: true }));
-        setAvatarPreview(null);
-        setShowPasswordError(false);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const handleRevertAvatar = () => {
-        setFormData((prev) => ({ ...prev, avatar: null, removeAvatar: false }));
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        setAvatarPreview(`${apiUrl}/users/${user?.id}/avatar?t=${Date.now()}`);
-        setShowPasswordError(false);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const token = document.cookie
-                .split('; ')
-                .find((row) => row.startsWith('token='))
-                ?.split('=')[1];
-
-            const data = new FormData();
-            if (formData.name !== user?.name) data.append('name', formData.name);
-            if (formData.username !== user?.username) data.append('username', formData.username);
-            if (formData.email !== user?.email) data.append('email', formData.email);
-            if (formData.password) {
-                if (formData.password !== formData.confirmNewPassword) {
-                    toast.error('New passwords do not match');
-                    setLoading(false);
-                    return;
-                }
-                data.append('password', formData.password);
-            }
-
-            if (!formData.currentPassword) {
-                toast.error('Current password is required to save changes');
-                setShowPasswordError(true);
-                setLoading(false);
-                return;
-            }
-            data.append('currentPassword', formData.currentPassword);
-
-            if (formData.avatar) data.append('avatar', formData.avatar);
-            if (formData.removeAvatar) data.append('removeAvatar', 'true');
-
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-            const res = await fetch(`${apiUrl}/users/me`, {
-                method: 'PATCH',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: data,
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.message || 'Failed to update profile');
-            }
-
-            const updatedUser = await res.json();
-
-            // Update local user state in the store
-            const userForStore = {
-                id: updatedUser.id,
-                name: updatedUser.name,
-                username: updatedUser.username,
-                email: updatedUser.email
-            };
-
-            if (token) {
-                login(userForStore, token);
-            }
-
-            toast.success('Profile updated successfully');
-            setOpen(false);
-
-        } catch (error: any) {
-            toast.error(error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const hasChanges =
-        formData.name !== user?.name ||
-        formData.username !== user?.username ||
-        formData.email !== user?.email ||
-        formData.password !== '' ||
-        formData.avatar !== null ||
-        formData.removeAvatar;
+    const {
+        user,
+        loading,
+        checkingUsername,
+        usernameAvailable,
+        avatarPreview,
+        showPasswordError,
+        hasDbAvatar,
+        setHasDbAvatar,
+        fileInputRef,
+        formData,
+        handleChange,
+        handleFileChange,
+        handleRemoveAvatar,
+        handleRevertAvatar,
+        handleSubmit,
+        hasChanges,
+        setShowPasswordError,
+    } = useProfileManager(open, setOpen);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -242,167 +54,35 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                    <div className="flex flex-col items-center gap-4">
-                        <Avatar className="h-24 w-24 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                            {avatarPreview ? (
-                                <>
-                                    <AvatarImage
-                                        src={avatarPreview}
-                                        className="object-cover"
-                                        onLoad={() => {
-                                            if (!formData.avatar && !formData.removeAvatar) {
-                                                setHasDbAvatar(true);
-                                            }
-                                        }}
-                                        onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                            if (!formData.avatar && !formData.removeAvatar) {
-                                                setHasDbAvatar(false);
-                                            }
-                                        }}
-                                    />
-                                    <AvatarFallback className="text-2xl">
-                                        {(formData.name || user?.name || '?').charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                </>
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-2xl">
-                                    {(formData.name || user?.name || '?').charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </Avatar>
-                        <div className="flex gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                                <Upload className="mr-2 h-4 w-4" />
-                                Change Photo
-                            </Button>
-                            {(formData.avatar || formData.removeAvatar) ? (
-                                <Button type="button" variant="outline" size="sm" onClick={handleRevertAvatar}>
-                                    <Undo className="mr-2 h-4 w-4" />
-                                    Reverter
-                                </Button>
-                            ) : hasDbAvatar ? (
-                                <Button type="button" variant="destructive" size="sm" onClick={handleRemoveAvatar}>
-                                    <X className="mr-2 h-4 w-4" />
-                                    Remover
-                                </Button>
-                            ) : null}
-                        </div>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*,.heic"
-                            onChange={handleFileChange}
-                        />
-                    </div>
+                    <ProfileAvatarUpload
+                        fileInputRef={fileInputRef}
+                        avatarPreview={avatarPreview}
+                        formData={formData}
+                        user={user}
+                        setHasDbAvatar={setHasDbAvatar}
+                        hasDbAvatar={hasDbAvatar}
+                        handleFileChange={handleFileChange}
+                        handleRevertAvatar={handleRevertAvatar}
+                        handleRemoveAvatar={handleRemoveAvatar}
+                    />
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right whitespace-nowrap">
-                            Name
-                        </Label>
-                        <Input
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="col-span-3"
-                        />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="username" className="text-right whitespace-nowrap">
-                            Username
-                        </Label>
-                        <div className="col-span-3 relative">
-                            <Input
-                                id="username"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                className={usernameAvailable === false ? "border-red-500" : usernameAvailable === true ? "border-green-500" : ""}
-                            />
-                            {checkingUsername && (
-                                <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
-                            )}
-                            {!checkingUsername && usernameAvailable === true && formData.username !== user?.username && (
-                                <span className="text-xs text-green-500 absolute -bottom-5 left-0 flex items-center">
-                                    <Check className="w-3 h-3 mr-1" /> Available
-                                </span>
-                            )}
-                            {!checkingUsername && usernameAvailable === false && (
-                                <span className="text-xs text-red-500 absolute -bottom-5 left-0 flex items-center">
-                                    <AlertCircle className="w-3 h-3 mr-1" /> Not Available
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4 mt-2">
-                        <Label htmlFor="email" className="text-right whitespace-nowrap">
-                            Email
-                        </Label>
-                        <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="col-span-3"
-                        />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="password" className="text-right whitespace-nowrap">
-                            Password
-                        </Label>
-                        <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            placeholder="Leave blank to keep current"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="col-span-3"
-                        />
-                    </div>
-                    {formData.password && (
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="confirmNewPassword" className="text-right whitespace-nowrap">
-                                Confirm Password
-                            </Label>
-                            <Input
-                                id="confirmNewPassword"
-                                name="confirmNewPassword"
-                                type="password"
-                                placeholder="Re-enter new password"
-                                value={formData.confirmNewPassword}
-                                onChange={handleChange}
-                                className="col-span-3"
-                            />
-                        </div>
-                    )}
+                    <ProfileFormFields
+                        formData={formData}
+                        handleChange={handleChange}
+                        user={user}
+                        checkingUsername={checkingUsername}
+                        usernameAvailable={usernameAvailable}
+                    />
+
                     {hasChanges && (
-                        <div className={`grid grid-cols-4 items-center gap-4 border-t pt-4 mt-4 ${showPasswordError && !formData.currentPassword ? "mb-6" : ""}`}>
-                            <Label htmlFor="currentPassword" className="text-right font-bold whitespace-nowrap">
-                                Current Password
-                            </Label>
-                            <div className="col-span-3 relative">
-                                <Input
-                                    id="currentPassword"
-                                    name="currentPassword"
-                                    type="password"
-                                    placeholder="Required to save changes"
-                                    value={formData.currentPassword}
-                                    onChange={(e) => {
-                                        handleChange(e);
-                                        if (e.target.value) setShowPasswordError(false);
-                                    }}
-                                    className={showPasswordError && !formData.currentPassword ? "border-red-300" : ""}
-                                />
-                                {showPasswordError && !formData.currentPassword && (
-                                    <p className="text-xs text-red-500 absolute -bottom-5 left-0">Please enter your current password to confirm changes.</p>
-                                )}
-                            </div>
-                        </div>
+                        <ProfilePasswordFields
+                            formData={formData}
+                            handleChange={handleChange}
+                            showPasswordError={showPasswordError}
+                            setShowPasswordError={setShowPasswordError}
+                        />
                     )}
+
                     <DialogFooter>
                         <Button type="submit" disabled={loading || usernameAvailable === false || !hasChanges}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

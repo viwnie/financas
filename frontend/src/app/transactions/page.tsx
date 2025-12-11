@@ -24,7 +24,7 @@ interface Transaction {
     amount: string;
     description?: string;
     date: string;
-    category: { name: string };
+    category: { name: string; color?: string | null; translations?: any[] };
     isShared: boolean;
     isFixed: boolean;
     creatorId: string;
@@ -40,6 +40,20 @@ interface Transaction {
         user?: { name: string; username: string; avatarMimeType?: string | null };
     }[];
 }
+
+const getContrastColor = (hexcolor: string | null | undefined) => {
+    if (!hexcolor) return '#1e40af'; // default blue-800
+    // If hex is short (e.g. #FFF), expand it
+    let hex = hexcolor.replace('#', '');
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return yiq >= 128 ? '#000000' : '#FFFFFF';
+};
 
 export default function TransactionsPage() {
     const { token, user } = useAuthStore();
@@ -76,7 +90,7 @@ export default function TransactionsPage() {
             if (year) params.append('year', year);
             if (typeFilter !== 'ALL') params.append('type', typeFilter);
 
-            const res = await fetch(`http://localhost:3000/transactions?${params.toString()}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Failed to fetch transactions');
@@ -87,7 +101,7 @@ export default function TransactionsPage() {
 
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
-            const res = await fetch(`http://localhost:3000/transactions/${id}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -100,7 +114,7 @@ export default function TransactionsPage() {
 
     const respondMutation = useMutation({
         mutationFn: async ({ id, status }: { id: string; status: string }) => {
-            const res = await fetch(`http://localhost:3000/transactions/${id}/respond`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions/${id}/respond`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -117,7 +131,7 @@ export default function TransactionsPage() {
 
     const leaveMutation = useMutation({
         mutationFn: async (id: string) => {
-            const res = await fetch(`http://localhost:3000/transactions/${id}/leave`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions/${id}/leave`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -361,6 +375,8 @@ export default function TransactionsPage() {
                                         const acceptedCount = t.participants.filter(p => p.status === 'ACCEPTED' && p.userId !== t.creatorId).length;
                                         const totalInvited = t.participants.filter(p => p.userId !== t.creatorId).length;
 
+                                        const catColor = t.category.color;
+
                                         return (
                                             <tr key={t.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
@@ -370,7 +386,10 @@ export default function TransactionsPage() {
                                                     {t.description || '-'}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                    <span
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${!catColor ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}`}
+                                                        style={catColor ? { backgroundColor: catColor, color: getContrastColor(catColor) } : undefined}
+                                                    >
                                                         {getCategoryDisplayName(t.category)}
                                                     </span>
                                                 </td>

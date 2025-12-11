@@ -32,6 +32,7 @@ export function Navbar() {
     const navLinks = [
         { href: '/dashboard', label: t('nav.dashboard') },
         { href: '/transactions', label: t('nav.transactions') },
+        { href: '/categories', label: 'Categories' },
         { href: '/friends', label: t('nav.friends') },
     ];
 

@@ -9,11 +9,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, AreaChart, A
 import { useLanguage } from '@/contexts/language-context';
 import { Navbar } from '@/components/navbar';
 import { CreditCard, Users, Mail } from 'lucide-react';
+import { getCategoryDisplayName } from '@/lib/utils';
 
 export default function DashboardPage() {
     const { user, token } = useAuthStore();
     const router = useRouter();
-    const { t } = useLanguage();
+    const { t, locale } = useLanguage();
 
     if (!user) {
         // Middleware handles this
@@ -151,17 +152,20 @@ export default function DashboardPage() {
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
-                                                data={stats.expensesByCategory}
+                                                data={stats.expensesByCategory.map((item: any) => ({
+                                                    ...item,
+                                                    displayName: getCategoryDisplayName(item, locale)
+                                                }))}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={60}
                                                 outerRadius={80}
                                                 paddingAngle={5}
                                                 dataKey="amount"
-                                                nameKey="name"
+                                                nameKey="displayName"
                                             >
                                                 {stats.expensesByCategory.map((entry: any, index: number) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
                                             <Tooltip

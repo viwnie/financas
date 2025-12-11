@@ -171,7 +171,8 @@ export class DashboardService {
             const amount = map.get(cat.id) || 0;
             return {
                 categoryId: cat.id,
-                name: cat.translations[0]?.name || 'Unnamed', // Simplified for stats
+                name: cat.translations[0]?.name || 'Unnamed', // Fallback
+                translations: cat.translations,
                 color: cat.userSettings[0]?.color || null,
                 amount,
                 percentage: totalExpense > 0 ? (amount / totalExpense) * 100 : 0

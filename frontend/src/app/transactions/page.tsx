@@ -36,7 +36,7 @@ interface Transaction {
         baseSharePercent?: string;
         status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXITED';
         placeholderName?: string;
-        user?: { name: string; username: string };
+        user?: { name: string; username: string; avatarMimeType?: string | null };
     }[];
 }
 
@@ -400,12 +400,13 @@ export default function TransactionsPage() {
                                                                                 'text-yellow-600';
 
                                                                 const username = p.user?.username;
+                                                                const hasAvatar = !!p.user?.avatarMimeType;
 
                                                                 return (
                                                                     <div key={idx} className="flex items-center gap-2">
                                                                         <Avatar className="h-6 w-6">
                                                                             <AvatarImage
-                                                                                src={username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${username}` : undefined}
+                                                                                src={hasAvatar && username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${username}` : undefined}
                                                                                 alt={name}
                                                                                 className="object-cover"
                                                                             />

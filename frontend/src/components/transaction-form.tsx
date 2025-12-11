@@ -62,9 +62,12 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                 userId: p.userId,
                 username: p.user?.username,
                 name: p.user?.name || p.placeholderName || 'Unknown',
-                amount: parseFloat(p.baseShareAmount ?? p.shareAmount),
-                percent: parseFloat(p.baseSharePercent ?? p.sharePercent),
-                status: p.status
+                amount: p.shareAmount !== null ? parseFloat(p.shareAmount) : parseFloat(p.baseShareAmount || '0'),
+                percent: p.sharePercent !== null ? parseFloat(p.sharePercent) : parseFloat(p.baseSharePercent || '0'),
+                amount: p.shareAmount !== null ? parseFloat(p.shareAmount) : parseFloat(p.baseShareAmount || '0'),
+                percent: p.sharePercent !== null ? parseFloat(p.sharePercent) : parseFloat(p.baseSharePercent || '0'),
+                status: p.status,
+                hasAvatar: !!p.user?.avatarMimeType
             }))
         : [];
 
@@ -333,7 +336,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             }
         }
 
-        const cleanedParticipants = data.participants?.map(({ status, ...p }) => p);
+        const cleanedParticipants = data.participants?.map((p) => p);
         const cleanedData = { ...data, participants: cleanedParticipants };
 
         mutation.mutate({ ...cleanedData, language: locale } as any);
@@ -342,16 +345,25 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     const distributeEqually = (currentFields: any[]) => {
         const currentTotal = totalAmount || 0;
 
-        // Total participants = creator (1) + added participants
-        const totalParticipants = currentFields.length + 1;
-        const sharePercent = 100 / totalParticipants;
-        const shareAmount = currentTotal / totalParticipants;
+        // Filter out REJECTED participants from the split count
+        const activeParticipants = currentFields.filter(p => p.status !== 'REJECTED');
 
-        return currentFields.map(field => ({
-            ...field,
-            percent: parseFloat(sharePercent.toFixed(2)),
-            amount: parseFloat(shareAmount.toFixed(2))
-        }));
+        // Total participants = creator (1) + active participants
+        const totalSplitting = 1 + activeParticipants.length;
+
+        const sharePercent = 100 / totalSplitting;
+        const shareAmount = currentTotal / totalSplitting;
+
+        return currentFields.map(field => {
+            if (field.status === 'REJECTED') {
+                return { ...field, percent: 0, amount: 0 };
+            }
+            return {
+                ...field,
+                percent: parseFloat(sharePercent.toFixed(2)),
+                amount: parseFloat(shareAmount.toFixed(2))
+            };
+        });
     };
 
     const handleAddFriend = (friend: any) => {
@@ -360,7 +372,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             userId: isExternal ? undefined : undefined, // Don't send userId for internal friends, use username
             username: isExternal ? undefined : friend.username,
             name: friend.name,
-            status: isExternal ? 'ACCEPTED' : 'PENDING'
+            status: isExternal ? 'ACCEPTED' : 'PENDING',
+            hasAvatar: !!friend.avatarMimeType
         };
         const updatedFields = [...fields, newParticipant];
         const distributedFields = distributeEqually(updatedFields);
@@ -370,12 +383,21 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
     const handleAddAdHoc = () => {
         if (friendSearch.trim()) {
-            const newParticipant = { name: friendSearch.trim(), status: 'ACCEPTED' };
+            const newParticipant = { name: friendSearch.trim(), status: 'ACCEPTED', hasAvatar: false };
             const updatedFields = [...fields, newParticipant];
             const distributedFields = distributeEqually(updatedFields);
             replace(distributedFields);
             setFriendSearch('');
         }
+    };
+
+    const handleReinvite = (index: number) => {
+        const updatedFields = fields.map((field, i) =>
+            i === index ? { ...field, status: 'PENDING' } : field
+        );
+        const distributedFields = distributeEqually(updatedFields);
+        replace(distributedFields);
+        toast.info('Participante re-convidado. O valor será redistribuído.');
     };
 
     const handleRemoveParticipant = (index: number) => {
@@ -412,6 +434,21 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
         // 2. Simulate Backend Dynamic Redistribution (Effective Share)
         // Active = Status ACCEPTED (External/Ad-hoc usually ACCEPTED) or Creator
         const activeParticipants = participantsList.filter(p => !p.status || p.status === 'ACCEPTED');
+
+        // Check if everyone (Creator + Active Participants) has effectively equal base shares
+        const allBaseShares = [
+            creatorBaseShare,
+            ...activeParticipants.map(p => p.amount || 0)
+        ];
+
+        const minBase = Math.min(...allBaseShares);
+        const maxBase = Math.max(...allBaseShares);
+        const isEffectivelyEqual = (maxBase - minBase) <= 0.011; // Match backend epsilon
+
+        if (isEffectivelyEqual && allBaseShares.length > 0) {
+            // Equal split logic
+            return totalAmount / allBaseShares.length;
+        }
 
         const totalActiveBase = creatorBaseShare + activeParticipants.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
@@ -737,7 +774,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                         <div className="flex-1 font-medium flex items-center gap-2">
                                             <Avatar className="h-8 w-8">
                                                 <AvatarImage
-                                                    src={field.username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${field.username}` : undefined}
+                                                    src={field.hasAvatar && field.username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${field.username}` : undefined}
                                                     alt={field.name}
                                                     className="object-cover"
                                                 />
@@ -747,42 +784,66 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                                 {field.name}
                                                 {!field.username && !field.userId && <span className="ml-2 text-xs text-muted-foreground">(Externo)</span>}
                                                 {field.status === 'PENDING' && transactionId && <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-1 rounded">Pendente</span>}
+                                                {field.status === 'REJECTED' && <span className="ml-2 text-xs text-red-600 bg-red-100 px-1 rounded">Rejeitado</span>}
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <div className="relative w-[100px]">
-                                                <span className="absolute left-2 top-2.5 text-xs text-muted-foreground">R$</span>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    className="pl-6 h-9"
-                                                    {...register(`participants.${index}.amount`)}
-                                                    onChange={(e) => handleSplitChange(index, 'amount', e.target.value)}
-                                                />
+                                        {field.status === 'REJECTED' ? (
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleReinvite(index)}
+                                                    className="text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                                                >
+                                                    Re-convidar
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => handleRemoveParticipant(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
                                             </div>
-                                            <div className="relative w-[80px]">
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="%"
-                                                    className="pr-6 h-9"
-                                                    {...register(`participants.${index}.percent`)}
-                                                    onChange={(e) => handleSplitChange(index, 'percent', e.target.value)}
-                                                />
-                                                <span className="absolute right-2 top-2.5 text-xs text-muted-foreground">%</span>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <div className="relative w-[100px]">
+                                                    <span className="absolute left-2 top-2.5 text-xs text-muted-foreground">R$</span>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="0.00"
+                                                        className="pl-6 h-9"
+                                                        {...register(`participants.${index}.amount`)}
+                                                        onChange={(e) => handleSplitChange(index, 'amount', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="relative w-[80px]">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="%"
+                                                        className="pr-6 h-9"
+                                                        {...register(`participants.${index}.percent`)}
+                                                        onChange={(e) => handleSplitChange(index, 'percent', e.target.value)}
+                                                    />
+                                                    <span className="absolute right-2 top-2.5 text-xs text-muted-foreground">%</span>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => handleRemoveParticipant(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
                                             </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => handleRemoveParticipant(index)}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

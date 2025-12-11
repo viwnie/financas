@@ -64,7 +64,8 @@ export class UsersService {
             take: 10,
             select: {
                 name: true,
-                username: true
+                username: true,
+                avatarMimeType: true
             }
         });
     }
@@ -156,7 +157,7 @@ export class UsersService {
             where: { id },
             data: updateData,
         });
-        
+
         this.logger.log(`User updated successfully: ${updatedUser.username}`);
         return updatedUser;
     }

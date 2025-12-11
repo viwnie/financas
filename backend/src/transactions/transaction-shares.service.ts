@@ -62,7 +62,7 @@ export class TransactionSharesService {
         const baseAmounts = activeWithBase.map(p => p.baseAmount);
         const maxBase = Math.max(...baseAmounts);
         const minBase = Math.min(...baseAmounts);
-        const isEffectivelyEqual = (maxBase - minBase) <= 0.01;
+        const isEffectivelyEqual = (maxBase - minBase) <= 0.011;
 
         if (totalActiveBaseAmount > 0 && !isEffectivelyEqual) {
             let remainingAmount = totalAmount;

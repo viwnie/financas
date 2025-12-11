@@ -207,7 +207,12 @@ export class TransactionParticipantsService {
 
                 let newStatus = existing.status;
                 if (existing.userId) {
-                    if (shouldResetStatus) newStatus = ParticipantStatus.PENDING;
+                    // Allow explicit reset associated with "Re-invite" (REJECTED -> PENDING)
+                    if (p.status === ParticipantStatus.PENDING && existing.status === ParticipantStatus.REJECTED) {
+                        newStatus = ParticipantStatus.PENDING;
+                    } else if (shouldResetStatus) {
+                        newStatus = ParticipantStatus.PENDING;
+                    }
                 } else {
                     if (newStatus === ParticipantStatus.PENDING) newStatus = ParticipantStatus.ACCEPTED;
                 }
@@ -223,7 +228,15 @@ export class TransactionParticipantsService {
                     }
                 });
 
-                if (shouldResetStatus && existing.userId) {
+                if (newStatus === ParticipantStatus.PENDING && existing.status === ParticipantStatus.REJECTED) {
+                    await this.notificationsService.create(
+                        existing.userId,
+                        'transaction_invitation',
+                        'Re-invitation Received',
+                        `${transaction.creator.name} re-invited you to the transaction: "${transaction.description || 'No description'}".`,
+                        { transactionId: transaction.id }
+                    );
+                } else if (shouldResetStatus && existing.userId) {
                     await this.notificationsService.create(
                         existing.userId,
                         'transaction_update',
@@ -337,6 +350,12 @@ export class TransactionParticipantsService {
         });
 
         if (status === ParticipantStatus.ACCEPTED && Number(participant.shareAmount) === 0) {
+            await this.transactionSharesService.recalculateDynamicShares(transaction.id);
+        } else if (status === ParticipantStatus.REJECTED) {
+            await this.prisma.transactionParticipant.update({
+                where: { id: participant.id },
+                data: { shareAmount: 0, sharePercent: 0 }
+            });
             await this.transactionSharesService.recalculateDynamicShares(transaction.id);
         }
 

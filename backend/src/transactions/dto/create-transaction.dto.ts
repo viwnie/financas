@@ -77,4 +77,8 @@ export class TransactionParticipantDto {
     @IsOptional()
     @IsString()
     username?: string;
+
+    @IsOptional()
+    @IsString()
+    status?: string;
 }

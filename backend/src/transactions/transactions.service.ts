@@ -123,7 +123,7 @@ export class TransactionsService {
                     }
                 },
                 installments: true,
-                participants: { include: { user: { select: { name: true, username: true } } } }
+                participants: { include: { user: { select: { name: true, username: true, avatarMimeType: true } } } }
             },
             orderBy: { date: 'desc' }
         });

@@ -35,6 +35,8 @@ const translations = {
         'notifications.reject': 'Reject',
         'notifications.friendRequestUpdated': 'Friend request updated',
         'notifications.invitationUpdated': 'Invitation updated',
+        'notifications.clearAll': 'Clear All',
+        'notifications.allDeleted': 'All notifications cleared',
     },
     pt: {
         // ... (existing pt)
@@ -64,6 +66,8 @@ const translations = {
         'notifications.reject': 'Rejeitar',
         'notifications.friendRequestUpdated': 'Solicitação de amizade atualizada',
         'notifications.invitationUpdated': 'Convite atualizado',
+        'notifications.clearAll': 'Limpar Tudo',
+        'notifications.allDeleted': 'Todas as notificações foram limpas',
     },
     es: {
         'dashboard.welcome': 'Bienvenido',
@@ -92,6 +96,8 @@ const translations = {
         'notifications.reject': 'Rechazar',
         'notifications.friendRequestUpdated': 'Solicitud de amistad actualizada',
         'notifications.invitationUpdated': 'Invitación actualizada',
+        'notifications.clearAll': 'Limpiar Todo',
+        'notifications.allDeleted': 'Todas las notificaciones borradas',
     }
 };
 

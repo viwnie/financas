@@ -160,6 +160,16 @@ export function NotificationCenter() {
         },
     });
 
+    const deleteAllNotificationsMutation = useMutation({
+        mutationFn: async () => {
+            await api.delete('/notifications');
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            toast.success(t('notifications.allDeleted') || 'All notifications cleared');
+        },
+    });
+
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
@@ -176,8 +186,18 @@ export function NotificationCenter() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-96 p-0">
-                <div className="p-4 border-b">
+                <div className="p-4 border-b flex justify-between items-center">
                     <h4 className="font-semibold leading-none">{t('notifications.title')}</h4>
+                    {persistentNotifications.length > 0 && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteAllNotificationsMutation.mutate()}
+                        >
+                            {t('notifications.clearAll') || 'Clear All'}
+                        </Button>
+                    )}
                 </div>
 
                 <Tabs defaultValue="all" className="w-full">

@@ -57,6 +57,11 @@ export class TransactionsController {
         return this.transactionParticipantsService.respondToInvitation(id, req.user.userId, body.status);
     }
 
+    @Post('actions/respond-all')
+    respondAll(@Request() req, @Body() body: { status: ParticipantStatus }) {
+        return this.transactionsService.respondAll(req.user.userId, body.status);
+    }
+
     @Post(':id/leave')
     leave(@Param('id') id: string, @Request() req) {
         return this.transactionParticipantsService.leaveTransaction(id, req.user.userId);

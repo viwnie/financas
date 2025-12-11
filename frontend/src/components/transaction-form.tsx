@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,7 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, X, Search, UserPlus, Clock, Check } from 'lucide-react';
+import { CalendarIcon, Plus, X, Search, UserPlus, Clock, Check, Trash2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -29,6 +29,7 @@ const participantSchema = z.object({
     amount: z.coerce.number().optional(),
     percent: z.coerce.number().optional(),
     status: z.string().optional(),
+    hasAvatar: z.boolean().optional(),
 });
 
 const transactionSchema = z.object({
@@ -54,26 +55,23 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     const [friendSearch, setFriendSearch] = useState('');
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-    const defaultParticipants = initialData?.participants
-        ? initialData.participants
-            .filter((p: any) => p.userId !== user?.id)
-            .map((p: any) => ({
-                id: p.id,
-                userId: p.userId,
-                username: p.user?.username,
-                name: p.user?.name || p.placeholderName || 'Unknown',
-                amount: p.shareAmount !== null ? parseFloat(p.shareAmount) : parseFloat(p.baseShareAmount || '0'),
-                percent: p.sharePercent !== null ? parseFloat(p.sharePercent) : parseFloat(p.baseSharePercent || '0'),
-                amount: p.shareAmount !== null ? parseFloat(p.shareAmount) : parseFloat(p.baseShareAmount || '0'),
-                percent: p.sharePercent !== null ? parseFloat(p.sharePercent) : parseFloat(p.baseSharePercent || '0'),
-                status: p.status,
-                hasAvatar: !!p.user?.avatarMimeType
-            }))
-        : [];
+    const defaultValues: TransactionFormValues = React.useMemo(() => {
+        const participants = initialData?.participants
+            ? initialData.participants
+                .filter((p: any) => p.userId !== user?.id)
+                .map((p: any) => ({
+                    id: p.id,
+                    userId: p.userId,
+                    username: p.user?.username,
+                    name: p.user?.name || p.placeholderName || 'Unknown',
+                    amount: p.shareAmount !== null ? parseFloat(p.shareAmount) : parseFloat(p.baseShareAmount || '0'),
+                    percent: p.sharePercent !== null ? parseFloat(p.sharePercent) : parseFloat(p.baseSharePercent || '0'),
+                    status: p.status,
+                    hasAvatar: !!p.user?.avatarMimeType
+                }))
+            : [];
 
-    const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<TransactionFormValues>({
-        resolver: zodResolver(transactionSchema) as any,
-        defaultValues: {
+        return {
             type: initialData?.type || 'EXPENSE',
             amount: initialData ? parseFloat(initialData.amount) : undefined,
             description: initialData?.description || '',
@@ -83,9 +81,21 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             isFixed: initialData?.isFixed || false,
             installmentsCount: initialData?.installmentsCount || 1,
             isShared: initialData?.isShared || false,
-            participants: defaultParticipants,
-        },
+            participants: participants,
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialData, user?.id]);
+
+    const { register, control, handleSubmit, setValue, watch, reset, formState: { errors, isDirty } } = useForm<TransactionFormValues>({
+        resolver: zodResolver(transactionSchema) as any,
+        defaultValues,
     });
+
+    useEffect(() => {
+        if (initialData) {
+            reset(defaultValues);
+        }
+    }, [initialData, reset]);
 
     const { fields, append, remove, update, replace } = useFieldArray({
         control,
@@ -854,7 +864,20 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end gap-2 pt-4">
+                {isDirty && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                            reset();
+                        }}
+                        className="text-muted-foreground hover:text-destructive"
+                    >
+                        {transactionId ? <RotateCcw className="w-4 h-4 mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                        {transactionId ? 'Reverter alterações' : 'Limpar'}
+                    </Button>
+                )}
                 <Button type="submit" className="w-[150px]" disabled={mutation.isPending}>
                     {mutation.isPending ? (transactionId ? 'Alterando...' : 'Salvando...') : (transactionId ? 'Alterar' : 'Salvar')}
                 </Button>

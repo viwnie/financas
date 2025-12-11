@@ -16,6 +16,7 @@ import { ConfirmationModal } from '@/components/confirmation-modal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Edit } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 
 interface Transaction {
     id: string;
@@ -127,6 +128,24 @@ export default function TransactionsPage() {
         },
     });
 
+    const respondAllMutation = useMutation({
+        mutationFn: async (status: 'ACCEPTED' | 'REJECTED') => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions/actions/respond-all`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ status })
+            });
+            if (!res.ok) throw new Error('Failed to respond all');
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            toast.success('Todas as convites foram respondidos.');
+        },
+    });
+
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
         type: 'DELETE' | 'LEAVE' | 'REJECT' | null;
@@ -217,9 +236,21 @@ export default function TransactionsPage() {
             <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h1 className="text-3xl font-bold">Transactions</h1>
-                    <Button variant="outline" onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}>
-                        Export CSV
-                    </Button>
+                    <div className="flex gap-2">
+                        {transactions.some(t => t.participants.some(p => p.userId === user?.id && p.status === 'PENDING')) && (
+                            <>
+                                <Button size="sm" onClick={() => respondAllMutation.mutate('ACCEPTED')} className="bg-green-600 hover:bg-green-700 text-white">
+                                    Aceitar Todos
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => respondAllMutation.mutate('REJECTED')}>
+                                    Recusar Todos
+                                </Button>
+                            </>
+                        )}
+                        <Button variant="outline" onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}>
+                            Export CSV
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Inline Creation Form */}

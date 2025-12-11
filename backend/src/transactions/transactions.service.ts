@@ -227,4 +227,25 @@ export class TransactionsService {
             }
         };
     }
+
+    async respondAll(userId: string, status: ParticipantStatus) {
+        const pending = await this.prisma.transactionParticipant.findMany({
+            where: {
+                userId,
+                status: ParticipantStatus.PENDING
+            },
+            select: { transactionId: true }
+        });
+
+        const results: any[] = [];
+        for (const p of pending) {
+            try {
+                await this.transactionParticipantsService.respondToInvitation(p.transactionId, userId, status);
+                results.push({ id: p.transactionId, success: true });
+            } catch (error) {
+                results.push({ id: p.transactionId, success: false, error: error.message });
+            }
+        }
+        return results;
+    }
 }

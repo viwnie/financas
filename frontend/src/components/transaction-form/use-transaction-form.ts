@@ -85,7 +85,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
         defaultValues,
     });
 
-    const { control, reset, watch, setValue, handleSubmit, formState: { errors } } = form;
+    const { control, reset, watch, setValue, handleSubmit, formState: { errors, touchedFields } } = form;
 
     const { fields, append, remove, replace } = useFieldArray({
         control,
@@ -139,7 +139,12 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
     // Suggestion logic
     useEffect(() => {
         if (prediction && prediction.category) {
-            if ((!categoryName || isAutoFilled) && description && description.length >= 3) {
+            const currentCategoryName = form.getValues('categoryName');
+            const isTouched = form.formState.touchedFields.categoryName;
+
+            // Only apply if field is not touched, OR if it's empty, OR if we previously autofilled it
+            // ensuring we don't overwrite user manual edits unless implicit overwrite is safe
+            if (!isTouched && (!currentCategoryName || isAutoFilled) && description && description.length >= 3) {
                 setValue('categoryName', prediction.category.name);
                 if (prediction.category.color) {
                     setValue('categoryColor', prediction.category.color);
@@ -152,7 +157,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
                 });
             }
         }
-    }, [prediction, setValue, categoryName, isAutoFilled, description]);
+    }, [prediction, isAutoFilled, description, setValue, form]); // Keeping isAutoFilled/description/form in deps is safer for closure correctness, but KEY is removing categoryName and touchedFields. Actually, strictly, removing categoryName is the fix.
 
     const learnMutation = useMutation({
         mutationFn: async (data: { description: string, categoryId: string }) => {

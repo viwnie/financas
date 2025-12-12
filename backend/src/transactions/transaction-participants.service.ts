@@ -297,6 +297,18 @@ export class TransactionParticipantsService {
                         baseSharePercent: creatorNewPercent
                     }
                 });
+            } else {
+                await client.transactionParticipant.create({
+                    data: {
+                        transactionId: transaction.id,
+                        userId: transaction.creatorId,
+                        shareAmount: creatorNewAmount,
+                        sharePercent: creatorNewPercent,
+                        baseShareAmount: creatorNewAmount, // Ensure consistency
+                        baseSharePercent: creatorNewPercent,
+                        status: ParticipantStatus.ACCEPTED
+                    }
+                });
             }
 
             await this.transactionSharesService.recalculateDynamicShares(transaction.id, tx);

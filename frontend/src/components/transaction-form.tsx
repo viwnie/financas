@@ -59,7 +59,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     <Input {...register('description')} placeholder={t('transactions.descriptionPlaceholder')} />
                 </div>
 
-                <div className="w-[200px] space-y-2">
+                <div className="w-[300px] space-y-2">
                     <Label>{t('transactions.amount')}</Label>
                     <MoneyInput
                         amount={totalAmount}
@@ -70,6 +70,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                         onCurrencyChange={(val) => {
                             setValue('currency', val, { shouldDirty: true });
                         }}
+                        type={type}
+                        onTypeChange={(val) => setValue('type', val)}
                     />
                     {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
                     {isShared && (totalAmount || 0) > 0 && (
@@ -79,19 +81,6 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                             </span>
                         </div>
                     )}
-                </div>
-
-                <div className="w-[140px] space-y-2">
-                    <Label>{t('transactions.type')}</Label>
-                    <Select onValueChange={(val) => setValue('type', val as 'INCOME' | 'EXPENSE')} defaultValue={type}>
-                        <SelectTrigger>
-                            <SelectValue placeholder={t('transactions.select')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="INCOME">{t('transactions.income')}</SelectItem>
-                            <SelectItem value="EXPENSE">{t('transactions.expense')}</SelectItem>
-                        </SelectContent>
-                    </Select>
                 </div>
 
                 <div className="w-[160px] space-y-2 flex flex-col">

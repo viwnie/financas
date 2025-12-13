@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Plus, Minus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -15,6 +16,8 @@ interface MoneyInputProps {
     currency: string;
     onAmountChange: (value: number) => void;
     onCurrencyChange: (currency: string) => void;
+    type?: 'INCOME' | 'EXPENSE';
+    onTypeChange?: (type: 'INCOME' | 'EXPENSE') => void;
     disabled?: boolean;
     className?: string;
     placeholder?: string;
@@ -25,6 +28,8 @@ export function MoneyInput({
     currency,
     onAmountChange,
     onCurrencyChange,
+    type,
+    onTypeChange,
     disabled,
     className,
     placeholder
@@ -72,15 +77,50 @@ export function MoneyInput({
         onAmountChange(numberValue);
     };
 
+    const isIncome = type === 'INCOME';
+    const showTypeSelector = !!onTypeChange;
+
     return (
         <div className={cn("relative flex items-center", className)}>
             <div className="absolute left-0 top-0 bottom-0 flex items-center z-10">
+                {showTypeSelector && (
+                    <Select
+                        value={type}
+                        onValueChange={(val) => onTypeChange(val as 'INCOME' | 'EXPENSE')}
+                        disabled={disabled}
+                    >
+                        <SelectTrigger
+                            className={cn(
+                                "h-9 w-[60px] border-0 rounded-r-none bg-muted hover:bg-muted/80 focus:ring-0 focus:ring-offset-0 gap-1 px-2 shadow-none justify-center",
+                                isIncome ? "text-emerald-600" : "text-red-500"
+                            )}
+                        >
+                            <SelectValue>
+                                {isIncome ? <Plus className="h-5 w-5" strokeWidth={3} /> : <Minus className="h-5 w-5" strokeWidth={3} />}
+                            </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="INCOME" className="text-emerald-600 font-bold text-base">
+                                <span className="flex items-center gap-2"><Plus className="h-4 w-4" /> Receita</span>
+                            </SelectItem>
+                            <SelectItem value="EXPENSE" className="text-red-500 font-bold text-base">
+                                <span className="flex items-center gap-2"><Minus className="h-4 w-4" /> Despesa</span>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                )}
+
                 <Select
                     value={currency}
                     onValueChange={onCurrencyChange}
                     disabled={disabled}
                 >
-                    <SelectTrigger className="h-9 w-[70px] border-0 rounded-r-none bg-muted hover:bg-muted/80 focus:ring-0 focus:ring-offset-0 gap-1 px-2 text-muted-foreground shadow-none">
+                    <SelectTrigger
+                        className={cn(
+                            "h-9 w-[60px] border-0 bg-muted hover:bg-muted/80 focus:ring-0 focus:ring-offset-0 gap-1 px-2 text-muted-foreground shadow-none",
+                            showTypeSelector ? "rounded-none border-l-0" : "rounded-r-none"
+                        )}
+                    >
                         <SelectValue placeholder="Moeda">
                             {getCurrencySymbol(currency)}
                         </SelectValue>
@@ -101,7 +141,11 @@ export function MoneyInput({
                 value={inputValue}
                 onChange={handleInputChange}
                 disabled={disabled}
-                className="pl-[80px] text-right font-mono"
+                className={cn(
+                    "text-right font-mono font-medium",
+                    showTypeSelector ? "pl-[140px]" : "pl-[90px]",
+                    isIncome ? "text-emerald-600" : "text-red-500"
+                )}
                 placeholder={placeholder || ''}
             />
         </div>

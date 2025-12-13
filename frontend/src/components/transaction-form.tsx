@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { RotateCcw, Trash2, Repeat, Users } from 'lucide-react';
 import { useTransactionForm } from './transaction-form/use-transaction-form';
 import { TransactionCategoryInput } from './transaction-form/transaction-category-input';
 import { TransactionDatePicker } from './transaction-form/transaction-date-picker';
 import { TransactionParticipants } from './transaction-form/transaction-participants';
 import { useLanguage } from '@/contexts/language-context';
 import { MoneyInput } from '@/components/ui/money-input';
+import { Switch } from '@/components/ui/switch';
 
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
     const { t } = useLanguage();
@@ -120,29 +121,50 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     </div>
                 )}
 
-                <div className="flex items-center gap-6 pt-8">
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id={`isFixed-${transactionId || 'new'}`}
-                            checked={watch('isFixed')}
-                            onCheckedChange={(checked) => setValue('isFixed', checked as boolean)}
-                        />
-                        <Label htmlFor={`isFixed-${transactionId || 'new'}`}>{t('transactions.monthlyFixed')}</Label>
-                    </div>
+            </div>
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id={`isShared-${transactionId || 'new'}`}
-                            checked={watch('isShared')}
-                            onCheckedChange={(checked) => {
-                                setValue('isShared', checked as boolean);
-                                if (!checked) {
-                                    replace([]);
-                                }
-                            }}
-                        />
-                        <Label htmlFor={`isShared-${transactionId || 'new'}`}>{t('transactions.shareWithFriends')}</Label>
+            <div className="space-y-4 pt-4">
+                <div className="border rounded-lg p-4 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                            <Repeat className="w-4 h-4 text-muted-foreground" />
+                            <Label htmlFor={`isFixed-${transactionId || 'new'}`} className="text-base font-medium">
+                                {t('transactions.monthlyFixed')}
+                            </Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            {t('transactions.monthlyFixedDescription')}
+                        </p>
                     </div>
+                    <Switch
+                        id={`isFixed-${transactionId || 'new'}`}
+                        checked={watch('isFixed')}
+                        onCheckedChange={(checked) => setValue('isFixed', checked as boolean)}
+                    />
+                </div>
+
+                <div className="border rounded-lg p-4 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <Label htmlFor={`isShared-${transactionId || 'new'}`} className="text-base font-medium">
+                                {t('transactions.shareWithFriends')}
+                            </Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            {t('transactions.shareWithFriendsDescription')}
+                        </p>
+                    </div>
+                    <Switch
+                        id={`isShared-${transactionId || 'new'}`}
+                        checked={watch('isShared')}
+                        onCheckedChange={(checked) => {
+                            setValue('isShared', checked as boolean);
+                            if (!checked) {
+                                replace([]);
+                            }
+                        }}
+                    />
                 </div>
             </div>
 

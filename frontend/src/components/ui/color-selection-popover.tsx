@@ -37,9 +37,11 @@ interface ColorSelectionPopoverProps {
     showManageLink?: boolean;
     onClose?: () => void;
     trigger?: React.ReactNode;
+    side?: "top" | "bottom" | "left" | "right";
+    align?: "start" | "center" | "end";
 }
 
-export function ColorSelectionPopover({ id = 'color-picker', selectedColor, onSelect, showManageLink = false, onClose, trigger }: ColorSelectionPopoverProps) {
+export function ColorSelectionPopover({ id = 'color-picker', selectedColor, onSelect, showManageLink = false, onClose, trigger, side = "bottom", align = "start" }: ColorSelectionPopoverProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -60,7 +62,13 @@ export function ColorSelectionPopover({ id = 'color-picker', selectedColor, onSe
                     />
                 )}
             </PopoverTrigger>
-            <PopoverContent className="w-[320px] p-4" align="start">
+            <PopoverContent
+                className="w-[320px] p-4 overflow-y-auto"
+                align={align}
+                side={side}
+                collisionPadding={16}
+                style={{ maxHeight: 'var(--radix-popover-content-available-height)' }}
+            >
                 <ColorSelectionContent
                     selectedColor={selectedColor}
                     onSelect={(c) => {

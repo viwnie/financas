@@ -196,7 +196,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                     {!isGradientMode ? (
                         /* Solid Color UI */
                         <div className="space-y-3">
-                            <div className="w-full flex justify-center [&_.react-colorful]:w-full [&_.react-colorful]:h-[150px]">
+                            <div className="w-full flex justify-center [&_.react-colorful]:w-full [&_.react-colorful]:h-[100px]">
                                 <HexColorPicker color={customColor} onChange={(c) => { setCustomColor(c); onSelect(c); }} />
                             </div>
                             <div className="flex items-center space-x-2 w-full">
@@ -261,7 +261,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                             </div>
 
                             {/* Main Picker */}
-                            <div className="w-full flex justify-center [&_.react-colorful]:w-full [&_.react-colorful]:h-[150px]">
+                            <div className="w-full flex justify-center [&_.react-colorful]:w-full [&_.react-colorful]:h-[100px]">
                                 <HexColorPicker
                                     color={activeGradientStop === 'start' ? gradientStart : gradientEnd}
                                     onChange={(c) => {

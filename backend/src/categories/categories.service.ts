@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { TranslationService } from '../common/translation.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -243,6 +243,33 @@ export class CategoriesService {
         }));
 
         return scored.sort((a, b) => b.score - a.score);
+    }
+
+    async remove(userId: string, id: string) {
+        const category = await this.prisma.category.findUnique({
+            where: { id },
+            include: { _count: { select: { transactions: true } } }
+        });
+
+        if (!category) {
+            throw new NotFoundException('Category not found');
+        }
+
+        if (category.isSystem) {
+            throw new ForbiddenException('Cannot delete system categories');
+        }
+
+        if (category.userId !== userId) {
+            throw new ForbiddenException('You can only delete your own categories');
+        }
+
+        if (category._count.transactions > 0) {
+            throw new BadRequestException('Cannot delete category with associated transactions');
+        }
+
+        return this.prisma.category.delete({
+            where: { id }
+        });
     }
 
     @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

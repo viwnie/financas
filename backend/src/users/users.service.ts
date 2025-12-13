@@ -198,4 +198,38 @@ export class UsersService {
             mimeType: user.avatarMimeType || 'image/jpeg',
         };
     }
+
+    async getSavedColors(userId: string): Promise<string[]> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { savedColors: true }
+        });
+        return user?.savedColors || [];
+    }
+
+    async addSavedColor(userId: string, color: string): Promise<string[]> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { savedColors: true }
+        });
+
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        const currentColors = user.savedColors || [];
+        // Avoid duplicates and limit if necessary (e.g. 50 colors)
+        if (!currentColors.includes(color)) {
+            // Limit to 20 saved colors for now to keep things sane
+            const newColors = [...currentColors, color].slice(-20);
+
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { savedColors: newColors }
+            });
+            return newColors;
+        }
+
+        return currentColors;
+    }
 }

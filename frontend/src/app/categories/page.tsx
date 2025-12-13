@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Trash2, Loader2, Plus, ChevronDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { useLanguage } from '@/contexts/language-context';
@@ -10,9 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Plus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ColorSelectionPopover } from '@/components/ui/color-selection-popover';
+import { ColorSelectionContent } from '@/components/ui/color-selection-content';
 
 interface Category {
     id: string;
@@ -23,37 +26,11 @@ interface Category {
     translations: { language: string; name: string }[];
 }
 
-import { ColorSelectionPopover } from '@/components/ui/color-selection-popover';
-
-function CategoryColorPicker({ id, initialColor, onUpdate }: { id: string, initialColor: string | null, onUpdate: (id: string, color: string) => void }) {
-    const [color, setColor] = useState(initialColor);
-
-    useEffect(() => {
-        if (!color) return;
-        if (color === initialColor) return;
-
-        const timer = setTimeout(() => {
-            onUpdate(id, color);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [color, id, initialColor, onUpdate]);
-
-    return (
-        <ColorSelectionPopover
-            id={id}
-            selectedColor={initialColor}
-            onSelect={(c) => {
-                setColor(c);
-            }}
-            showManageLink={false}
-        />
-    );
-}
-
 export default function CategoriesPage() {
     const { token } = useAuthStore();
     const { locale } = useLanguage();
     const queryClient = useQueryClient();
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     const { data: categories = [], isLoading } = useQuery<Category[]>({
         queryKey: ['categories'],
@@ -81,13 +58,83 @@ export default function CategoriesPage() {
             return res.json();
         },
         onSuccess: () => {
-            toast.success('Category color updated');
+            // Removed generic success toast to avoid spamming while dragging/picking colors
+            // toast.success('Category color updated');
+            // Instead, rely on the visual update which is already instant due to local mutation state or query invalidation
             queryClient.invalidateQueries({ queryKey: ['categories'] });
         },
         onError: () => {
             toast.error('Failed to update color');
         }
     });
+
+    const createCategoryMutation = useMutation({
+        mutationFn: async (data: { name: string; color: string }) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/categories`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error('Failed to create category');
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success('Category created successfully');
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+
+            setNewCategoryName('');
+            setNewCategoryColor(null);
+        },
+        onError: () => {
+            toast.error('Failed to create category');
+        }
+    });
+
+    const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+
+    const deleteCategoryMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/categories/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (!res.ok) throw new Error('Failed to delete category');
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success('Category deleted successfully');
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            setCategoryToDelete(null);
+        },
+        onError: () => {
+            toast.error('Failed to delete category');
+        }
+    });
+
+    const confirmDeleteCategory = () => {
+        if (categoryToDelete) {
+            deleteCategoryMutation.mutate(categoryToDelete);
+        }
+    };
+
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryColor, setNewCategoryColor] = useState<string | null>(null);
+
+    const handleCreateCategory = () => {
+        if (!newCategoryName.trim()) {
+            toast.error('Category name is required');
+            return;
+        }
+        createCategoryMutation.mutate({
+            name: newCategoryName,
+            color: newCategoryColor || '#e2e8f0'
+        });
+    };
 
     const handleColorChange = (id: string, color: string) => {
         updateColorMutation.mutate({ id, color });
@@ -131,35 +178,137 @@ export default function CategoriesPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {categories.map((category) => (
-                        <Card key={category.id} className="overflow-hidden">
-                            <CardHeader className="pb-4">
-                                <div className="flex justify-between items-center">
-                                    <div
-                                        className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border"
-                                        style={{ background: category.color || '#e2e8f0' }}
+                {/* Inline Creation Card */}
+                <Card className="border-dashed border-2 bg-muted/20">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Create New Category</CardTitle>
+                        <CardDescription>Add a new category to organize your transactions.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className="space-y-2">
+                                <Label>Color</Label>
+                                <div className="flex items-center gap-2">
+                                    <ColorSelectionPopover
+                                        selectedColor={newCategoryColor}
+                                        onSelect={setNewCategoryColor}
+                                        showManageLink={false}
                                     />
-                                    {category.isSystem && (
-                                        <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">System</span>
-                                    )}
                                 </div>
-                                <CardTitle className="mt-2 text-xl truncate" title={category.name}>
-                                    {getCategoryDisplayName(category)}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-
-                                <CategoryColorPicker
-                                    id={category.id}
-                                    initialColor={category.color}
-                                    onUpdate={handleColorChange}
+                            </div>
+                            <div className="space-y-2 flex-1 w-full max-w-sm">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    placeholder="e.g., Groceries"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
                                 />
-                            </CardContent>
+                            </div>
+                            <Button
+                                onClick={handleCreateCategory}
+                                disabled={createCategoryMutation.isPending}
+                                className="w-full md:w-auto"
+                            >
+                                {createCategoryMutation.isPending ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Plus className="mr-2 h-4 w-4" />
+                                )}
+                                Create Category
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                    {categories.map((category) => (
+                        <Card
+                            key={category.id}
+                            className={cn(
+                                "overflow-hidden transition-all duration-300 ease-in-out",
+                                expandedId === category.id ? "ring-2 ring-primary shadow-md" : "hover:border-primary/50"
+                            )}
+                        >
+                            <CardHeader
+                                className="cursor-pointer select-none group"
+                                onClick={() => setExpandedId(expandedId === category.id ? null : category.id)}
+                            >
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="h-8 w-8 rounded-full shadow-sm ring-1 ring-border"
+                                            style={{ background: category.color || '#e2e8f0' }}
+                                        />
+                                        <CardTitle className="text-lg truncate group-hover:text-primary transition-colors" title={category.name}>
+                                            {getCategoryDisplayName(category)}
+                                        </CardTitle>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <ChevronDown
+                                            className={cn(
+                                                "h-5 w-5 text-muted-foreground transition-transform duration-300",
+                                                expandedId === category.id && "rotate-180"
+                                            )}
+                                        />
+                                        {!category.isSystem && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10 z-10"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setCategoryToDelete(category.id);
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {category.isSystem && (
+                                            <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">System</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <div
+                                className={cn(
+                                    "grid transition-[grid-template-rows] duration-300 ease-in-out border-t bg-muted/10",
+                                    expandedId === category.id ? "grid-rows-[1fr]" : "grid-rows-[0fr] border-none"
+                                )}
+                            >
+                                <div className="overflow-hidden">
+                                    <CardContent className="pt-4">
+                                        <ColorSelectionContent
+                                            selectedColor={category.color}
+                                            onSelect={(c) => handleColorChange(category.id, c)}
+                                            showManageLink={false}
+                                            onClose={() => setExpandedId(null)}
+                                        />
+                                    </CardContent>
+                                </div>
+                            </div>
                         </Card>
                     ))}
                 </div>
             </div>
+
+            <Dialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Category</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this category? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCategoryToDelete(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={confirmDeleteCategory} disabled={deleteCategoryMutation.isPending}>
+                            {deleteCategoryMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

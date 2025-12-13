@@ -5,7 +5,7 @@ import { TransactionFormValues } from './use-transaction-form';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/language-context';
 import { Search } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 import { ColorSelectionPopover } from '@/components/ui/color-selection-popover';
 
 interface TransactionCategoryInputProps {
@@ -32,7 +32,7 @@ export function TransactionCategoryInput({
 }: TransactionCategoryInputProps) {
     const { register, setValue, watch, formState: { errors } } = form;
     const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
-    const [openColorPicker, setOpenColorPicker] = useState(false);
+
     const { t } = useLanguage();
 
     return (
@@ -46,23 +46,18 @@ export function TransactionCategoryInput({
 
 
             <div className="absolute left-9 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10">
-                <Popover open={openColorPicker} onOpenChange={setOpenColorPicker}>
-                    <PopoverTrigger asChild>
+                <ColorSelectionPopover
+                    selectedColor={watch('categoryColor')}
+                    onSelect={(color) => setValue('categoryColor', color)}
+                    showManageLink={true}
+                    trigger={
                         <div
                             className="w-4 h-4 rounded-full border cursor-pointer shadow-sm transition-transform active:scale-95 hover:scale-110 ring-2 ring-background"
                             style={{ background: watch('categoryColor') || '#e2e8f0' }}
                             title={t('transactions.chooseColor')}
                         />
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-3" align="start">
-                        <ColorSelectionPopover
-                            selectedColor={watch('categoryColor')}
-                            onSelect={(color) => setValue('categoryColor', color)}
-                            showManageLink={true}
-                            onClose={() => setOpenColorPicker(false)}
-                        />
-                    </PopoverContent>
-                </Popover>
+                    }
+                />
             </div>
 
             <input

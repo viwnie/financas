@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request, Patch, Body, UseInterceptors, UploadedFile, BadRequestException, Res, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Request, Patch, Body, UseInterceptors, UploadedFile, BadRequestException, Res, Param } from '@nestjs/common';
 import { Buffer } from 'buffer';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -37,6 +37,19 @@ export class UsersController {
             data['avatarMimeType'] = file.mimetype;
         }
         return this.usersService.update(req.user.userId, data);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('me/colors')
+    async getSavedColors(@Request() req) {
+        return this.usersService.getSavedColors(req.user.userId);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('me/colors')
+    async addSavedColor(@Request() req, @Body('color') color: string) {
+        if (!color) throw new BadRequestException('Color is required');
+        return this.usersService.addSavedColor(req.user.userId, color);
     }
 
     @Get('check-username')

@@ -43,6 +43,7 @@ model User {
   avatarMimeType String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  savedColors String[] @default([])
 
   // Relations
   sentFriendRequests     Friendship[] @relation("FriendshipRequester")

@@ -54,7 +54,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
     return (
         <form onSubmit={onSubmit} className="space-y-4" >
             <div className="flex flex-wrap gap-4 items-start">
-                <div className="flex-1 min-w-[200px] space-y-2">
+                <div className="w-[400px] space-y-2">
                     <Label>{t('transactions.description')}</Label>
                     <Input {...register('description')} placeholder={t('transactions.descriptionPlaceholder')} />
                     {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
@@ -96,13 +96,13 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             </div>
 
             <div className="flex flex-wrap gap-4 items-start">
-                <div className="flex-1 min-w-[200px] space-y-2">
+                <div className="w-[400px] space-y-2">
                     <Label>{t('transactions.category')}</Label>
                     <TransactionCategoryInput
                         form={form}
                         categorySuggestions={categorySuggestions}
                         isLoadingSuggestions={isLoadingSuggestions}
-                        debouncedCategoryName={debouncedCategoryName}
+                        debouncedCategoryName={debouncedCategoryName || ''}
                         isAutoFilled={isAutoFilled}
                         setIsAutoFilled={setIsAutoFilled}
                         learnMutation={learnMutation}

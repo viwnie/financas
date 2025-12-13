@@ -21,7 +21,8 @@ const participantSchema = z.object({
 
 export const transactionSchema = z.object({
     type: z.enum(['INCOME', 'EXPENSE']),
-    amount: z.coerce.number().min(0.01, 'Amount must be positive'),
+    amount: z.coerce.number().min(0, 'Informe o valor'),
+    currency: z.string().optional(),
     description: z.string().optional(),
     date: z.date(),
     categoryName: z.string().min(1, 'Category is required'),
@@ -66,9 +67,14 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
                 }))
             : [];
 
+        let defaultCurrency = 'USD';
+        if (locale === 'pt-BR') defaultCurrency = 'BRL';
+        else if (locale === 'es') defaultCurrency = 'EUR';
+
         return {
             type: initialData?.type || 'EXPENSE',
             amount: initialData ? parseFloat(initialData.amount) : undefined,
+            currency: initialData?.currency || defaultCurrency,
             description: initialData?.description || '',
             date: initialData ? new Date(initialData.date) : new Date(),
             categoryName: initialData?.category?.name || '',
@@ -78,7 +84,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             isShared: initialData?.isShared || false,
             participants: participants,
         };
-    }, [initialData, user?.id]);
+    }, [initialData, user?.id, locale]);
 
     const form = useForm<TransactionFormValues>({
         resolver: zodResolver(transactionSchema) as any,

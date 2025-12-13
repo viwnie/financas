@@ -12,6 +12,7 @@ import { TransactionCategoryInput } from './transaction-form/transaction-categor
 import { TransactionDatePicker } from './transaction-form/transaction-date-picker';
 import { TransactionParticipants } from './transaction-form/transaction-participants';
 import { useLanguage } from '@/contexts/language-context';
+import { MoneyInput } from '@/components/ui/money-input';
 
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
     const { t } = useLanguage();
@@ -58,14 +59,23 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     <Input {...register('description')} placeholder={t('transactions.descriptionPlaceholder')} />
                 </div>
 
-                <div className="w-[140px] space-y-2">
+                <div className="w-[200px] space-y-2">
                     <Label>{t('transactions.amount')}</Label>
-                    <Input type="number" step="0.01" {...register('amount')} placeholder="0,00" />
+                    <MoneyInput
+                        amount={totalAmount}
+                        currency={watch('currency') || 'BRL'}
+                        onAmountChange={(val) => {
+                            setValue('amount', val, { shouldDirty: true, shouldValidate: true });
+                        }}
+                        onCurrencyChange={(val) => {
+                            setValue('currency', val, { shouldDirty: true });
+                        }}
+                    />
                     {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
                     {isShared && (totalAmount || 0) > 0 && (
                         <div className="text-xs text-muted-foreground mt-1">
                             {t('transactions.youPay')} <span className="font-medium text-primary">
-                                R$ {calculateMyShare().toFixed(2)}
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: watch('currency') || 'BRL' }).format(calculateMyShare())}
                             </span>
                         </div>
                     )}

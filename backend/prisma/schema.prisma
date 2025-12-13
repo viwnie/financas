@@ -159,6 +159,7 @@ model Transaction {
   id          String          @id @default(uuid())
   type        TransactionType
   amount      Decimal         @db.Decimal(10, 2)
+  currency    String          @default("BRL")
   description String?
   date        DateTime
   isShared    Boolean         @default(false)

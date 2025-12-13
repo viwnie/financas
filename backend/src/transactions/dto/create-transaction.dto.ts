@@ -12,6 +12,10 @@ export class CreateTransactionDto {
 
     @IsOptional()
     @IsString()
+    currency?: string;
+
+    @IsOptional()
+    @IsString()
     description?: string;
 
     @IsDateString()
@@ -52,6 +56,7 @@ export class CreateTransactionDto {
     @Type(() => TransactionParticipantDto)
     participants?: TransactionParticipantDto[];
 }
+
 
 export class TransactionParticipantDto {
     @IsOptional()

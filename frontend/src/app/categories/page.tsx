@@ -1,7 +1,7 @@
 'use client';
 
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Trash2, Loader2, Plus, ChevronDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,13 +26,79 @@ interface Category {
     translations: { language: string; name: string }[];
 }
 
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    rectSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { PRESET_GRADIENTS } from '@/components/ui/color-selection-content';
+
+interface SortableColorItemProps {
+    color: string;
+    onDelete: (color: string) => void;
+    isSystem: boolean;
+}
+
+function SortableColorItem({ color, onDelete, isSystem }: SortableColorItemProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: color });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="group relative touch-none">
+            <div
+                className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border cursor-move"
+                style={{ background: color }}
+                title={color}
+            />
+            {!isSystem && (
+                <button
+                    className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md cursor-pointer pointer-events-auto"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(color);
+                    }}
+                    title="Delete color"
+                >
+                    <Trash2 className="h-3 w-3" />
+                </button>
+            )}
+        </div>
+    );
+}
+
 interface ColorManagementSectionProps {
     token: string | null;
     queryClient: any;
 }
 
 function ColorManagementSection({ token, queryClient }: ColorManagementSectionProps) {
-    const { data: savedColors = [] } = useQuery({
+    const [items, setItems] = useState<string[]>([]);
+
+    // Fetch user saved colors
+    const { data: savedColors = [], isSuccess } = useQuery({
         queryKey: ['saved-colors'],
         queryFn: async () => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/me/colors`, {
@@ -44,47 +110,135 @@ function ColorManagementSection({ token, queryClient }: ColorManagementSectionPr
         enabled: !!token
     });
 
+    // Initialize/Sync items when query succeeds
+    useEffect(() => {
+        if (isSuccess) {
+            // Logic: 
+            // 1. If user has NO saved colors at all (empty array from DB), we assume first load.
+            //    We merge PRESET_GRADIENTS + empty. 
+            // 2. If user HAS saved colors, we check if they contain the system colors.
+            //    To support the "user can reorder everything" req, we must treat the DB list as the master list.
+            //    BUT if the DB list is just "custom colors" (old behavior), it won't have system colors.
+            //    So we fallback: If the DB list doesn't overlap significantly with system colors, we likely need to merge them.
+            //    Simplest approach: If DB list is empty, use presets. If DB list is present, use it.
+            //    However, to migrating old users who have 0 saved colors, we want them to see system colors.
+            //    What if they deleted everything? We should probably allow restoring defaults? 
+            //    Let's assume: If savedColors is empty, use PRESET_GRADIENTS.
+            //    Wait, what if they just have 1 custom color? Then we lose system colors?
+            //    Better: Merge unique(savedColors + PRESET_GRADIENTS). 
+            //    But order matters. If savedColors has data, we trust its order.
+            //    If savedColors is missing system colors that *should* be there, we append them?
+            //    Let's try: If savedColors is empty, init with PRESET_GRADIENTS.
+
+            if (savedColors.length === 0) {
+                setItems(PRESET_GRADIENTS);
+            } else {
+                // Check if it contains system colors. 
+                // If the user has saved colors but they are disjoint from presets (i.e. old data),
+                // we might want to merge.
+                const hasSystemColors = savedColors.some((c: string) => PRESET_GRADIENTS.includes(c));
+                if (!hasSystemColors) {
+                    // Old data only had custom colors. Prepend presets.
+                    setItems([...PRESET_GRADIENTS, ...savedColors]);
+                } else {
+                    // Has system colors, so we trust the order from DB.
+                    setItems(savedColors);
+                }
+            }
+        }
+    }, [savedColors, isSuccess]);
+
+    const updateColorsMutation = useMutation({
+        mutationFn: async (newColors: string[]) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/me/colors-list`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ colors: newColors })
+            });
+            if (!res.ok) throw new Error('Failed to update colors');
+            return res.json();
+        },
+        onSuccess: () => {
+            // success silently or small toast
+        },
+        onError: () => {
+            toast.error('Failed to save color order');
+        }
+    });
+
     const deleteColorMutation = useMutation({
         mutationFn: async (color: string) => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/me/colors/${encodeURIComponent(color)}`, {
-                method: 'PATCH',
+                method: 'PATCH', // Using the endpoint we created
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to delete color');
             return res.json();
         },
-        onSuccess: () => {
+        onSuccess: (updatedListFromBackend) => {
             toast.success('Color deleted');
-            queryClient.invalidateQueries({ queryKey: ['saved-colors'] });
+            setItems(updatedListFromBackend); // Update local state from backend response
+            queryClient.setQueryData(['saved-colors'], updatedListFromBackend);
         },
         onError: () => {
             toast.error('Failed to delete color');
         }
     });
 
-    if (savedColors.length === 0) {
-        return <div className="text-muted-foreground text-sm">No saved colors yet. Create some in the color picker!</div>;
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setItems((items) => {
+                const oldIndex = items.indexOf(active.id as string);
+                const newIndex = items.indexOf(over.id as string);
+                const newOrder = arrayMove(items, oldIndex, newIndex);
+
+                // Trigger save
+                updateColorsMutation.mutate(newOrder);
+
+                return newOrder;
+            });
+        }
+    };
+
+    if (items.length === 0) {
+        return <div className="text-muted-foreground text-sm">Loading colors...</div>;
     }
 
     return (
-        <div className="flex flex-wrap gap-3">
-            {savedColors.map((color: string, index: number) => (
-                <div key={index} className="group relative">
-                    <div
-                        className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border"
-                        style={{ background: color }}
-                        title={color}
-                    />
-                    <button
-                        className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md"
-                        onClick={() => deleteColorMutation.mutate(color)}
-                        title="Delete color"
-                    >
-                        <Trash2 className="h-3 w-3" />
-                    </button>
-                </div>
-            ))}
-        </div>
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+        >
+            <div className="flex flex-wrap gap-3 p-1">
+                <SortableContext items={items} strategy={rectSortingStrategy}>
+                    {items.map((color) => (
+                        <SortableColorItem
+                            key={color}
+                            color={color}
+                            onDelete={(c) => deleteColorMutation.mutate(c)}
+                            isSystem={PRESET_GRADIENTS.includes(color)}
+                        />
+                    ))}
+                </SortableContext>
+            </div>
+        </DndContext>
     );
 }
 

@@ -129,7 +129,10 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
         setActiveTab("gradients");
     };
 
-    const allColors = [...PRESET_GRADIENTS, ...savedColors];
+    // If savedColors contains system colors, use it as the master list (preserves user order).
+    // Otherwise, prepend presets (legacy behavior or first load with custom colors only).
+    const hasSystemColors = savedColors.some((c: string) => PRESET_GRADIENTS.includes(c));
+    const allColors = hasSystemColors ? savedColors : [...PRESET_GRADIENTS, ...savedColors];
 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

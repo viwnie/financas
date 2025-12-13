@@ -141,7 +141,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                 <TabsTrigger value="solids">Personalizar</TabsTrigger>
             </TabsList>
             <TabsContent value="gradients" className="mt-0">
-                <div className="grid grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-1">
+                <div className="grid grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-3">
                     {allColors.map((c, index) => (
                         <button
                             key={index}

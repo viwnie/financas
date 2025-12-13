@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Trash2, Loader2, Plus, ChevronDown } from 'lucide-react';
+import { Trash2, Loader2, Plus, ChevronDown, Lock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { useLanguage } from '@/contexts/language-context';
@@ -68,10 +68,14 @@ function SortableColorItem({ color, onDelete, isSystem }: SortableColorItemProps
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="group relative touch-none">
             <div
-                className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border cursor-move"
+                className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border cursor-move flex items-center justify-center"
                 style={{ background: color }}
-                title={color}
-            />
+                title={isSystem ? "System color (cannot delete) - Drag to reorder" : "Custom color - Drag to reorder"}
+            >
+                {isSystem && (
+                    <Lock className="h-4 w-4 text-white drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
+            </div>
             {!isSystem && (
                 <button
                     className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md cursor-pointer pointer-events-auto"
@@ -444,7 +448,9 @@ export default function CategoriesPage() {
                     <Card className="flex flex-col">
                         <CardHeader>
                             <CardTitle className="text-lg">My Saved Colors</CardTitle>
-                            <CardDescription>Manage your custom colors.</CardDescription>
+                            <CardDescription>
+                                Manage your custom colors. Drag and drop to reorder the palette.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1">
                             <ColorManagementSection token={token} queryClient={queryClient} />

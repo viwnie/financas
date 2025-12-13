@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { CURRENCIES, getCurrencyLocale } from '@/lib/currencies';
+import { CURRENCIES, getCurrencyLocale, getCurrencySymbol } from '@/lib/currencies';
 import { cn } from '@/lib/utils';
 
 interface MoneyInputProps {
@@ -81,7 +81,9 @@ export function MoneyInput({
                     disabled={disabled}
                 >
                     <SelectTrigger className="h-9 w-[70px] border-0 rounded-r-none bg-muted hover:bg-muted/80 focus:ring-0 focus:ring-offset-0 gap-1 px-2 text-muted-foreground shadow-none">
-                        <SelectValue placeholder="Moeda" />
+                        <SelectValue placeholder="Moeda">
+                            {getCurrencySymbol(currency)}
+                        </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                         {CURRENCIES.map((c) => (

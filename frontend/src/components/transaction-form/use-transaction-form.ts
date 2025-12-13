@@ -68,7 +68,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             : [];
 
         let defaultCurrency = 'USD';
-        if (locale === 'pt-BR') defaultCurrency = 'BRL';
+        if (locale === 'pt') defaultCurrency = 'BRL';
         else if (locale === 'es') defaultCurrency = 'EUR';
 
         return {
@@ -92,6 +92,15 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
     });
 
     const { control, reset, watch, setValue, handleSubmit, formState: { errors, touchedFields } } = form;
+
+    // Update currency when locale changes (only for new transactions)
+    useEffect(() => {
+        if (!initialData) {
+            if (locale === 'pt') setValue('currency', 'BRL');
+            else if (locale === 'es') setValue('currency', 'EUR');
+            else setValue('currency', 'USD');
+        }
+    }, [locale, setValue, initialData]);
 
     const { fields, append, remove, replace } = useFieldArray({
         control,

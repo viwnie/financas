@@ -174,7 +174,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-4">
-                {isDirty && Object.keys(dirtyFields).length > 0 && (
+                {isDirty && Object.keys(dirtyFields).some(key => key !== 'currency') && (
                     <Button
                         type="button"
                         variant="ghost"

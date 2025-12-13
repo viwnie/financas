@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsBoolean, ValidateNested, IsArray, Min } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsBoolean, ValidateNested, IsArray, Min, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TransactionType } from '@prisma/client';
 
@@ -14,9 +14,9 @@ export class CreateTransactionDto {
     @IsString()
     currency?: string;
 
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
-    description?: string;
+    description: string;
 
     @IsDateString()
     date: string;

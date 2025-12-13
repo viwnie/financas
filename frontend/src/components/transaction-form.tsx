@@ -57,6 +57,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                 <div className="flex-1 min-w-[200px] space-y-2">
                     <Label>{t('transactions.description')}</Label>
                     <Input {...register('description')} placeholder={t('transactions.descriptionPlaceholder')} />
+                    {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
                 </div>
 
                 <div className="w-[230px] space-y-2">
@@ -115,6 +116,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     <div className="w-[100px] space-y-2">
                         <Label>{t('transactions.installments')}</Label>
                         <Input type="number" min="1" {...register('installmentsCount')} placeholder="1" />
+                        {errors.installmentsCount && <p className="text-xs text-red-500">{errors.installmentsCount.message}</p>}
                     </div>
                 )}
 

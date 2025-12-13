@@ -19,21 +19,38 @@ const participantSchema = z.object({
     hasAvatar: z.boolean().optional(),
 });
 
-export const transactionSchema = z.object({
+const createTransactionSchema = (t: (key: string) => string) => z.object({
     type: z.enum(['INCOME', 'EXPENSE']),
-    amount: z.coerce.number().min(0, 'Informe o valor'),
+    amount: z.union([z.number(), z.string(), z.nan(), z.undefined(), z.null()])
+        .transform((val) => Number(val || 0))
+        .refine((val) => !isNaN(val) && val >= 0.01, t('errors.amountRequired')),
     currency: z.string().optional(),
-    description: z.string().optional(),
+    description: z.string().min(1, t('errors.descriptionRequired')),
     date: z.date(),
-    categoryName: z.string().min(1, 'Category is required'),
+    categoryName: z.string().min(1, t('errors.categoryRequired')),
     categoryColor: z.string().optional(),
     isFixed: z.boolean().optional(),
-    installmentsCount: z.coerce.number().optional(),
+    installmentsCount: z.coerce.number().min(1, t('errors.installmentsMin')).optional(),
     isShared: z.boolean().optional(),
     participants: z.array(participantSchema).optional(),
 });
 
-export type TransactionFormValues = z.infer<typeof transactionSchema>;
+// Base schema for type inference
+const baseSchema = z.object({
+    type: z.enum(['INCOME', 'EXPENSE']),
+    amount: z.number(),
+    currency: z.string().optional(),
+    description: z.string().optional(),
+    date: z.date(),
+    categoryName: z.string().optional(),
+    categoryColor: z.string().optional(),
+    isFixed: z.boolean().optional(),
+    installmentsCount: z.number().optional(),
+    isShared: z.boolean().optional(),
+    participants: z.array(participantSchema).optional(),
+});
+
+export type TransactionFormValues = z.infer<typeof baseSchema>;
 
 interface UseTransactionFormProps {
     onSuccess?: () => void;
@@ -43,7 +60,7 @@ interface UseTransactionFormProps {
 
 export function useTransactionForm({ onSuccess, initialData, transactionId }: UseTransactionFormProps) {
     const { token, user } = useAuthStore();
-    const { locale } = useLanguage();
+    const { locale, t } = useLanguage();
     const queryClient = useQueryClient();
     const [error, setError] = useState('');
 
@@ -51,7 +68,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
     const [autoFilledCategory, setAutoFilledCategory] = useState<string | null>(null);
     const [isAutoFilled, setIsAutoFilled] = useState(false);
 
-    const defaultValues: TransactionFormValues = useMemo(() => {
+    const defaultValues = useMemo(() => {
         const participants = initialData?.participants
             ? initialData.participants
                 .filter((p: any) => p.userId !== user?.id)
@@ -86,8 +103,10 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
         };
     }, [initialData, user?.id, locale]);
 
+    const schema = useMemo(() => createTransactionSchema(t), [t]);
+
     const form = useForm<TransactionFormValues>({
-        resolver: zodResolver(transactionSchema) as any,
+        resolver: zodResolver(schema) as any,
         defaultValues,
     });
 

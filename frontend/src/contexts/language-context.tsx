@@ -12,6 +12,11 @@ interface LanguageContextType {
 
 const translations = {
     en: {
+        'errors.descriptionRequired': 'Description is required',
+        'errors.amountRequired': 'Amount must be greater than 0.01',
+        'errors.categoryRequired': 'Category is required',
+        'errors.installmentsMin': 'Installments must be at least 1',
+        // ... (existing en)
         // ... (existing en)
         'dashboard.welcome': 'Welcome',
         'dashboard.transactions': 'Transactions',
@@ -120,6 +125,10 @@ const translations = {
         'transactions.chooseColor': 'Choose category color',
     },
     pt: {
+        'errors.descriptionRequired': 'A descrição é obrigatória',
+        'errors.amountRequired': 'O valor deve ser maior que 0,01',
+        'errors.categoryRequired': 'A categoria é obrigatória',
+        'errors.installmentsMin': 'O número de parcelas deve ser pelo menos 1',
         // ... (existing pt)
         'dashboard.welcome': 'Bem-vindo',
         'dashboard.transactions': 'Transações',
@@ -228,6 +237,10 @@ const translations = {
         'transactions.chooseColor': 'Escolher cor da categoria',
     },
     es: {
+        'errors.descriptionRequired': 'La descripción es obligatoria',
+        'errors.amountRequired': 'El monto debe ser mayor a 0.01',
+        'errors.categoryRequired': 'La categoría es obligatoria',
+        'errors.installmentsMin': 'El número de cuotas debe ser al menos 1',
         'dashboard.welcome': 'Bienvenido',
         'dashboard.transactions': 'Transacciones',
         'dashboard.friends': 'Amigos',

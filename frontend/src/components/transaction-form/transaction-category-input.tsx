@@ -5,6 +5,8 @@ import { TransactionFormValues } from './use-transaction-form';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/language-context';
 import { Search } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ColorSelectionPopover } from '@/components/ui/color-selection-popover';
 
 interface TransactionCategoryInputProps {
     form: UseFormReturn<TransactionFormValues>;
@@ -30,6 +32,7 @@ export function TransactionCategoryInput({
 }: TransactionCategoryInputProps) {
     const { register, setValue, watch, formState: { errors } } = form;
     const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+    const [openColorPicker, setOpenColorPicker] = useState(false);
     const { t } = useLanguage();
 
     return (
@@ -38,22 +41,32 @@ export function TransactionCategoryInput({
                 <Search className="w-4 h-4" />
             </div>
 
+
+
+
+
             <div className="absolute left-9 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10">
-                <div
-                    className="w-4 h-4 rounded-full border cursor-pointer shadow-sm transition-transform active:scale-95 hover:scale-110 ring-2 ring-background"
-                    style={{ backgroundColor: watch('categoryColor') || '#e2e8f0' }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        document.getElementById('category-color-picker')?.click();
-                    }}
-                    title={t('transactions.chooseColor')}
-                />
+                <Popover open={openColorPicker} onOpenChange={setOpenColorPicker}>
+                    <PopoverTrigger asChild>
+                        <div
+                            className="w-4 h-4 rounded-full border cursor-pointer shadow-sm transition-transform active:scale-95 hover:scale-110 ring-2 ring-background"
+                            style={{ background: watch('categoryColor') || '#e2e8f0' }}
+                            title={t('transactions.chooseColor')}
+                        />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-3" align="start">
+                        <ColorSelectionPopover
+                            selectedColor={watch('categoryColor')}
+                            onSelect={(color) => setValue('categoryColor', color)}
+                            showManageLink={true}
+                            onClose={() => setOpenColorPicker(false)}
+                        />
+                    </PopoverContent>
+                </Popover>
             </div>
 
             <input
-                id="category-color-picker"
-                type="color"
-                className="absolute opacity-0 w-0 h-0"
+                type="hidden"
                 {...register('categoryColor')}
             />
 
@@ -106,7 +119,7 @@ export function TransactionCategoryInput({
                                 >
                                     <div className="flex items-center gap-3">
                                         {cat.color && (
-                                            <div className="w-3 h-3 rounded-full shadow-sm ring-1 ring-border" style={{ backgroundColor: cat.color }} />
+                                            <div className="w-3 h-3 rounded-full shadow-sm ring-1 ring-border" style={{ background: cat.color }} />
                                         )}
                                         <span className="font-medium">{displayName}</span>
                                     </div>

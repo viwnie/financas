@@ -8,8 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Navbar } from '@/components/navbar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Category {
     id: string;
@@ -20,57 +23,30 @@ interface Category {
     translations: { language: string; name: string }[];
 }
 
-// Internal component to handle color debounce
+import { ColorSelectionPopover } from '@/components/ui/color-selection-popover';
 
 function CategoryColorPicker({ id, initialColor, onUpdate }: { id: string, initialColor: string | null, onUpdate: (id: string, color: string) => void }) {
-    const [color, setColor] = useState(initialColor || '#e2e8f0');
+    const [color, setColor] = useState(initialColor);
 
-    // Debounce the update
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (color !== (initialColor || '#e2e8f0')) {
-                onUpdate(id, color);
-            }
-        }, 500); // 500ms delay
+        if (!color) return;
+        if (color === initialColor) return;
 
+        const timer = setTimeout(() => {
+            onUpdate(id, color);
+        }, 500);
         return () => clearTimeout(timer);
     }, [color, id, initialColor, onUpdate]);
 
     return (
-        <div className="space-y-2">
-            <Label htmlFor={`color-${id}`}>Category Color</Label>
-            <div className="flex gap-2">
-                <div className="relative flex-1">
-                    <Input
-                        id={`color-${id}`}
-                        type="color"
-                        className="h-10 w-full p-1 cursor-pointer"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value)}
-                    />
-                </div>
-                <Input
-                    value={color}
-                    placeholder="#HEX"
-                    className="w-24 uppercase"
-                    onChange={(e) => {
-                        const val = e.target.value;
-                        if (val.startsWith('#') && val.length === 7) {
-                            setColor(val);
-                        } else {
-                            // Allow typing but don't update if invalid yet, or handle partials?
-                            // For simplicity, just let it update local state if it looks vaguely like a color or handle it strictly
-                            // Better to let them type freely but only commit valid hex
-                            // For now, let's just stick to the specific hex format for the state or it might break the color input
-                            if (val.length <= 7) setColor(val);
-                        }
-                    }}
-                />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-                Click the color box to pick a new color.
-            </p>
-        </div>
+        <ColorSelectionPopover
+            id={id}
+            selectedColor={initialColor}
+            onSelect={(c) => {
+                setColor(c);
+            }}
+            showManageLink={false}
+        />
     );
 }
 
@@ -161,8 +137,8 @@ export default function CategoriesPage() {
                             <CardHeader className="pb-4">
                                 <div className="flex justify-between items-center">
                                     <div
-                                        className="h-8 w-8 rounded-full border shadow-sm"
-                                        style={{ backgroundColor: category.color || '#e2e8f0' }}
+                                        className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border"
+                                        style={{ background: category.color || '#e2e8f0' }}
                                     />
                                     {category.isSystem && (
                                         <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">System</span>
@@ -173,6 +149,7 @@ export default function CategoriesPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
+
                                 <CategoryColorPicker
                                     id={category.id}
                                     initialColor={category.color}

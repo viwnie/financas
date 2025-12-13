@@ -59,8 +59,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     <Input {...register('description')} placeholder={t('transactions.descriptionPlaceholder')} />
                 </div>
 
-                <div className="w-[300px] space-y-2">
-                    <Label>{t('transactions.amount')}</Label>
+                <div className="w-[230px] space-y-2">
+                    <Label>Tipo, Moeda e Valor</Label>
                     <MoneyInput
                         amount={totalAmount}
                         currency={watch('currency') || 'BRL'}
@@ -163,21 +163,25 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <div className="flex justify-end gap-2 pt-4">
-                {isDirty && Object.keys(dirtyFields).some(key => key !== 'currency') && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                            reset();
-                            setIsAutoFilled(false);
-                            setFriendSearch('');
-                        }}
-                        className="text-muted-foreground hover:text-destructive"
-                    >
-                        {transactionId ? <RotateCcw className="w-4 h-4 mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                        {transactionId ? t('transactions.revert') : t('transactions.clear')}
-                    </Button>
-                )}
+                {isDirty && Object.keys(dirtyFields).some(key => {
+                    if (key === 'currency') return false;
+                    if (key === 'amount') return (totalAmount || 0) > 0;
+                    return true;
+                }) && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                                reset();
+                                setIsAutoFilled(false);
+                                setFriendSearch('');
+                            }}
+                            className="text-muted-foreground hover:text-destructive"
+                        >
+                            {transactionId ? <RotateCcw className="w-4 h-4 mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                            {transactionId ? t('transactions.revert') : t('transactions.clear')}
+                        </Button>
+                    )}
                 <Button type="submit" className="w-[150px]" disabled={mutation.isPending}>
                     {mutation.isPending ? (transactionId ? t('transactions.updating') : t('transactions.saving')) : (transactionId ? t('transactions.update') : t('transactions.save'))}
                 </Button>

@@ -38,7 +38,7 @@ export function MoneyInput({
 
     // Update input value when amount changes externally
     useEffect(() => {
-        if (amount === undefined || amount === null || amount === 0) {
+        if (amount === undefined || amount === null || amount === 0 || Number.isNaN(amount)) {
             setInputValue('');
             return;
         }
@@ -65,6 +65,12 @@ export function MoneyInput({
 
         // Convert to number (divided by 100 for decimals)
         const numberValue = parseInt(rawValue, 10) / 100;
+
+        if (Number.isNaN(numberValue)) {
+            setInputValue('');
+            onAmountChange(0);
+            return;
+        }
 
         // Format back to string for display
         const locale = getCurrencyLocale(currency);
@@ -96,15 +102,15 @@ export function MoneyInput({
                             )}
                         >
                             <SelectValue>
-                                {isIncome ? <Plus className="h-5 w-5" strokeWidth={3} /> : <Minus className="h-5 w-5" strokeWidth={3} />}
+                                {isIncome ? <Plus className="h-5 w-5 text-emerald-600" strokeWidth={3} /> : <Minus className="h-5 w-5 text-red-500" strokeWidth={3} />}
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="INCOME" className="text-emerald-600 font-bold text-base">
-                                <span className="flex items-center gap-2"><Plus className="h-4 w-4" /> Receita</span>
+                                <span className="flex items-center gap-2"><Plus className="h-4 w-4 text-emerald-600" /> Receita</span>
                             </SelectItem>
                             <SelectItem value="EXPENSE" className="text-red-500 font-bold text-base">
-                                <span className="flex items-center gap-2"><Minus className="h-4 w-4" /> Despesa</span>
+                                <span className="flex items-center gap-2"><Minus className="h-4 w-4 text-red-500" /> Despesa</span>
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -142,8 +148,8 @@ export function MoneyInput({
                 onChange={handleInputChange}
                 disabled={disabled}
                 className={cn(
-                    "text-right font-mono font-medium",
-                    showTypeSelector ? "pl-[140px]" : "pl-[90px]",
+                    "text-right font-mono font-medium text-sm",
+                    showTypeSelector ? "pl-[120px]" : "pl-[70px]",
                     isIncome ? "text-emerald-600" : "text-red-500"
                 )}
                 placeholder={placeholder || ''}

@@ -26,6 +26,68 @@ interface Category {
     translations: { language: string; name: string }[];
 }
 
+interface ColorManagementSectionProps {
+    token: string | null;
+    queryClient: any;
+}
+
+function ColorManagementSection({ token, queryClient }: ColorManagementSectionProps) {
+    const { data: savedColors = [] } = useQuery({
+        queryKey: ['saved-colors'],
+        queryFn: async () => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/me/colors`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) return [];
+            return res.json();
+        },
+        enabled: !!token
+    });
+
+    const deleteColorMutation = useMutation({
+        mutationFn: async (color: string) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/me/colors/${encodeURIComponent(color)}`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to delete color');
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success('Color deleted');
+            queryClient.invalidateQueries({ queryKey: ['saved-colors'] });
+        },
+        onError: () => {
+            toast.error('Failed to delete color');
+        }
+    });
+
+    if (savedColors.length === 0) {
+        return <div className="text-muted-foreground text-sm">No saved colors yet. Create some in the color picker!</div>;
+    }
+
+    return (
+        <div className="flex flex-wrap gap-3">
+            {savedColors.map((color: string, index: number) => (
+                <div key={index} className="group relative">
+                    <div
+                        className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border"
+                        style={{ background: color }}
+                        title={color}
+                    />
+                    <button
+                        className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md"
+                        onClick={() => deleteColorMutation.mutate(color)}
+                        title="Delete color"
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </button>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export default function CategoriesPage() {
     const { token } = useAuthStore();
     const { locale } = useLanguage();
@@ -178,48 +240,63 @@ export default function CategoriesPage() {
                     </p>
                 </div>
 
-                {/* Inline Creation Card */}
-                <Card className="border-dashed border-2 bg-muted/20">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Create New Category</CardTitle>
-                        <CardDescription>Add a new category to organize your transactions.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col md:flex-row gap-4 items-end">
-                            <div className="space-y-2">
-                                <Label>Color</Label>
-                                <div className="flex items-center gap-2">
-                                    <ColorSelectionPopover
-                                        selectedColor={newCategoryColor}
-                                        onSelect={setNewCategoryColor}
-                                        showManageLink={false}
-                                    />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                    {/* Inline Creation Card */}
+                    <Card className="border-dashed border-2 bg-muted/20 flex flex-col justify-center">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Create New Category</CardTitle>
+                            <CardDescription>Add a new category.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex gap-4 items-start">
+                                    <div className="space-y-2">
+                                        <Label>Color</Label>
+                                        <div className="flex items-center gap-2">
+                                            <ColorSelectionPopover
+                                                selectedColor={newCategoryColor}
+                                                onSelect={setNewCategoryColor}
+                                                showManageLink={false}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 flex-1">
+                                        <Label htmlFor="name">Name</Label>
+                                        <Input
+                                            id="name"
+                                            placeholder="e.g., Groceries"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
+                                <Button
+                                    onClick={handleCreateCategory}
+                                    disabled={createCategoryMutation.isPending}
+                                    className="w-full"
+                                >
+                                    {createCategoryMutation.isPending ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Plus className="mr-2 h-4 w-4" />
+                                    )}
+                                    Create Category
+                                </Button>
                             </div>
-                            <div className="space-y-2 flex-1 w-full max-w-sm">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="e.g., Groceries"
-                                    value={newCategoryName}
-                                    onChange={(e) => setNewCategoryName(e.target.value)}
-                                />
-                            </div>
-                            <Button
-                                onClick={handleCreateCategory}
-                                disabled={createCategoryMutation.isPending}
-                                className="w-full md:w-auto"
-                            >
-                                {createCategoryMutation.isPending ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Plus className="mr-2 h-4 w-4" />
-                                )}
-                                Create Category
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+
+                    {/* Color Management Section */}
+                    <Card className="flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="text-lg">My Saved Colors</CardTitle>
+                            <CardDescription>Manage your custom colors.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                            <ColorManagementSection token={token} queryClient={queryClient} />
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                     {categories.map((category) => (

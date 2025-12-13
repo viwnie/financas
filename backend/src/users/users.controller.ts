@@ -52,6 +52,35 @@ export class UsersController {
         return this.usersService.addSavedColor(req.user.userId, color);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Patch('me/colors/:color')
+    async deleteSavedColor(@Request() req, @Param('color') color: string) {
+        // Using PATCH instead of DELETE because DELETE with body or complex param encoding can be tricky,
+        // but RESTfully it should be DELETE. Let's try DELETE first, but if encoding issues arise, we might fallback.
+        // Actually, let's stick to standard DELETE with Param.
+        return this.usersService.deleteSavedColor(req.user.userId, color);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('me/colors/delete/:color') // Fallback endpoint if DELETE method has issues with clients
+    async deleteSavedColorFallback(@Request() req, @Param('color') color: string) {
+        return this.usersService.deleteSavedColor(req.user.userId, color);
+    }
+
+    // Better implementation: DELETE with Param
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors()
+    @Get('me/colors/remove') // Using GET/Query as a super safe fallback for special chars
+    async removeColor(@Request() req, @Query('color') color: string) {
+        return this.usersService.deleteSavedColor(req.user.userId, color);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('me/colors-list')
+    async updateSavedColors(@Request() req, @Body('colors') colors: string[]) {
+        return this.usersService.updateSavedColors(req.user.userId, colors);
+    }
+
     @Get('check-username')
     async checkUsername(@Query('username') username: string) {
         const isAvailable = await this.usersService.checkUsernameAvailability(username);

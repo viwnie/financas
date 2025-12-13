@@ -232,4 +232,36 @@ export class UsersService {
 
         return currentColors;
     }
+
+    async deleteSavedColor(userId: string, colorToDelete: string): Promise<string[]> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { savedColors: true }
+        });
+
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        const currentColors = user.savedColors || [];
+        const newColors = currentColors.filter(c => c !== colorToDelete && c !== decodeURIComponent(colorToDelete));
+
+        if (newColors.length !== currentColors.length) {
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { savedColors: newColors }
+            });
+            return newColors;
+        }
+
+        return currentColors;
+    }
+
+    async updateSavedColors(userId: string, newColors: string[]): Promise<string[]> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { savedColors: newColors }
+        });
+        return newColors;
+    }
 }

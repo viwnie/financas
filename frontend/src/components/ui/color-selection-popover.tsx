@@ -73,7 +73,8 @@ export function ColorSelectionPopover({ id = 'color-picker', selectedColor, onSe
                     selectedColor={selectedColor}
                     onSelect={(c) => {
                         onSelect(c);
-                        setIsOpen(false);
+                        // Do not close on select, let the content handle closing if needed (e.g. presets)
+                        // This allows dragging on the color picker without closing the popover
                     }}
                     showManageLink={showManageLink}
                     onClose={() => setIsOpen(false)}

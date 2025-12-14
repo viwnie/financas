@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload, X, Undo } from 'lucide-react';
 import { MutableRefObject } from 'react';
+import { getInitials } from '@/lib/utils';
 
 interface ProfileAvatarUploadProps {
     fileInputRef: MutableRefObject<HTMLInputElement | null>;
@@ -47,12 +48,12 @@ export function ProfileAvatarUpload({
                             }}
                         />
                         <AvatarFallback className="text-2xl">
-                            {(formData.name || user?.name || '?').charAt(0).toUpperCase()}
+                            {getInitials(formData.name || user?.name || '?')}
                         </AvatarFallback>
                     </>
                 ) : (
                     <div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-2xl">
-                        {(formData.name || user?.name || '?').charAt(0).toUpperCase()}
+                        {getInitials(formData.name || user?.name || '?')}
                     </div>
                 )}
             </Avatar>

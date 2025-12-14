@@ -13,9 +13,28 @@ export class UsersService {
     async create(data: Prisma.UserCreateInput): Promise<User> {
         this.logger.log(`Creating new user: ${data.username}`);
         const hashedPassword = await bcrypt.hash(data.password, 10);
+
+        // Capitalize Name (Title Case) and handle whitespace
+        const name = data.name
+            .trim()
+            .toLowerCase()
+            .split(/\s+/) // Split by any whitespace and remove extra spaces
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        // Capitalize Username and trim
+        const username = data.username.trim().charAt(0).toUpperCase() + data.username.trim().slice(1);
+
+        // Capitalize Email First Letter and trim
+        const formatEmail = (email: string) => email.trim().charAt(0).toUpperCase() + email.trim().slice(1);
+        const formattedEmail = formatEmail(data.email);
+
         return this.prisma.user.create({
             data: {
                 ...data,
+                name,
+                username,
+                email: formattedEmail,
                 password: hashedPassword,
             },
         });
@@ -28,14 +47,24 @@ export class UsersService {
     }
 
     async findByEmail(email: string): Promise<User | null> {
-        return this.prisma.user.findUnique({
-            where: { email },
+        return this.prisma.user.findFirst({
+            where: {
+                email: {
+                    equals: email,
+                    mode: 'insensitive'
+                }
+            },
         });
     }
 
     async findByUsername(username: string): Promise<User | null> {
-        return this.prisma.user.findUnique({
-            where: { username },
+        return this.prisma.user.findFirst({
+            where: {
+                username: {
+                    equals: username,
+                    mode: 'insensitive'
+                }
+            },
         });
     }
 
@@ -106,15 +135,17 @@ export class UsersService {
         // Capitalize Name (Title Case)
         if (data.name) {
             updateData.name = data.name
+                .trim()
                 .toLowerCase()
-                .split(' ')
+                .split(/\s+/)
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(' ');
         }
 
         // Capitalize username first letter
         if (data.username) {
-            updateData.username = data.username.charAt(0).toUpperCase() + data.username.slice(1);
+            const trimmed = data.username.trim();
+            updateData.username = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
         }
 
         // Check for uniqueness if username or email is being updated
@@ -126,14 +157,10 @@ export class UsersService {
         }
 
         if (data.email) {
-            // Normalize email to lowercase
-            data.email = data.email.toLowerCase();
+            const trimmedEmail = data.email.trim();
+            // Capitalize Email First Letter
+            data.email = trimmedEmail.charAt(0).toUpperCase() + trimmedEmail.slice(1);
             updateData.email = data.email;
-            updateData.email = data.email; // Redundant line in original code? No, wait. 
-            // In original code:
-            // data.email = data.email.toLowerCase();
-            // updateData.email = data.email;
-            // It seems fine.
 
             // Check email case-insensitively
             const existingUser = await this.prisma.user.findFirst({

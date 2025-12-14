@@ -6,6 +6,7 @@ import { Search, UserPlus, Clock, Plus, X } from 'lucide-react';
 import { UseFormRegister } from 'react-hook-form';
 import { TransactionFormValues } from './use-transaction-form';
 import { useLanguage } from '@/contexts/language-context';
+import { getInitials } from '@/lib/utils';
 
 interface TransactionParticipantsProps {
     isShared: boolean;
@@ -75,7 +76,7 @@ export function TransactionParticipants({
                                             alt={result.name}
                                             className="object-cover"
                                         />
-                                        <AvatarFallback>{result.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                        <AvatarFallback>{getInitials(result.name)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col">
                                         <span className="font-medium">{result.name}</span>
@@ -141,7 +142,7 @@ export function TransactionParticipants({
                                             alt={field.name}
                                             className="object-cover"
                                         />
-                                        <AvatarFallback>{field.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                                        <AvatarFallback>{getInitials(field.name || '')}</AvatarFallback>
                                     </Avatar>
                                     <div>
                                         {field.name}

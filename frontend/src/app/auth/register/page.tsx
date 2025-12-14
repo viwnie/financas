@@ -61,6 +61,18 @@ export default function RegisterPage() {
         },
     });
 
+    // Helper functions for capitalization
+    const toTitleCase = (str: string) => {
+        return str.toLowerCase().split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+    };
+
+    const toFirstUpper = (str: string) => {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    };
+
     const onSubmit = (data: RegisterForm) => {
         setError('');
         mutation.mutate(data);
@@ -77,17 +89,42 @@ export default function RegisterPage() {
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="name">Name</Label>
-                            <Input id="name" {...register('name')} />
+                            <Input
+                                id="name"
+                                {...register('name', {
+                                    onChange: (e) => {
+                                        e.target.value = toTitleCase(e.target.value);
+                                        return e;
+                                    }
+                                })}
+                            />
                             {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="username">Username</Label>
-                            <Input id="username" {...register('username')} />
+                            <Input
+                                id="username"
+                                {...register('username', {
+                                    onChange: (e) => {
+                                        e.target.value = toFirstUpper(e.target.value);
+                                        return e;
+                                    }
+                                })}
+                            />
                             {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" {...register('email')} />
+                            <Input
+                                id="email"
+                                type="email"
+                                {...register('email', {
+                                    onChange: (e) => {
+                                        e.target.value = toFirstUpper(e.target.value);
+                                        return e;
+                                    }
+                                })}
+                            />
                             {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
                         </div>
                         <div className="space-y-2">

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
 import { format } from 'date-fns';
 import { Trash2, Filter, Calendar } from 'lucide-react';
-import { getCategoryDisplayName, formatCurrency } from '@/lib/utils'; // Import at top
+import { getCategoryDisplayName, formatCurrency, getInitials } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -443,7 +443,7 @@ export default function TransactionsPage() {
                                                                                         alt={name}
                                                                                         className="object-cover"
                                                                                     />
-                                                                                    <AvatarFallback className="text-[9px]">{name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                                                    <AvatarFallback className="text-[9px]">{getInitials(name)}</AvatarFallback>
                                                                                 </Avatar>
                                                                             </div>
                                                                         );

@@ -43,12 +43,23 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
     }, [user, open]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+        let { name, value } = e.target;
         setShowPasswordError(false);
 
         if (name === 'name') {
             if (!/^[a-zA-Z\u00C0-\u00FF ]*$/.test(value)) {
                 return;
+            }
+            // Title Case for Name
+            value = value.toLowerCase().split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        if (name === 'username' || name === 'email') {
+            // First letter Uppercase
+            if (value) {
+                value = value.charAt(0).toUpperCase() + value.slice(1);
             }
         }
 

@@ -13,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getInitials } from '@/lib/utils';
 import { Moon, Sun, Globe, LogOut, Wallet, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from 'react';
@@ -134,7 +135,7 @@ export function Navbar() {
                                         className="object-cover"
                                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
                                     />
-                                    <AvatarFallback>{user?.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                                    <AvatarFallback>{getInitials(user?.name || '')}</AvatarFallback>
                                 </Avatar>
                             </Button>
                         </UserProfileModal>

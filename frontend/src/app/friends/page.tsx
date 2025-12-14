@@ -19,6 +19,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getInitials } from '@/lib/utils';
 
 interface Friend {
     id: string;
@@ -400,7 +401,7 @@ export default function FriendsPage() {
                                                                 alt={user.name}
                                                                 className="object-cover"
                                                             />
-                                                            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex flex-col">
                                                             <span>{user.name}</span>
@@ -436,7 +437,7 @@ export default function FriendsPage() {
                                         <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10">
-                                                    <AvatarFallback>{req.requester.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                    <AvatarFallback>{getInitials(req.requester.name)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
                                                     <p className="font-medium">From: {req.requester.name}</p>
@@ -473,7 +474,7 @@ export default function FriendsPage() {
                                                         alt={req.requester.name}
                                                         className="object-cover"
                                                     />
-                                                    <AvatarFallback>{req.requester.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                    <AvatarFallback>{getInitials(req.requester.name)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
                                                     <p className="font-medium">{req.requester.name}</p>
@@ -516,7 +517,7 @@ export default function FriendsPage() {
                                                         alt={req.addressee.name}
                                                         className="object-cover"
                                                     />
-                                                    <AvatarFallback>{req.addressee.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                    <AvatarFallback>{getInitials(req.addressee.name)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
                                                     <div className="flex items-center gap-2">
@@ -566,7 +567,7 @@ export default function FriendsPage() {
                                                             alt={friend.name}
                                                             className="object-cover"
                                                         />
-                                                        <AvatarFallback>{friend.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                        <AvatarFallback>{getInitials(friend.name)}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
                                                         <p className="font-medium">{friend.name}</p>
@@ -604,7 +605,7 @@ export default function FriendsPage() {
                                             <div key={idx} className="flex items-center justify-between p-4 border rounded-lg bg-card">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-10 w-10">
-                                                        <AvatarFallback>{friend.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                        <AvatarFallback>{getInitials(friend.name)}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
                                                         <p className="font-medium">{friend.name}</p>

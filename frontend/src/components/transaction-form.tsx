@@ -13,8 +13,12 @@ import { useLanguage } from '@/contexts/language-context';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Switch } from '@/components/ui/switch';
 
+import { format } from "date-fns";
+
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
     const { t } = useLanguage();
+    const [stopRecurrenceOpen, setStopRecurrenceOpen] = React.useState(false);
+    const [tempEndDate, setTempEndDate] = React.useState<Date>(new Date());
     const {
         form,
         fields,
@@ -122,27 +126,78 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             </div>
 
             <div className="space-y-4 pt-4">
-                <label
-                    htmlFor={`isFixed-${transactionId || 'new'}`}
-                    className="border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
-                >
-                    <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                            <Repeat className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-base font-medium cursor-pointer">
-                                {t('transactions.monthlyFixed')}
-                            </span>
+
+                <div className="flex flex-col gap-4">
+                    <label
+                        htmlFor={`isFixed-${transactionId || 'new'}`}
+                        className="border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                <Repeat className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-base font-medium cursor-pointer">
+                                    {t('transactions.monthlyFixed')}
+                                </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                {t('transactions.monthlyFixedDescription')}
+                            </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                            {t('transactions.monthlyFixedDescription')}
-                        </p>
-                    </div>
-                    <Switch
-                        id={`isFixed-${transactionId || 'new'}`}
-                        checked={watch('isFixed')}
-                        onCheckedChange={(checked) => setValue('isFixed', checked as boolean)}
-                    />
-                </label>
+                        <Switch
+                            id={`isFixed-${transactionId || 'new'}`}
+                            checked={watch('isFixed')}
+                            onCheckedChange={(checked) => {
+                                if (!checked) {
+                                    // User trying to turn off
+                                    setValue('isFixed', false); // Visually off immediately
+
+                                    // Only show stop recurrence UI if it was ALREADY fixed in the database
+                                    if (initialData?.isFixed) {
+                                        setTempEndDate(new Date());
+                                        setStopRecurrenceOpen(true);
+                                    } else {
+                                        setStopRecurrenceOpen(false);
+                                    }
+                                } else {
+                                    // User turning on
+                                    setValue('isFixed', true);
+                                    setValue('recurrenceEndsAt', undefined);
+                                    setStopRecurrenceOpen(false);
+                                }
+                            }}
+                        />
+                    </label>
+
+                    {stopRecurrenceOpen && (
+                        <div className="pl-6 border-l-2 border-muted ml-1 space-y-4 animate-in fade-in slide-in-from-top-2">
+                            <div className="space-y-1">
+                                <h4 className="font-medium text-sm text-foreground">{t('transactions.stopRecurrenceTitle')}</h4>
+                                <p className="text-xs text-muted-foreground">{t('transactions.stopRecurrenceDesc')}</p>
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                                <div className="space-y-2">
+                                    <Label>Data final</Label>
+                                    <TransactionDatePicker
+                                        date={tempEndDate}
+                                        onSelect={(date) => date && setTempEndDate(date)}
+                                    />
+                                </div>
+                                <Button size="sm" variant="secondary" onClick={(e) => {
+                                    e.preventDefault();
+                                    // Confirming end date
+                                    setValue('recurrenceEndsAt', tempEndDate);
+                                    setStopRecurrenceOpen(false);
+                                }}>Confirmar fim</Button>
+                                <Button size="sm" variant="ghost" onClick={(e) => {
+                                    e.preventDefault();
+                                    setStopRecurrenceOpen(false);
+                                    setValue('isFixed', true); // Revert to on
+                                }}>Cancelar</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 <label
                     htmlFor={`isShared-${transactionId || 'new'}`}

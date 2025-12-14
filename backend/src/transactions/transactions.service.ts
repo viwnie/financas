@@ -104,7 +104,13 @@ export class TransactionsService {
                     {
                         AND: [
                             { isFixed: true },
-                            { date: { lte: endDate } }
+                            { date: { lte: endDate } },
+                            {
+                                OR: [
+                                    { recurrenceEndsAt: null },
+                                    { recurrenceEndsAt: { gte: startDate } }
+                                ]
+                            }
                         ]
                     }
                 ]
@@ -128,14 +134,38 @@ export class TransactionsService {
             orderBy: { date: 'desc' }
         });
 
-        return transactions.map(t => ({
-            ...t,
-            category: {
-                ...t.category,
-                color: t.category.userSettings[0]?.color || null,
-                name: t.category.translations[0]?.name || 'Unnamed' // Fallback
+        return transactions.map(t => {
+            let displayDate = t.date;
+            if (filters?.month && filters?.year && t.isFixed) {
+                const targetYear = filters.year;
+                const targetMonth = filters.month - 1; // 0-indexed
+                // Check if original date is not in the target month/year
+                if (t.date.getMonth() !== targetMonth || t.date.getFullYear() !== targetYear) {
+                    // Create date in target month
+                    // Handle edge cases like Jan 31 -> Feb 28 using simple date setting?
+                    // new Date(y, m, d) automatically rolls over if d > daysInMonth, which might not be desired (Jan 31 -> Mar 3).
+                    // Better to clamp to last day of month.
+                    const originalDay = t.date.getDate();
+                    const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+                    const targetDay = Math.min(originalDay, daysInTargetMonth);
+                    displayDate = new Date(targetYear, targetMonth, targetDay);
+
+                    // Preserve time? Usually irrelevant for transactions but good practice
+                    displayDate.setHours(t.date.getHours(), t.date.getMinutes(), t.date.getSeconds(), t.date.getMilliseconds());
+                }
             }
-        }));
+
+            return {
+                ...t,
+                date: displayDate, // Override correct date for the view
+                originalDate: t.date, // Keep original just in case
+                category: {
+                    ...t.category,
+                    color: t.category.userSettings[0]?.color || null,
+                    name: t.category.translations[0]?.name || 'Unnamed' // Fallback
+                }
+            };
+        });
     }
 
     async remove(id: string, userId: string) {
@@ -179,7 +209,18 @@ export class TransactionsService {
                     amount: newAmount,
                     date: transactionDate,
                     categoryId: finalCategoryId,
-                    isFixed: isFixed !== undefined ? isFixed : transaction.isFixed,
+                    isFixed: (isFixed === true) ? true      // Explicitly enabled hard
+                        : (isFixed === false) ? true     // Explicitly disabled -> forcing true to keep history
+                            : transaction.isFixed,       // Not specified -> keep current
+
+                    recurrenceEndsAt: dto.recurrenceEndsAt // If explicit date provided (by frontend picker), use it
+                        ? new Date(dto.recurrenceEndsAt)
+                        : (isFixed === false) // If turning off without date (legacy/default), set to now
+                            ? new Date()
+                            : (isFixed === true) // If turning ON, clear end date
+                                ? null
+                                : transaction.recurrenceEndsAt, // Else keep current
+
                     isShared: participants && participants.length > 0 ? true : (participants ? false : transaction.isShared)
                 }
             });

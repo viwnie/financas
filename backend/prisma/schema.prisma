@@ -165,6 +165,7 @@ model Transaction {
   date        DateTime
   isShared    Boolean         @default(false)
   isFixed     Boolean         @default(false)
+  recurrenceEndsAt DateTime?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

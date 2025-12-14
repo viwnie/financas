@@ -1,6 +1,4 @@
-'use client';
-
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,14 +64,14 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     <MoneyInput
                         amount={totalAmount}
                         currency={watch('currency') || 'BRL'}
-                        onAmountChange={(val) => {
+                        onAmountChange={useCallback((val: number) => {
                             setValue('amount', val, { shouldDirty: true, shouldValidate: true });
-                        }}
-                        onCurrencyChange={(val) => {
+                        }, [setValue])}
+                        onCurrencyChange={useCallback((val: string) => {
                             setValue('currency', val, { shouldDirty: true });
-                        }}
+                        }, [setValue])}
                         type={type}
-                        onTypeChange={(val) => setValue('type', val)}
+                        onTypeChange={useCallback((val: 'INCOME' | 'EXPENSE') => setValue('type', val), [setValue])}
                     />
                     {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
                     {isShared && (totalAmount || 0) > 0 && (
@@ -124,13 +122,16 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
             </div>
 
             <div className="space-y-4 pt-4">
-                <div className="border rounded-lg p-4 flex items-center justify-between">
+                <label
+                    htmlFor={`isFixed-${transactionId || 'new'}`}
+                    className="border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                >
                     <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                             <Repeat className="w-4 h-4 text-muted-foreground" />
-                            <Label htmlFor={`isFixed-${transactionId || 'new'}`} className="text-base font-medium">
+                            <span className="text-base font-medium cursor-pointer">
                                 {t('transactions.monthlyFixed')}
-                            </Label>
+                            </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                             {t('transactions.monthlyFixedDescription')}
@@ -141,15 +142,18 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                         checked={watch('isFixed')}
                         onCheckedChange={(checked) => setValue('isFixed', checked as boolean)}
                     />
-                </div>
+                </label>
 
-                <div className="border rounded-lg p-4 flex items-center justify-between">
+                <label
+                    htmlFor={`isShared-${transactionId || 'new'}`}
+                    className="border rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                >
                     <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                             <Users className="w-4 h-4 text-muted-foreground" />
-                            <Label htmlFor={`isShared-${transactionId || 'new'}`} className="text-base font-medium">
+                            <span className="text-base font-medium cursor-pointer">
                                 {t('transactions.shareWithFriends')}
-                            </Label>
+                            </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                             {t('transactions.shareWithFriendsDescription')}
@@ -165,7 +169,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                             }
                         }}
                     />
-                </div>
+                </label>
             </div>
 
             <TransactionParticipants

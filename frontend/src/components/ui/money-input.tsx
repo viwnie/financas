@@ -23,7 +23,7 @@ interface MoneyInputProps {
     placeholder?: string;
 }
 
-export function MoneyInput({
+export const MoneyInputComponent = React.forwardRef<HTMLDivElement, MoneyInputProps>(({
     amount,
     currency,
     onAmountChange,
@@ -33,7 +33,7 @@ export function MoneyInput({
     disabled,
     className,
     placeholder
-}: MoneyInputProps) {
+}, ref) => {
     const [inputValue, setInputValue] = useState('');
 
     // Update input value when amount changes externally
@@ -156,4 +156,6 @@ export function MoneyInput({
             />
         </div>
     );
-}
+});
+
+export const MoneyInput = React.memo(MoneyInputComponent);

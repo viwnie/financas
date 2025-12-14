@@ -36,7 +36,7 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
                 removeAvatar: false,
             });
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-            setAvatarPreview(`${apiUrl}/users/${user.id}/avatar?t=${Date.now()}`);
+            setAvatarPreview(`${apiUrl}/users/${user.id}/avatar?t=${user.avatarLastUpdated || 0}`);
             setHasDbAvatar(false);
             setShowPasswordError(false);
         }
@@ -119,7 +119,7 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
     const handleRevertAvatar = () => {
         setFormData((prev) => ({ ...prev, avatar: null, removeAvatar: false }));
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        setAvatarPreview(`${apiUrl}/users/${user?.id}/avatar?t=${Date.now()}`);
+        setAvatarPreview(`${apiUrl}/users/${user?.id}/avatar?t=${user?.avatarLastUpdated || 0}`);
         setShowPasswordError(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -180,7 +180,9 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
                 id: updatedUser.id,
                 name: updatedUser.name,
                 username: updatedUser.username,
-                email: updatedUser.email
+                email: updatedUser.email,
+                avatarMimeType: updatedUser.avatarMimeType,
+                avatarLastUpdated: formData.avatar || formData.removeAvatar ? Date.now() : user?.avatarLastUpdated
             };
 
             if (token) {

@@ -7,6 +7,7 @@ interface User {
     username: string;
     email: string;
     avatarMimeType?: string | null;
+    avatarLastUpdated?: number;
 }
 
 interface AuthState {

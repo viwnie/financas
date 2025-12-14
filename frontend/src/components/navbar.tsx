@@ -129,7 +129,7 @@ export function Navbar() {
                             <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage
-                                        src={user?.avatarMimeType ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${user.username}?t=${Date.now()}` : undefined}
+                                        src={user?.avatarMimeType ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${user.username}?t=${user.avatarLastUpdated || 0}` : undefined}
                                         alt={user?.name || 'User'}
                                         className="object-cover"
                                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}

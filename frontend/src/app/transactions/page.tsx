@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
 import { format } from 'date-fns';
-import { Trash2, Filter } from 'lucide-react';
-import { getCategoryDisplayName } from '@/lib/utils'; // Import at top
+import { Trash2, Filter, Calendar } from 'lucide-react';
+import { getCategoryDisplayName, formatCurrency } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,6 +26,7 @@ interface Transaction {
     id: string;
     type: 'INCOME' | 'EXPENSE';
     amount: string;
+    currency: string;
     description?: string;
     date: string;
     category: { name: string; color?: string | null; translations?: any[] };
@@ -45,18 +46,37 @@ interface Transaction {
     }[];
 }
 
-const getContrastColor = (hexcolor: string | null | undefined) => {
-    if (!hexcolor) return '#1e40af'; // default blue-800
-    // If hex is short (e.g. #FFF), expand it
-    let hex = hexcolor.replace('#', '');
-    if (hex.length === 3) {
-        hex = hex.split('').map(c => c + c).join('');
-    }
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return yiq >= 128 ? '#000000' : '#FFFFFF';
+const getContrastColor = (color: string | null | undefined) => {
+    if (!color) return '#FFFFFF'; // Default to white if no color
+
+    // Extract all hex colors from the string
+    const matches = color.match(/#[a-fA-F0-9]{3,6}/g);
+
+    // If no hex colors found, default to white
+    if (!matches || matches.length === 0) return '#FFFFFF';
+
+    let totalYiq = 0;
+
+    matches.forEach(match => {
+        let hex = match.replace('#', '');
+        if (hex.length === 3) {
+            hex = hex.split('').map(c => c + c).join('');
+        }
+
+        if (hex.length === 6) {
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            // YIQ equation
+            totalYiq += ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        }
+    });
+
+    // Calculate average brightness
+    const averageYiq = totalYiq / matches.length;
+
+    // Use a higher threshold (150 instead of 128) to prefer white text on mid-tones
+    return averageYiq >= 150 ? '#000000' : '#FFFFFF';
 };
 
 export default function TransactionsPage() {
@@ -322,7 +342,6 @@ export default function TransactionsPage() {
                                     <th className="px-6 py-3">{t('transactions.table.type')}</th>
                                     <th className="px-6 py-3">{t('transactions.table.amount')}</th>
                                     <th className="px-6 py-3">{t('transactions.table.status')}</th>
-                                    <th className="px-6 py-3">{t('transactions.table.users')}</th>
                                     <th className="px-6 py-3 text-right">{t('transactions.table.actions')}</th>
                                 </tr>
                             </thead>
@@ -360,7 +379,10 @@ export default function TransactionsPage() {
                                         return (
                                             <tr key={transaction.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
-                                                    {format(new Date(transaction.date), 'MMM d, yyyy', { locale: dateLocales[locale] || enUS })}
+                                                    <div className="flex items-center">
+                                                        <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                        {format(new Date(transaction.date), 'MMM d, yyyy', { locale: dateLocales[locale] || enUS })}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {transaction.description || '-'}
@@ -368,43 +390,74 @@ export default function TransactionsPage() {
                                                 <td className="px-6 py-4">
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${!catColor ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}`}
-                                                        style={catColor ? { backgroundColor: catColor, color: getContrastColor(catColor) } : undefined}
+                                                        style={catColor ? { background: catColor, color: getContrastColor(catColor) } : undefined}
                                                     >
                                                         {getCategoryDisplayName(transaction.category, locale)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`font-bold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.type === 'INCOME' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
                                                         {t(`transactions.type.${transaction.type}`)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 font-bold">
                                                     <div className="flex flex-col">
-                                                        <span>${parseFloat(transaction.amount).toFixed(2)} {transaction.isShared && <span className="text-xs font-normal text-muted-foreground">({t('transactions.total')})</span>}</span>
+                                                        <span>{formatCurrency(transaction.amount, locale, transaction.currency)} {transaction.isShared && <span className="text-xs font-normal text-muted-foreground">({t('transactions.total')})</span>}</span>
                                                         {transaction.isShared && (
                                                             <span className="text-xs text-primary font-medium">
-                                                                ${displayAmount.toFixed(2)} <span className="text-muted-foreground font-normal">{shareLabel}</span>
+                                                                {formatCurrency(displayAmount, locale, transaction.currency)} <span className="text-muted-foreground font-normal">{shareLabel}</span>
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col gap-1">
-                                                        {transaction.isShared && (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 w-fit">
-                                                                {t('transactions.shared')}
-                                                            </span>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            {transaction.isShared && (
+                                                                <span className="inline-flex flex-col items-start px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                                                    <span>{t('transactions.shared')}</span>
+                                                                    <span className="text-[10px] whitespace-nowrap opacity-90">• {acceptedCount}/{totalInvited} Accepted</span>
+                                                                </span>
+                                                            )}
+                                                            {transaction.isShared && (
+                                                                <div className="flex -space-x-2">
+                                                                    {transaction.participants.map((p, idx) => {
+                                                                        const name = p.user?.name || p.placeholderName || 'Unknown';
+                                                                        const isCreatorParticipant = p.userId === transaction.creatorId;
+                                                                        if (isCreatorParticipant) return null;
+
+                                                                        const statusBorder =
+                                                                            p.status === 'ACCEPTED' ? 'border-green-500' :
+                                                                                p.status === 'REJECTED' ? 'border-red-500' :
+                                                                                    p.status === 'EXITED' ? 'border-gray-500' :
+                                                                                        'border-yellow-500';
+
+                                                                        const username = p.user?.username;
+                                                                        const hasAvatar = !!p.user?.avatarMimeType;
+
+                                                                        return (
+                                                                            <div key={idx} className="relative z-0 hover:z-10 transition-all" title={`${name} (${p.status})`}>
+                                                                                <Avatar className={`h-6 w-6 border-2 ring-2 ring-background ${statusBorder}`}>
+                                                                                    <AvatarImage
+                                                                                        src={hasAvatar && username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${username}` : undefined}
+                                                                                        alt={name}
+                                                                                        className="object-cover"
+                                                                                    />
+                                                                                    <AvatarFallback className="text-[9px]">{name.charAt(0).toUpperCase()}</AvatarFallback>
+                                                                                </Avatar>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
                                                         {transaction.isFixed && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 w-fit">
                                                                 {t('transactions.fixed')}
                                                             </span>
                                                         )}
-                                                        {isCreator && transaction.isShared && (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {acceptedCount}/{totalInvited} Accepted
-                                                            </span>
-                                                        )}
+
                                                         {!isCreator && myParticipant && (
                                                             <span className={`text-xs font-medium ${myParticipant.status === 'PENDING' ? 'text-yellow-600' :
                                                                 myParticipant.status === 'ACCEPTED' ? 'text-green-600' :
@@ -414,45 +467,6 @@ export default function TransactionsPage() {
                                                             </span>
                                                         )}
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {transaction.isShared ? (
-                                                        <div className="flex flex-col gap-1">
-                                                            {transaction.participants.map((p, idx) => {
-                                                                const name = p.user?.name || p.placeholderName || 'Unknown';
-                                                                const isCreatorParticipant = p.userId === transaction.creatorId;
-                                                                if (isCreatorParticipant) return null;
-
-                                                                const statusColor =
-                                                                    p.status === 'ACCEPTED' ? 'text-green-600' :
-                                                                        p.status === 'REJECTED' ? 'text-red-600' :
-                                                                            p.status === 'EXITED' ? 'text-gray-500' :
-                                                                                'text-yellow-600';
-
-                                                                const username = p.user?.username;
-                                                                const hasAvatar = !!p.user?.avatarMimeType;
-
-                                                                return (
-                                                                    <div key={idx} className="flex items-center gap-2">
-                                                                        <Avatar className="h-6 w-6">
-                                                                            <AvatarImage
-                                                                                src={hasAvatar && username ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${username}` : undefined}
-                                                                                alt={name}
-                                                                                className="object-cover"
-                                                                            />
-                                                                            <AvatarFallback className="text-[10px]">{name.charAt(0).toUpperCase()}</AvatarFallback>
-                                                                        </Avatar>
-                                                                        <span className={`text-xs font-medium ${statusColor}`}>
-                                                                            {name}
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                            {transaction.participants.filter(p => p.userId !== transaction.creatorId).length === 0 && <span className="text-xs text-muted-foreground">No other participants</span>}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">-</span>
-                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex justify-end gap-2">

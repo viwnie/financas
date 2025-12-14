@@ -52,6 +52,7 @@ interface SortableColorItemProps {
 }
 
 function SortableColorItem({ color, onDelete, isSystem }: SortableColorItemProps) {
+    const { t } = useLanguage();
     const {
         attributes,
         listeners,
@@ -70,7 +71,7 @@ function SortableColorItem({ color, onDelete, isSystem }: SortableColorItemProps
             <div
                 className="h-10 w-10 rounded-full shadow-sm ring-1 ring-border cursor-move flex items-center justify-center"
                 style={{ background: color }}
-                title={isSystem ? "System color (cannot delete) - Drag to reorder" : "Custom color - Drag to reorder"}
+                title={isSystem ? t('categories.tooltipSystemColor') : t('categories.tooltipCustomColor')}
             >
                 {isSystem && (
                     <Lock className="h-4 w-4 text-white drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -84,7 +85,7 @@ function SortableColorItem({ color, onDelete, isSystem }: SortableColorItemProps
                         e.stopPropagation();
                         onDelete(color);
                     }}
-                    title="Delete color"
+                    title={t('categories.tooltipDeleteColor')}
                 >
                     <Trash2 className="h-3 w-3" />
                 </button>
@@ -99,6 +100,7 @@ interface ColorManagementSectionProps {
 }
 
 function ColorManagementSection({ token, queryClient }: ColorManagementSectionProps) {
+    const { t } = useLanguage();
     const [items, setItems] = useState<string[]>([]);
 
     // Fetch user saved colors
@@ -169,7 +171,7 @@ function ColorManagementSection({ token, queryClient }: ColorManagementSectionPr
             // success silently or small toast
         },
         onError: () => {
-            toast.error('Failed to save color order');
+            toast.error(t('categories.errorSaveColorOrder'));
         }
     });
 
@@ -183,12 +185,12 @@ function ColorManagementSection({ token, queryClient }: ColorManagementSectionPr
             return res.json();
         },
         onSuccess: (updatedListFromBackend) => {
-            toast.success('Color deleted');
+            toast.success(t('categories.successColorDeleted'));
             setItems(updatedListFromBackend); // Update local state from backend response
             queryClient.setQueryData(['saved-colors'], updatedListFromBackend);
         },
         onError: () => {
-            toast.error('Failed to delete color');
+            toast.error(t('categories.errorDeleteColor'));
         }
     });
 
@@ -221,7 +223,7 @@ function ColorManagementSection({ token, queryClient }: ColorManagementSectionPr
     };
 
     if (items.length === 0) {
-        return <div className="text-muted-foreground text-sm">Loading colors...</div>;
+        return <div className="text-muted-foreground text-sm">{t('categories.colorsLoading')}</div>;
     }
 
     return (
@@ -248,7 +250,7 @@ function ColorManagementSection({ token, queryClient }: ColorManagementSectionPr
 
 export default function CategoriesPage() {
     const { token } = useAuthStore();
-    const { locale } = useLanguage();
+    const { locale, t } = useLanguage();
     const queryClient = useQueryClient();
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -284,7 +286,7 @@ export default function CategoriesPage() {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
         },
         onError: () => {
-            toast.error('Failed to update color');
+            toast.error(t('categories.errorUpdateColor'));
         }
     });
 
@@ -302,14 +304,14 @@ export default function CategoriesPage() {
             return res.json();
         },
         onSuccess: () => {
-            toast.success('Category created successfully');
+            toast.success(t('categories.successCreated'));
             queryClient.invalidateQueries({ queryKey: ['categories'] });
 
             setNewCategoryName('');
             setNewCategoryColor(null);
         },
         onError: () => {
-            toast.error('Failed to create category');
+            toast.error(t('categories.errorCreate'));
         }
     });
 
@@ -325,12 +327,12 @@ export default function CategoriesPage() {
             });
             if (!res.ok) {
                 const errorData = await res.json();
-                throw new Error(errorData.message || 'Failed to delete category');
+                throw new Error(errorData.message || t('categories.errorDelete'));
             }
             return res.json();
         },
         onSuccess: () => {
-            toast.success('Category deleted successfully');
+            toast.success(t('categories.successDeleted'));
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             setCategoryToDelete(null);
         },
@@ -350,7 +352,7 @@ export default function CategoriesPage() {
 
     const handleCreateCategory = () => {
         if (!newCategoryName.trim()) {
-            toast.error('Category name is required');
+            toast.error(t('categories.errorNameRequired'));
             return;
         }
         createCategoryMutation.mutate({
@@ -395,9 +397,9 @@ export default function CategoriesPage() {
             <Navbar />
             <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
                 <div>
-                    <h1 className="text-3xl font-bold">Category Management</h1>
+                    <h1 className="text-3xl font-bold">{t('categories.headerTitle')}</h1>
                     <p className="text-muted-foreground mt-2">
-                        Customize how your categories appear in transactions and reports.
+                        {t('categories.headerDescription')}
                     </p>
                 </div>
 
@@ -405,14 +407,14 @@ export default function CategoriesPage() {
                     {/* Inline Creation Card */}
                     <Card className="border-dashed border-2 bg-muted/20 flex flex-col justify-center">
                         <CardHeader>
-                            <CardTitle className="text-lg">Create New Category</CardTitle>
-                            <CardDescription>Add a new category.</CardDescription>
+                            <CardTitle className="text-lg">{t('categories.createNewTitle')}</CardTitle>
+                            <CardDescription>{t('categories.createNewDescription')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-col gap-4">
                                 <div className="flex gap-4 items-start">
                                     <div className="space-y-2">
-                                        <Label>Color</Label>
+                                        <Label>{t('categories.labelColor')}</Label>
                                         <div className="flex items-center gap-2">
                                             <ColorSelectionPopover
                                                 selectedColor={newCategoryColor}
@@ -422,10 +424,10 @@ export default function CategoriesPage() {
                                         </div>
                                     </div>
                                     <div className="space-y-2 flex-1">
-                                        <Label htmlFor="name">Name</Label>
+                                        <Label htmlFor="name">{t('categories.labelName')}</Label>
                                         <Input
                                             id="name"
-                                            placeholder="e.g., Groceries"
+                                            placeholder={t('categories.placeholderName')}
                                             value={newCategoryName}
                                             onChange={(e) => setNewCategoryName(e.target.value)}
                                         />
@@ -441,7 +443,7 @@ export default function CategoriesPage() {
                                     ) : (
                                         <Plus className="mr-2 h-4 w-4" />
                                     )}
-                                    Create Category
+                                    {t('categories.buttonCreate')}
                                 </Button>
                             </div>
                         </CardContent>
@@ -450,9 +452,9 @@ export default function CategoriesPage() {
                     {/* Color Management Section */}
                     <Card className="flex flex-col">
                         <CardHeader>
-                            <CardTitle className="text-lg">My Saved Colors</CardTitle>
+                            <CardTitle className="text-lg">{t('categories.colorsTitle')}</CardTitle>
                             <CardDescription>
-                                Manage your custom colors. Drag and drop to reorder the palette.
+                                {t('categories.colorsDescription')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1">
@@ -505,7 +507,7 @@ export default function CategoriesPage() {
                                             </Button>
                                         )}
                                         {category.isSystem && (
-                                            <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">System</span>
+                                            <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">{t('categories.badgeSystem')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -535,9 +537,9 @@ export default function CategoriesPage() {
             <Dialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Category</DialogTitle>
+                        <DialogTitle>{t('categories.deleteDialogTitle')}</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this category? This action cannot be undone.
+                            {t('categories.deleteDialogDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

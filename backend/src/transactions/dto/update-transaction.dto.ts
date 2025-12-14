@@ -1,6 +1,9 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateTransactionDto } from './create-transaction.dto';
+import { IsOptional, IsDateString } from 'class-validator';
 
 export class UpdateTransactionDto extends PartialType(CreateTransactionDto) {
-    recurrenceEndsAt?: Date;
+    @IsOptional()
+    @IsDateString()
+    recurrenceEndsAt?: string;
 }

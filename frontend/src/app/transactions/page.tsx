@@ -32,6 +32,7 @@ interface Transaction {
     category: { name: string; color?: string | null; translations?: any[] };
     isShared: boolean;
     isFixed: boolean;
+    recurrenceEndsAt?: string | null;
     creatorId: string;
     installmentsCount?: number;
     participants: {
@@ -452,7 +453,7 @@ export default function TransactionsPage() {
                                                             )}
                                                         </div>
 
-                                                        {transaction.isFixed && (
+                                                        {transaction.isFixed && (!transaction.recurrenceEndsAt || new Date(transaction.recurrenceEndsAt) > new Date()) && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 w-fit">
                                                                 {t('transactions.fixed')}
                                                             </span>

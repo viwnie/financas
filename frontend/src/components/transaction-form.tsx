@@ -152,7 +152,8 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                     setValue('isFixed', false); // Visually off immediately
 
                                     // Only show stop recurrence UI if it was ALREADY fixed in the database
-                                    if (initialData?.isFixed) {
+                                    // AND it doesn't already have an end date (meaning it wasn't already stopped)
+                                    if (initialData?.isFixed && !initialData?.recurrenceEndsAt) {
                                         setTempEndDate(new Date());
                                         setStopRecurrenceOpen(true);
                                     } else {

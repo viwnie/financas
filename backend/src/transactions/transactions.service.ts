@@ -181,6 +181,16 @@ export class TransactionsService {
     }
 
     async update(id: string, userId: string, dto: UpdateTransactionDto) {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const fs = require('fs');
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const path = require('path');
+            fs.appendFileSync(path.join(process.cwd(), 'backend_debug_log.txt'), 'Update DTO: ' + JSON.stringify(dto) + '\n');
+        } catch (e) {
+            console.error('Failed to log', e);
+        }
+        
         const { amount, date, participants, categoryName, categoryId, isFixed, installmentsCount, categoryColor, language, ...rest } = dto;
         const transaction = await this.findOne(id, userId);
 

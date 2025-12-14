@@ -46,6 +46,10 @@ export class CreateTransactionDto {
     isShared?: boolean;
 
     @IsOptional()
+    @IsDateString()
+    recurrenceEndsAt?: string;
+
+    @IsOptional()
     @IsNumber()
     @Min(1)
     installmentsCount?: number;

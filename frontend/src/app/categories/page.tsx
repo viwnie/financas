@@ -323,7 +323,10 @@ export default function CategoriesPage() {
                     Authorization: `Bearer ${token}`
                 }
             });
-            if (!res.ok) throw new Error('Failed to delete category');
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to delete category');
+            }
             return res.json();
         },
         onSuccess: () => {
@@ -331,8 +334,8 @@ export default function CategoriesPage() {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             setCategoryToDelete(null);
         },
-        onError: () => {
-            toast.error('Failed to delete category');
+        onError: (error) => {
+            toast.error(error.message);
         }
     });
 

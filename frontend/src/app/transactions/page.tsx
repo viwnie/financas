@@ -453,7 +453,7 @@ export default function TransactionsPage() {
                                                             )}
                                                         </div>
 
-                                                        {transaction.isFixed && (!transaction.recurrenceEndsAt || new Date(transaction.recurrenceEndsAt) > new Date()) && (
+                                                        {transaction.isFixed && !transaction.recurrenceEndsAt && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 w-fit">
                                                                 {t('transactions.fixed')}
                                                             </span>

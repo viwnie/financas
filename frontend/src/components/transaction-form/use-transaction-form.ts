@@ -98,7 +98,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             date: initialData ? new Date(initialData.date) : new Date(),
             categoryName: initialData?.category?.name || '',
             categoryColor: initialData?.category?.color || initialData?.categoryColor || '#e2e8f0',
-            isFixed: initialData?.isFixed && (!initialData?.recurrenceEndsAt || new Date(initialData.recurrenceEndsAt) > new Date()),
+            isFixed: initialData?.isFixed && !initialData?.recurrenceEndsAt,
             recurrenceEndsAt: initialData?.recurrenceEndsAt ? new Date(initialData.recurrenceEndsAt) : undefined,
             installmentsCount: initialData?.installmentsCount || 1,
             isShared: initialData?.isShared || false,
@@ -478,7 +478,15 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
         }
 
         const cleanedParticipants = data.participants?.map((p) => p);
-        const cleanedData = { ...data, participants: cleanedParticipants };
+
+        let dateToSubmit = data.date;
+        // If date wasn't touched and we have an originalDate (indicating a virtual occurrence view),
+        // preserve the original start date instead of moving it to the occurrence date.
+        if (!form.formState.dirtyFields.date && initialData?.originalDate) {
+            dateToSubmit = new Date(initialData.originalDate);
+        }
+
+        const cleanedData = { ...data, date: dateToSubmit, participants: cleanedParticipants };
         mutation.mutate({ ...cleanedData, language: locale } as any);
     };
 

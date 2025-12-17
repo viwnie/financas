@@ -17,12 +17,13 @@ async function bootstrap() {
     credentials: true,
   });
 
-  transform: true,
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
     whitelist: false,
   }));
 
-logger.log('Starting application...');
-await app.listen(port, '0.0.0.0');
-logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log('Starting application...');
+  await app.listen(port, '0.0.0.0');
+  logger.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

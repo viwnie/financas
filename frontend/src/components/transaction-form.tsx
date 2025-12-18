@@ -198,6 +198,31 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                             </div>
                         </div>
                     )}
+
+                    {watch('excludedDates') && watch('excludedDates')!.length > 0 && (
+                        <div className="mt-4 p-4 border rounded-md bg-muted/30">
+                            <h4 className="text-sm font-medium mb-2">{t('transactions.excludedOccurrences') || 'Excluded Occurrences'}</h4>
+                            <div className="space-y-2">
+                                {watch('excludedDates')!.map((dateStr, idx) => (
+                                    <div key={idx} className="flex items-center justify-between text-sm bg-background p-2 rounded border">
+                                        <span>{new Date(dateStr).toLocaleDateString()}</span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 px-2 text-primary hover:text-primary/80"
+                                            onClick={() => {
+                                                const current = watch('excludedDates')!;
+                                                setValue('excludedDates', current.filter((_, i) => i !== idx));
+                                            }}
+                                        >
+                                            {t('common.restore') || 'Restore'}
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <label

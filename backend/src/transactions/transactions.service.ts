@@ -155,6 +155,19 @@ export class TransactionsService {
                 }
             }
 
+            // Check exclusions
+            // We match based on Year-Month-Day to be safe, or exact time if robust
+            // Since excludedDates will be stored with same time as t.date (from frontend logic ideally), exact match might work.
+            // But robust way: checks if any excluded date falls on same day as displayDate.
+            const isExcluded = t.excludedDates.some(ex => {
+                const exDate = new Date(ex);
+                return exDate.getFullYear() === displayDate.getFullYear() &&
+                    exDate.getMonth() === displayDate.getMonth() &&
+                    exDate.getDate() === displayDate.getDate();
+            });
+
+            if (isExcluded) return null;
+
             return {
                 ...t,
                 date: displayDate, // Override correct date for the view
@@ -165,7 +178,7 @@ export class TransactionsService {
                     name: t.category.translations[0]?.name || 'Unnamed' // Fallback
                 }
             };
-        });
+        }).filter(Boolean); // Remove nulls
     }
 
     async remove(id: string, userId: string) {
@@ -190,7 +203,7 @@ export class TransactionsService {
         } catch (e) {
             console.error('Failed to log', e);
         }
-        
+
         const { amount, date, participants, categoryName, categoryId, isFixed, installmentsCount, categoryColor, language, ...rest } = dto;
         const transaction = await this.findOne(id, userId);
 
@@ -230,6 +243,8 @@ export class TransactionsService {
                             : (isFixed === true) // If turning ON, clear end date
                                 ? null
                                 : transaction.recurrenceEndsAt, // Else keep current
+
+                    excludedDates: dto.excludedDates ? dto.excludedDates.map(d => new Date(d)) : undefined, // Replace list if provided
 
                     isShared: participants && participants.length > 0 ? true : (participants ? false : transaction.isShared)
                 }

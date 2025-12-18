@@ -6,4 +6,7 @@ export class UpdateTransactionDto extends PartialType(CreateTransactionDto) {
     @IsOptional()
     @IsDateString()
     recurrenceEndsAt?: string;
+
+    @IsOptional()
+    excludedDates?: string[];
 }

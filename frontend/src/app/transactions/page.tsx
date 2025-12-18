@@ -14,7 +14,16 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfirmationModal } from '@/components/confirmation-modal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Edit } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
@@ -29,6 +38,8 @@ interface Transaction {
     currency: string;
     description?: string;
     date: string;
+    originalDate?: string;
+    excludedDates?: string[];
     category: { name: string; color?: string | null; translations?: any[] };
     isShared: boolean;
     isFixed: boolean;
@@ -171,10 +182,53 @@ export default function TransactionsPage() {
         },
     });
 
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: any }) => {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to update');
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            toast.success(t('transactions.updated'));
+        },
+    });
+
+    const [recurrenceAction, setRecurrenceAction] = useState<'SINGLE' | 'ALL'>('SINGLE');
+    const [isRecurrenceModalOpen, setIsRecurrenceModalOpen] = useState(false);
+    const [recurrenceTransaction, setRecurrenceTransaction] = useState<Transaction | null>(null);
+
+    const handleRecurrenceConfirm = () => {
+        if (!recurrenceTransaction) return;
+
+        if (recurrenceAction === 'ALL') {
+            deleteMutation.mutate(recurrenceTransaction.id);
+        } else {
+            // Single (Exclude)
+            const viewDate = new Date(recurrenceTransaction.date);
+            const currentExcluded = recurrenceTransaction.excludedDates || [];
+            const newExcluded = [...currentExcluded, viewDate.toISOString()];
+
+            updateMutation.mutate({
+                id: recurrenceTransaction.id,
+                data: { excludedDates: newExcluded }
+            });
+        }
+        setIsRecurrenceModalOpen(false);
+        setRecurrenceTransaction(null);
+    };
+
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
         type: 'DELETE' | 'LEAVE' | 'REJECT' | null;
         id: string | null;
+        transaction?: Transaction | null;
         title: string;
         description: string;
         variant: 'default' | 'destructive';
@@ -182,6 +236,7 @@ export default function TransactionsPage() {
         isOpen: false,
         type: null,
         id: null,
+        transaction: null,
         title: '',
         description: '',
         variant: 'default',
@@ -204,7 +259,15 @@ export default function TransactionsPage() {
         setConfirmation(prev => ({ ...prev, isOpen: false }));
     };
 
-    const openConfirmation = (type: 'DELETE' | 'LEAVE' | 'REJECT', id: string) => {
+    const openConfirmation = (type: 'DELETE' | 'LEAVE' | 'REJECT', id: string, transaction?: Transaction) => {
+        // Intercept DELETE for Recurring Transactions
+        if (type === 'DELETE' && transaction?.isFixed) {
+            setRecurrenceTransaction(transaction);
+            setRecurrenceAction('SINGLE'); // Default
+            setIsRecurrenceModalOpen(true);
+            return;
+        }
+
         let title = '';
         let description = '';
         let variant: 'default' | 'destructive' = 'default';
@@ -231,6 +294,7 @@ export default function TransactionsPage() {
             isOpen: true,
             type,
             id,
+            transaction,
             title,
             description,
             variant,
@@ -485,7 +549,7 @@ export default function TransactionsPage() {
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-8 w-8 text-muted-foreground hover:text-red-600"
-                                                                    onClick={() => openConfirmation('DELETE', transaction.id)}
+                                                                    onClick={() => openConfirmation('DELETE', transaction.id, transaction)}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
@@ -510,6 +574,33 @@ export default function TransactionsPage() {
                         </table>
                     </div>
                 </div>
+                <Dialog open={isRecurrenceModalOpen} onOpenChange={setIsRecurrenceModalOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{t('transactions.deleteRecurringTitle') || 'Delete Transaction'}</DialogTitle>
+                            <DialogDescription>
+                                {t('transactions.deleteRecurringDesc') || 'This is a recurring transaction. What do you want to delete?'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <RadioGroup value={recurrenceAction} onValueChange={(v: any) => setRecurrenceAction(v)}>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="SINGLE" id="single" />
+                                    <Label htmlFor="single">{t('transactions.deleteSingle') || 'Delete only this date'}</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="ALL" id="all" />
+                                    <Label htmlFor="all">{t('transactions.deleteAll') || 'Delete all transactions'}</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsRecurrenceModalOpen(false)}>{t('common.cancel')}</Button>
+                            <Button variant="destructive" onClick={handleRecurrenceConfirm}>{t('common.confirm')}</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 <ConfirmationModal
                     open={confirmation.isOpen}
                     onOpenChange={(open) => setConfirmation(prev => ({ ...prev, isOpen: open }))}

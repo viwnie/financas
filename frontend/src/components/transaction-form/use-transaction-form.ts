@@ -103,6 +103,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             installmentsCount: initialData?.installmentsCount || 1,
             isShared: initialData?.isShared || false,
             participants: participants,
+            excludedDates: initialData?.excludedDates || [],
         };
     }, [initialData, user?.id, locale]);
 

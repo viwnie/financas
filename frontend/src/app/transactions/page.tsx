@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
 import { format } from 'date-fns';
-import { Trash2, Filter, Calendar } from 'lucide-react';
+import { Trash2, Filter, Calendar, History } from 'lucide-react';
 import { getCategoryDisplayName, formatCurrency, getInitials } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
@@ -545,6 +545,24 @@ export default function TransactionsPage() {
                                                                 >
                                                                     <Edit className="h-4 w-4" />
                                                                 </Button>
+                                                                {transaction.isFixed && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                                        title={t('transactions.goToOriginal')}
+                                                                        onClick={() => {
+                                                                            if (transaction.originalDate) {
+                                                                                const orig = new Date(transaction.originalDate);
+                                                                                setMonth(String(orig.getMonth() + 1));
+                                                                                setYear(String(orig.getFullYear()));
+                                                                                toast.info(t('transactions.navigatedToOriginal'));
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <History className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"

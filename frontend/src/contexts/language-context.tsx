@@ -16,8 +16,6 @@ const translations = {
         'errors.amountRequired': 'Amount must be greater than 0.01',
         'errors.categoryRequired': 'Category is required',
         'errors.installmentsMin': 'Installments must be at least 1',
-        // ... (existing en)
-        // ... (existing en)
         'dashboard.welcome': 'Welcome',
         'dashboard.transactions': 'Transactions',
         'dashboard.friends': 'Friends',
@@ -168,7 +166,6 @@ const translations = {
         'errors.amountRequired': 'O valor deve ser maior que 0,01',
         'errors.categoryRequired': 'A categoria é obrigatória',
         'errors.installmentsMin': 'O número de parcelas deve ser pelo menos 1',
-        // ... (existing pt)
         'dashboard.welcome': 'Bem-vindo',
         'dashboard.transactions': 'Transações',
         'dashboard.friends': 'Amigos',

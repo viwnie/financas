@@ -56,7 +56,7 @@ export class TransactionsService {
         });
     }
 
-    async findAll(userId: string, filters?: { month?: number; year?: number; type?: TransactionType }) {
+    async findAll(userId: string, filters?: { months?: number[]; years?: number[]; type?: TransactionType; search?: string }) {
         const userAccessFilter: Prisma.TransactionWhereInput = {
             OR: [
                 { creatorId: userId },
@@ -79,40 +79,93 @@ export class TransactionsService {
             where.type = filters.type;
         }
 
-        if (filters?.month || filters?.year) {
-            const now = new Date();
-            const targetYear = filters.year || now.getFullYear();
-            let startDate: Date;
-            let endDate: Date;
+        if (filters?.search) {
+            (where.AND as Prisma.TransactionWhereInput[]).push({
+                OR: [
+                    { description: { contains: filters.search, mode: 'insensitive' } },
+                    {
+                        category: {
+                            OR: [
+                                { name: { contains: filters.search, mode: 'insensitive' } }, // Original name
+                                {
+                                    translations: {
+                                        some: {
+                                            name: { contains: filters.search, mode: 'insensitive' } // Translated name
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            });
+        }
 
-            if (filters.month) {
-                startDate = new Date(targetYear, filters.month - 1, 1);
-                endDate = new Date(targetYear, filters.month, 0);
-            } else {
-                startDate = new Date(targetYear, 0, 1);
-                endDate = new Date(targetYear, 11, 31);
+        // Date Filtering Logic for Multiple Months/Years
+        // Strategy:
+        // 1. If only years provided: Filter by those years (Jan 1 to Dec 31).
+        // 2. If months and years provided:
+        //    Ideally, we want "all selected months in all selected years". 
+        //    E.g. Month=[1, 2], Year=[2024, 2025] -> Jan 2024, Feb 2024, Jan 2025, Feb 2025.
+        // 3. If only months provided (no years): Assume current year (standard behavior) or ignore? 
+        //    Let's default to current year if no year provided but months are.
+
+        if (filters?.months?.length || filters?.years?.length) {
+            const targetYears = filters.years?.length ? filters.years : [new Date().getFullYear()];
+            const targetMonths = filters.months?.length ? filters.months : Array.from({ length: 12 }, (_, i) => i + 1); // If year selected but no month, imply *all* months? Or no filter? Usually "Year 2024" means all 2024.
+
+            // Construct ranges
+            const ranges: { start: Date; end: Date }[] = [];
+
+            for (const year of targetYears) {
+                if (filters?.months?.length) {
+                    // Specific months in this year
+                    for (const month of filters.months) {
+                        ranges.push({
+                            start: new Date(year, month - 1, 1),
+                            end: new Date(year, month, 0)
+                        });
+                    }
+                } else {
+                    // Whole year
+                    ranges.push({
+                        start: new Date(year, 0, 1),
+                        end: new Date(year, 11, 31)
+                    });
+                }
             }
+
+            const rangeConditions = ranges.map(range => ({
+                date: {
+                    gte: range.start,
+                    lte: range.end
+                }
+            }));
+
+            // Fixed transactions logic:
+            // A fixed transaction should show up if it is active during ANY of the target ranges.
+            // Active means:
+            // 1. isFixed = true
+            // 2. date (start date) <= range.end
+            // 3. recurrenceEndsAt IS NULL OR recurrenceEndsAt >= range.start
+
+            const fixedConditions = ranges.map(range => ({
+                AND: [
+                    { isFixed: true },
+                    { date: { lte: range.end } },
+                    {
+                        OR: [
+                            { recurrenceEndsAt: null },
+                            { recurrenceEndsAt: { gte: range.start } }
+                        ]
+                    }
+                ]
+            }));
 
             (where.AND as Prisma.TransactionWhereInput[]).push({
                 OR: [
-                    {
-                        date: {
-                            gte: startDate,
-                            lte: endDate
-                        }
-                    },
-                    {
-                        AND: [
-                            { isFixed: true },
-                            { date: { lte: endDate } },
-                            {
-                                OR: [
-                                    { recurrenceEndsAt: null },
-                                    { recurrenceEndsAt: { gte: startDate } }
-                                ]
-                            }
-                        ]
-                    }
+                    ...rangeConditions,
+                    ...fixedConditions
                 ]
             });
         }
@@ -134,51 +187,93 @@ export class TransactionsService {
             orderBy: { date: 'desc' }
         });
 
-        return transactions.map(t => {
-            let displayDate = t.date;
-            if (filters?.month && filters?.year && t.isFixed) {
-                const targetYear = filters.year;
-                const targetMonth = filters.month - 1; // 0-indexed
-                // Check if original date is not in the target month/year
-                if (t.date.getMonth() !== targetMonth || t.date.getFullYear() !== targetYear) {
-                    // Create date in target month
-                    // Handle edge cases like Jan 31 -> Feb 28 using simple date setting?
-                    // new Date(y, m, d) automatically rolls over if d > daysInMonth, which might not be desired (Jan 31 -> Mar 3).
-                    // Better to clamp to last day of month.
-                    const originalDay = t.date.getDate();
-                    const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-                    const targetDay = Math.min(originalDay, daysInTargetMonth);
-                    displayDate = new Date(targetYear, targetMonth, targetDay);
+        // Post-processing for Fixed Transactions display dates
+        // We need to flatten fixed transactions into their occurrences within the selected ranges.
+        // For standard transactions, we just return them.
+        // For fixed transactions, we might duplicate them if they appear in multiple selected months (e.g. Jan and Feb selected).
 
-                    // Preserve time? Usually irrelevant for transactions but good practice
-                    displayDate.setHours(t.date.getHours(), t.date.getMinutes(), t.date.getSeconds(), t.date.getMilliseconds());
+        const result: any[] = [];
+        const ranges = (filters?.months?.length || filters?.years?.length)
+            ? (filters.years?.length ? filters.years : [new Date().getFullYear()]).flatMap(y =>
+                (filters.months?.length ? filters.months : Array.from({ length: 12 }, (_, i) => i + 1)).map(m => ({ year: y, month: m - 1 }))
+            )
+            : []; // If no filter, we probably shouldn't be here or just show all? The original code defaulted to a specific month/year.
+        // If the user clears filters, we might want to default to something or show everything (pagination needed then).
+        // For now, if no ranges (empty filters), we just return the raw transactions (like "All Time").
+
+        // If we have ranges defined, we "explode" fixed transactions.
+        if (ranges.length > 0) {
+            for (const t of transactions) {
+                if (t.isFixed) {
+                    // Check which ranges this fixed transaction falls into
+                    let added = false;
+                    for (const range of ranges) {
+                        const rangeStart = new Date(range.year, range.month, 1);
+                        const rangeEnd = new Date(range.year, range.month + 1, 0);
+
+                        // Check if active in this range
+                        const isActive = t.date <= rangeEnd && (!t.recurrenceEndsAt || t.recurrenceEndsAt >= rangeStart);
+
+                        if (isActive) {
+                            // Calculate display date for this specific month/year occurrence
+                            // Logic: Match day of month, or clamp.
+                            const originalDay = t.date.getDate();
+                            const daysInTargetMonth = rangeEnd.getDate(); // rangeEnd is last day of month
+                            const targetDay = Math.min(originalDay, daysInTargetMonth);
+                            const displayDate = new Date(range.year, range.month, targetDay);
+                            displayDate.setHours(t.date.getHours(), t.date.getMinutes(), t.date.getSeconds(), t.date.getMilliseconds());
+
+                            // Check Exclusions for THIS specific date
+                            const isExcluded = t.excludedDates.some(ex => {
+                                const exDate = new Date(ex);
+                                return exDate.getFullYear() === displayDate.getFullYear() &&
+                                    exDate.getMonth() === displayDate.getMonth() &&
+                                    exDate.getDate() === displayDate.getDate();
+                            });
+
+                            if (!isExcluded) {
+                                // Clone and push
+                                result.push({
+                                    ...t,
+                                    date: displayDate,
+                                    originalDate: t.date,
+                                    category: {
+                                        ...t.category,
+                                        color: t.category.userSettings[0]?.color || null,
+                                        name: t.category.translations[0]?.name || 'Unnamed'
+                                    }
+                                });
+                                added = true;
+                            }
+                        }
+                    }
+                    // What if it's fixed but doesn't fall in any displayed range? (Should be filtered out by DB query, but double check)
+                } else {
+                    // Regular transaction
+                    result.push({
+                        ...t,
+                        category: {
+                            ...t.category,
+                            color: t.category.userSettings[0]?.color || null,
+                            name: t.category.translations[0]?.name || 'Unnamed'
+                        }
+                    });
                 }
             }
-
-            // Check exclusions
-            // We match based on Year-Month-Day to be safe, or exact time if robust
-            // Since excludedDates will be stored with same time as t.date (from frontend logic ideally), exact match might work.
-            // But robust way: checks if any excluded date falls on same day as displayDate.
-            const isExcluded = t.excludedDates.some(ex => {
-                const exDate = new Date(ex);
-                return exDate.getFullYear() === displayDate.getFullYear() &&
-                    exDate.getMonth() === displayDate.getMonth() &&
-                    exDate.getDate() === displayDate.getDate();
-            });
-
-            if (isExcluded) return null;
-
-            return {
+        } else {
+            // No time filters, just map standard props
+            return transactions.map(t => ({
                 ...t,
-                date: displayDate, // Override correct date for the view
-                originalDate: t.date, // Keep original just in case
                 category: {
                     ...t.category,
                     color: t.category.userSettings[0]?.color || null,
-                    name: t.category.translations[0]?.name || 'Unnamed' // Fallback
+                    name: t.category.translations[0]?.name || 'Unnamed'
                 }
-            };
-        }).filter(Boolean); // Remove nulls
+            }));
+        }
+
+        // Sort again because we might have generated out-of-order occurrences
+        return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
 
     async remove(id: string, userId: string) {

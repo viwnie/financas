@@ -22,14 +22,20 @@ export class TransactionsController {
     @Get()
     findAll(
         @Request() req,
-        @Query('month') month?: string,
-        @Query('year') year?: string,
-        @Query('type') type?: 'INCOME' | 'EXPENSE'
+        @Query('month') month?: string | string[],
+        @Query('year') year?: string | string[],
+        @Query('type') type?: 'INCOME' | 'EXPENSE',
+        @Query('search') search?: string
     ) {
+        // Normalize to arrays
+        const months = month ? (Array.isArray(month) ? month : [month]).map(m => parseInt(m)) : undefined;
+        const years = year ? (Array.isArray(year) ? year : [year]).map(y => parseInt(y)) : undefined;
+
         return this.transactionsService.findAll(req.user.userId, {
-            month: month ? parseInt(month) : undefined,
-            year: year ? parseInt(year) : undefined,
-            type: type as any
+            months,
+            years,
+            type: type as any,
+            search
         });
     }
 

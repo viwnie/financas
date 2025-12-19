@@ -13,6 +13,8 @@ import { getCategoryDisplayName, formatCurrency, getInitials } from '@/lib/utils
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { Input } from '@/components/ui/input';
 import { ConfirmationModal } from '@/components/confirmation-modal';
 import {
     Dialog,
@@ -99,18 +101,20 @@ export default function TransactionsPage() {
 
     // Removed local getCategoryDisplayName as it is now imported
 
-    const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
-    const [year, setYear] = useState<string>(String(new Date().getFullYear()));
+    const [monthsSelected, setMonthsSelected] = useState<string[]>([String(new Date().getMonth() + 1)]);
+    const [yearsSelected, setYearsSelected] = useState<string[]>([String(new Date().getFullYear())]);
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
 
     const { data: transactions = [] } = useQuery<Transaction[]>({
-        queryKey: ['transactions', month, year, typeFilter],
+        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, searchTerm],
         queryFn: async () => {
             const params = new URLSearchParams();
-            if (month) params.append('month', month);
-            if (year) params.append('year', year);
+            monthsSelected.forEach(m => params.append('month', m));
+            yearsSelected.forEach(y => params.append('year', y));
             if (typeFilter !== 'ALL') params.append('type', typeFilter);
+            if (searchTerm) params.append('search', searchTerm);
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -307,7 +311,10 @@ export default function TransactionsPage() {
     }));
 
     const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 5 }, (_, i) => String(currentYear - 2 + i));
+    const years = Array.from({ length: 5 }, (_, i) => ({
+        value: String(currentYear - 2 + i),
+        label: String(currentYear - 2 + i) // MultiSelect expects label/value objects
+    }));
 
     return (
         <div className="min-h-screen bg-background">
@@ -343,14 +350,23 @@ export default function TransactionsPage() {
                 </Card>
 
                 {/* Filters */}
-                <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-lg border">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col md:flex-row flex-wrap gap-4 items-end md:items-center bg-card p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 mr-auto">
                         <Filter className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">{t('transactions.filters')}</span>
                     </div>
 
+                    <div className="w-full md:w-[200px]">
+                        <Input
+                            placeholder={t('transactions.searchPlaceholder') || "Search category..."}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full"
+                        />
+                    </div>
+
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
-                        <SelectTrigger className="w-[140px]">
+                        <SelectTrigger className="w-full md:w-[140px]">
                             <SelectValue placeholder={t('transactions.type')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -360,35 +376,35 @@ export default function TransactionsPage() {
                         </SelectContent>
                     </Select>
 
-                    <Select value={month} onValueChange={setMonth}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder={t('transactions.month')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {months.map((m) => (
-                                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="w-full md:w-[180px]">
+                        <MultiSelect
+                            options={months}
+                            selected={monthsSelected}
+                            onChange={setMonthsSelected}
+                            placeholder={t('transactions.month')}
+                            width="w-full"
+                        />
+                    </div>
 
-                    <Select value={year} onValueChange={setYear}>
-                        <SelectTrigger className="w-[100px]">
-                            <SelectValue placeholder={t('transactions.year')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {years.map((y) => (
-                                <SelectItem key={y} value={y}>{y}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="w-full md:w-[120px]">
+                        <MultiSelect
+                            options={years}
+                            selected={yearsSelected}
+                            onChange={setYearsSelected}
+                            placeholder={t('transactions.year')}
+                            width="w-full"
+                        />
+                    </div>
 
                     <Button
                         variant="outline"
-                        className="dark:bg-white dark:text-black dark:hover:bg-gray-200"
+                        className="dark:bg-white dark:text-black dark:hover:bg-gray-200 w-full md:w-auto"
                         onClick={() => {
                             const now = new Date();
-                            setMonth(String(now.getMonth() + 1));
-                            setYear(String(now.getFullYear()));
+                            setMonthsSelected([String(now.getMonth() + 1)]);
+                            setYearsSelected([String(now.getFullYear())]);
+                            setSearchTerm('');
+                            setTypeFilter('ALL');
                         }}
                     >
                         {t('transactions.today')}
@@ -442,7 +458,7 @@ export default function TransactionsPage() {
                                         const catColor = transaction.category.color;
 
                                         return (
-                                            <tr key={transaction.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                                            <tr key={`${transaction.id}-${transaction.date}`} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -554,8 +570,8 @@ export default function TransactionsPage() {
                                                                         onClick={() => {
                                                                             if (transaction.originalDate) {
                                                                                 const orig = new Date(transaction.originalDate);
-                                                                                setMonth(String(orig.getMonth() + 1));
-                                                                                setYear(String(orig.getFullYear()));
+                                                                                setMonthsSelected([String(orig.getMonth() + 1)]);
+                                                                                setYearsSelected([String(orig.getFullYear())]);
                                                                                 toast.info(t('transactions.navigatedToOriginal'));
                                                                             }
                                                                         }}

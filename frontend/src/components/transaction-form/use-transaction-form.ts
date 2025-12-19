@@ -34,6 +34,7 @@ const createTransactionSchema = (t: (key: string) => string) => z.object({
     installmentsCount: z.coerce.number().min(1, t('errors.installmentsMin')).optional(),
     isShared: z.boolean().optional(),
     participants: z.array(participantSchema).optional(),
+    excludedDates: z.array(z.string()).optional(),
 });
 
 // Base schema for type inference
@@ -50,6 +51,7 @@ const baseSchema = z.object({
     installmentsCount: z.number().optional(),
     isShared: z.boolean().optional(),
     participants: z.array(participantSchema).optional(),
+    excludedDates: z.array(z.string()).optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof baseSchema>;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { useLanguage } from '@/contexts/language-context';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import { Edit } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { pt, es, enUS } from 'date-fns/locale';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const dateLocales: Record<string, any> = { pt, es, en: enUS };
 
@@ -104,19 +105,20 @@ export default function TransactionsPage() {
     const [monthsSelected, setMonthsSelected] = useState<string[]>([String(new Date().getMonth() + 1)]);
     const [yearsSelected, setYearsSelected] = useState<string[]>([String(new Date().getFullYear())]);
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 50);
     const [searchField, setSearchField] = useState<string>('DESCRIPTION');
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
 
     const { data: transactions = [] } = useQuery<Transaction[]>({
-        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, searchTerm, searchField],
+        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, debouncedSearchTerm, searchField],
         queryFn: async () => {
             const params = new URLSearchParams();
             monthsSelected.forEach(m => params.append('month', m));
             yearsSelected.forEach(y => params.append('year', y));
             if (typeFilter !== 'ALL') params.append('type', typeFilter);
-            if (searchTerm) {
-                params.append('search', searchTerm);
+            if (debouncedSearchTerm) {
+                params.append('search', debouncedSearchTerm);
                 params.append('searchField', searchField);
             }
 
@@ -126,6 +128,7 @@ export default function TransactionsPage() {
             if (!res.ok) throw new Error('Failed to fetch transactions');
             return res.json();
         },
+        placeholderData: keepPreviousData,
         enabled: !!token,
     });
 

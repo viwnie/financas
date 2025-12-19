@@ -104,17 +104,21 @@ export default function TransactionsPage() {
     const [monthsSelected, setMonthsSelected] = useState<string[]>([String(new Date().getMonth() + 1)]);
     const [yearsSelected, setYearsSelected] = useState<string[]>([String(new Date().getFullYear())]);
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [searchField, setSearchField] = useState<string>('DESCRIPTION');
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
 
     const { data: transactions = [] } = useQuery<Transaction[]>({
-        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, searchTerm],
+        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, searchTerm, searchField],
         queryFn: async () => {
             const params = new URLSearchParams();
             monthsSelected.forEach(m => params.append('month', m));
             yearsSelected.forEach(y => params.append('year', y));
             if (typeFilter !== 'ALL') params.append('type', typeFilter);
-            if (searchTerm) params.append('search', searchTerm);
+            if (searchTerm) {
+                params.append('search', searchTerm);
+                params.append('searchField', searchField);
+            }
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -356,13 +360,25 @@ export default function TransactionsPage() {
                         <span className="font-medium">{t('transactions.filters')}</span>
                     </div>
 
-                    <div className="w-full md:w-[200px]">
-                        <Input
-                            placeholder={t('transactions.searchPlaceholder') || "Search category..."}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full"
-                        />
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Select value={searchField} onValueChange={setSearchField}>
+                            <SelectTrigger className="w-[130px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="DESCRIPTION">{t('transactions.searchField.description')}</SelectItem>
+                                <SelectItem value="CATEGORY">{t('transactions.searchField.category')}</SelectItem>
+                                <SelectItem value="STATUS">{t('transactions.searchField.status')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <div className="w-full md:w-[200px]">
+                            <Input
+                                placeholder={t('transactions.searchPlaceholder') || "Search..."}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full"
+                            />
+                        </div>
                     </div>
 
                     <Select value={typeFilter} onValueChange={setTypeFilter}>

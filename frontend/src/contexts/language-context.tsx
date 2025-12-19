@@ -160,6 +160,10 @@ const translations = {
         'categories.errorSaveColorOrder': 'Failed to save color order',
         'categories.successColorDeleted': 'Color deleted',
         'categories.errorDeleteColor': 'Failed to delete color',
+        'transactions.searchPlaceholder': 'Search...',
+        'transactions.searchField.description': 'Description',
+        'transactions.searchField.category': 'Category',
+        'transactions.searchField.status': 'Status',
     },
     pt: {
         'errors.descriptionRequired': 'A descrição é obrigatória',
@@ -310,6 +314,10 @@ const translations = {
         'categories.errorSaveColorOrder': 'Falha ao salvar ordem das cores',
         'categories.successColorDeleted': 'Cor apagada',
         'categories.errorDeleteColor': 'Falha ao apagar cor',
+        'transactions.searchPlaceholder': 'Buscar...',
+        'transactions.searchField.description': 'Descrição',
+        'transactions.searchField.category': 'Categoria',
+        'transactions.searchField.status': 'Status',
     },
     es: {
         'errors.descriptionRequired': 'La descripción es obligatoria',
@@ -460,6 +468,10 @@ const translations = {
         'categories.errorSaveColorOrder': 'Error al guardar el orden de colores',
         'categories.successColorDeleted': 'Color eliminado',
         'categories.errorDeleteColor': 'Error al eliminar color',
+        'transactions.searchPlaceholder': 'Buscar...',
+        'transactions.searchField.description': 'Descripción',
+        'transactions.searchField.category': 'Categoría',
+        'transactions.searchField.status': 'Estado',
     },
 };
 

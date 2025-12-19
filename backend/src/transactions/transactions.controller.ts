@@ -25,7 +25,8 @@ export class TransactionsController {
         @Query('month') month?: string | string[],
         @Query('year') year?: string | string[],
         @Query('type') type?: 'INCOME' | 'EXPENSE',
-        @Query('search') search?: string
+        @Query('search') search?: string,
+        @Query('searchField') searchField?: 'DESCRIPTION' | 'CATEGORY' | 'STATUS'
     ) {
         // Normalize to arrays
         const months = month ? (Array.isArray(month) ? month : [month]).map(m => parseInt(m)) : undefined;
@@ -35,7 +36,8 @@ export class TransactionsController {
             months,
             years,
             type: type as any,
-            search
+            search,
+            searchField
         });
     }
 

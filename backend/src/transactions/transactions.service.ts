@@ -56,7 +56,8 @@ export class TransactionsService {
         });
     }
 
-    async findAll(userId: string, filters?: { months?: number[]; years?: number[]; type?: TransactionType; search?: string }) {
+    async findAll(userId: string, filters?: { months?: number[]; years?: number[]; type?: TransactionType; search?: string; searchField?: 'DESCRIPTION' | 'CATEGORY' | 'STATUS' }) {
+        console.log('Distilled Filters:', JSON.stringify(filters));
         const userAccessFilter: Prisma.TransactionWhereInput = {
             OR: [
                 { creatorId: userId },
@@ -80,25 +81,43 @@ export class TransactionsService {
         }
 
         if (filters?.search) {
-            (where.AND as Prisma.TransactionWhereInput[]).push({
-                OR: [
-                    { description: { contains: filters.search, mode: 'insensitive' } },
-                    {
-                        category: {
-                            OR: [
-                                { name: { contains: filters.search, mode: 'insensitive' } }, // Original name
-                                {
-                                    translations: {
-                                        some: {
-                                            name: { contains: filters.search, mode: 'insensitive' } // Translated name
-                                        }
-                                    }
-                                }
-                            ]
+            const search = filters.search;
+            const field = filters.searchField || 'DESCRIPTION';
+
+            if (field === 'DESCRIPTION') {
+                (where.AND as Prisma.TransactionWhereInput[]).push({
+                    description: { contains: search, mode: 'insensitive' }
+                });
+            } else if (field === 'CATEGORY') {
+                (where.AND as Prisma.TransactionWhereInput[]).push({
+                    category: {
+                        translations: {
+                            some: {
+                                name: { contains: search, mode: 'insensitive' }
+                            }
                         }
                     }
-                ]
-            });
+                });
+            } else if (field === 'STATUS') {
+                const allStatuses = Object.values(ParticipantStatus);
+                const matchingStatuses = allStatuses.filter(s => s.toLowerCase().includes(search.toLowerCase()));
+
+                if (matchingStatuses.length > 0) {
+                    (where.AND as Prisma.TransactionWhereInput[]).push({
+                        participants: {
+                            some: {
+                                userId,
+                                status: { in: matchingStatuses }
+                            }
+                        }
+                    });
+                } else {
+                    // If no status matches the search term, return no results
+                    (where.AND as Prisma.TransactionWhereInput[]).push({
+                        id: 'no-match'
+                    });
+                }
+            }
         }
 
         // Date Filtering Logic for Multiple Months/Years

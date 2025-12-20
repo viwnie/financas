@@ -25,6 +25,8 @@ export class TransactionsController {
         @Query('month') month?: string | string[],
         @Query('year') year?: string | string[],
         @Query('type') type?: 'INCOME' | 'EXPENSE',
+        @Query('isFixed') isFixed?: string,
+        @Query('isShared') isShared?: string,
         @Query('search') search?: string,
         @Query('searchField') searchField?: 'DESCRIPTION' | 'CATEGORY' | 'STATUS'
     ) {
@@ -32,10 +34,19 @@ export class TransactionsController {
         const months = month ? (Array.isArray(month) ? month : [month]).map(m => parseInt(m)) : undefined;
         const years = year ? (Array.isArray(year) ? year : [year]).map(y => parseInt(y)) : undefined;
 
+        // Parse booleans
+        const parseBool = (val: string | undefined): boolean | undefined => {
+            if (val === 'true') return true;
+            if (val === 'false') return false;
+            return undefined;
+        };
+
         return this.transactionsService.findAll(req.user.userId, {
             months,
             years,
             type: type as any,
+            isFixed: parseBool(isFixed),
+            isShared: parseBool(isShared),
             search,
             searchField
         });

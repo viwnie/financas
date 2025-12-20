@@ -164,6 +164,13 @@ const translations = {
         'transactions.searchField.description': 'Description',
         'transactions.searchField.category': 'Category',
         'transactions.searchField.status': 'Status',
+        'common.reset': 'Reset',
+        'transactions.filter.allRecurring': 'All Occurrences',
+        'transactions.filter.onlyRecurring': 'Recurring Only',
+        'transactions.filter.onlyOneTime': 'One-time Only',
+        'transactions.filter.allShared': 'All Transactions',
+        'transactions.filter.onlyShared': 'Shared Only',
+        'transactions.filter.onlyPrivate': 'Private Only',
     },
     pt: {
         'errors.descriptionRequired': 'A descrição é obrigatória',
@@ -318,6 +325,13 @@ const translations = {
         'transactions.searchField.description': 'Descrição',
         'transactions.searchField.category': 'Categoria',
         'transactions.searchField.status': 'Status',
+        'common.reset': 'Resetar',
+        'transactions.filter.allRecurring': 'Todas as Ocorrências',
+        'transactions.filter.onlyRecurring': 'Apenas Recorrentes',
+        'transactions.filter.onlyOneTime': 'Apenas Pontuais',
+        'transactions.filter.allShared': 'Todas as Transações',
+        'transactions.filter.onlyShared': 'Apenas Compartilhadas',
+        'transactions.filter.onlyPrivate': 'Apenas Privadas',
     },
     es: {
         'errors.descriptionRequired': 'La descripción es obligatoria',
@@ -422,7 +436,7 @@ const translations = {
         'transactions.requestSent': 'Solicitud Enviada',
         'transactions.add': 'Agregar',
         'transactions.nonRegistered': '(No registrado)',
-        'transactions.selectedParticipants': 'Participantes Seleccionados',
+        'transactions.selectedParticipants': 'Participantes Selecionados',
         'transactions.reinvite': 'Re-invitar',
         'transactions.pending': 'Pendiente',
         'transactions.stopRecurrenceTitle': 'Terminar Recurrencia',
@@ -472,7 +486,15 @@ const translations = {
         'transactions.searchField.description': 'Descripción',
         'transactions.searchField.category': 'Categoría',
         'transactions.searchField.status': 'Estado',
+        'common.reset': 'Reiniciar',
+        'transactions.filter.allRecurring': 'Todas las Ocurrencias',
+        'transactions.filter.onlyRecurring': 'Solo Recurrentes',
+        'transactions.filter.onlyOneTime': 'Solo Únicas',
+        'transactions.filter.allShared': 'Todas las Transacciones',
+        'transactions.filter.onlyShared': 'Solo Compartidas',
+        'transactions.filter.onlyPrivate': 'Solo Privadas',
     },
+
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

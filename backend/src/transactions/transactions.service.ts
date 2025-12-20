@@ -56,7 +56,7 @@ export class TransactionsService {
         });
     }
 
-    async findAll(userId: string, filters?: { months?: number[]; years?: number[]; type?: TransactionType; search?: string; searchField?: 'DESCRIPTION' | 'CATEGORY' | 'STATUS' }) {
+    async findAll(userId: string, filters?: { months?: number[]; years?: number[]; type?: TransactionType; isFixed?: boolean; isShared?: boolean; search?: string; searchField?: 'DESCRIPTION' | 'CATEGORY' | 'STATUS' }) {
         console.log('Distilled Filters:', JSON.stringify(filters));
         const userAccessFilter: Prisma.TransactionWhereInput = {
             OR: [
@@ -78,6 +78,14 @@ export class TransactionsService {
 
         if (filters?.type) {
             where.type = filters.type;
+        }
+
+        if (filters?.isFixed !== undefined) {
+            where.isFixed = filters.isFixed;
+        }
+
+        if (filters?.isShared !== undefined) {
+            where.isShared = filters.isShared;
         }
 
         if (filters?.search) {

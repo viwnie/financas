@@ -108,15 +108,19 @@ export default function TransactionsPage() {
     const debouncedSearchTerm = useDebounce(searchTerm, 50);
     const [searchField, setSearchField] = useState<string>('DESCRIPTION');
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
+    const [isFixedFilter, setIsFixedFilter] = useState<string>('ALL');
+    const [isSharedFilter, setIsSharedFilter] = useState<string>('ALL');
     const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
 
     const { data: transactions = [] } = useQuery<Transaction[]>({
-        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, debouncedSearchTerm, searchField],
+        queryKey: ['transactions', monthsSelected, yearsSelected, typeFilter, isFixedFilter, isSharedFilter, debouncedSearchTerm, searchField],
         queryFn: async () => {
             const params = new URLSearchParams();
             monthsSelected.forEach(m => params.append('month', m));
             yearsSelected.forEach(y => params.append('year', y));
             if (typeFilter !== 'ALL') params.append('type', typeFilter);
+            if (isFixedFilter !== 'ALL') params.append('isFixed', isFixedFilter === 'YES' ? 'true' : 'false');
+            if (isSharedFilter !== 'ALL') params.append('isShared', isSharedFilter === 'YES' ? 'true' : 'false');
             if (debouncedSearchTerm) {
                 params.append('search', debouncedSearchTerm);
                 params.append('searchField', searchField);
@@ -357,77 +361,105 @@ export default function TransactionsPage() {
                 </Card>
 
                 {/* Filters */}
-                <div className="flex flex-col md:flex-row flex-wrap gap-4 items-end md:items-center bg-card p-4 rounded-lg border">
-                    <div className="flex items-center gap-2 mr-auto">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{t('transactions.filters')}</span>
-                    </div>
-
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <Select value={searchField} onValueChange={setSearchField}>
-                            <SelectTrigger className="w-[130px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="DESCRIPTION">{t('transactions.searchField.description')}</SelectItem>
-                                <SelectItem value="CATEGORY">{t('transactions.searchField.category')}</SelectItem>
-                                <SelectItem value="STATUS">{t('transactions.searchField.status')}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <div className="w-full md:w-[200px]">
+                <div className="bg-card p-4 rounded-lg border space-y-4">
+                    <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+                        {/* Top Row: Search */}
+                        <div className="flex gap-2 w-full lg:w-auto flex-1">
+                            <Select value={searchField} onValueChange={setSearchField}>
+                                <SelectTrigger className="w-[140px] shrink-0">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="DESCRIPTION">{t('transactions.searchField.description')}</SelectItem>
+                                    <SelectItem value="CATEGORY">{t('transactions.searchField.category')}</SelectItem>
+                                    <SelectItem value="STATUS">{t('transactions.searchField.status')}</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <Input
                                 placeholder={t('transactions.searchPlaceholder') || "Search..."}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full"
+                                className="w-full max-w-md"
                             />
+                        </div>
+
+                        {/* Top Row: Date & Reset */}
+                        <div className="flex gap-2 w-full lg:w-auto">
+                            <div className="w-full lg:w-[150px]">
+                                <MultiSelect
+                                    options={months}
+                                    selected={monthsSelected}
+                                    onChange={setMonthsSelected}
+                                    placeholder={t('transactions.month')}
+                                    width="w-full"
+                                />
+                            </div>
+                            <div className="w-full lg:w-[100px]">
+                                <MultiSelect
+                                    options={years}
+                                    selected={yearsSelected}
+                                    onChange={setYearsSelected}
+                                    placeholder={t('transactions.year')}
+                                    width="w-full"
+                                />
+                            </div>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    const now = new Date();
+                                    setMonthsSelected([String(now.getMonth() + 1)]);
+                                    setYearsSelected([String(now.getFullYear())]);
+                                    setSearchTerm('');
+                                    setTypeFilter('ALL');
+                                    setIsFixedFilter('ALL');
+                                    setIsSharedFilter('ALL');
+                                }}
+                                title={t('common.reset') || "Reset Filters"}
+                            >
+                                <Filter className="h-4 w-4 mr-2" />
+                                {t('common.reset') || "Reset"}
+
+                            </Button>
                         </div>
                     </div>
 
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                        <SelectTrigger className="w-full md:w-[140px]">
-                            <SelectValue placeholder={t('transactions.type')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ALL">{t('transactions.allTypes')}</SelectItem>
-                            <SelectItem value="INCOME">{t('transactions.income')}</SelectItem>
-                            <SelectItem value="EXPENSE">{t('transactions.expense')}</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    {/* Second Row: Quick Filters */}
+                    <div className="flex flex-wrap gap-2 items-center pt-2 border-t">
+                        <span className="text-sm text-muted-foreground mr-2">{t('transactions.filters')}:</span>
 
-                    <div className="w-full md:w-[180px]">
-                        <MultiSelect
-                            options={months}
-                            selected={monthsSelected}
-                            onChange={setMonthsSelected}
-                            placeholder={t('transactions.month')}
-                            width="w-full"
-                        />
+                        <Select value={typeFilter} onValueChange={setTypeFilter}>
+                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                                <SelectValue placeholder={t('transactions.type')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">{t('transactions.allTypes')}</SelectItem>
+                                <SelectItem value="INCOME">{t('transactions.income')}</SelectItem>
+                                <SelectItem value="EXPENSE">{t('transactions.expense')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={isFixedFilter} onValueChange={setIsFixedFilter}>
+                            <SelectTrigger className="w-[160px] h-8 text-xs">
+                                <SelectValue placeholder="Recurring" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">{t('transactions.filter.allRecurring') || "All Occurrences"}</SelectItem>
+                                <SelectItem value="YES">{t('transactions.filter.onlyRecurring') || "Recurring Only"}</SelectItem>
+                                <SelectItem value="NO">{t('transactions.filter.onlyOneTime') || "One-time Only"}</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={isSharedFilter} onValueChange={setIsSharedFilter}>
+                            <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <SelectValue placeholder="Shared" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">{t('transactions.filter.allShared') || "All Transactions"}</SelectItem>
+                                <SelectItem value="YES">{t('transactions.filter.onlyShared') || "Shared Only"}</SelectItem>
+                                <SelectItem value="NO">{t('transactions.filter.onlyPrivate') || "Private Only"}</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
-
-                    <div className="w-full md:w-[120px]">
-                        <MultiSelect
-                            options={years}
-                            selected={yearsSelected}
-                            onChange={setYearsSelected}
-                            placeholder={t('transactions.year')}
-                            width="w-full"
-                        />
-                    </div>
-
-                    <Button
-                        variant="outline"
-                        className="dark:bg-white dark:text-black dark:hover:bg-gray-200 w-full md:w-auto"
-                        onClick={() => {
-                            const now = new Date();
-                            setMonthsSelected([String(now.getMonth() + 1)]);
-                            setYearsSelected([String(now.getFullYear())]);
-                            setSearchTerm('');
-                            setTypeFilter('ALL');
-                        }}
-                    >
-                        {t('transactions.today')}
-                    </Button>
                 </div>
 
                 {/* Responsive Table */}

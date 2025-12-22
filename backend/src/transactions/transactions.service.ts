@@ -107,17 +107,39 @@ export class TransactionsService {
                     }
                 });
             } else if (field === 'STATUS') {
+                const searchLower = search.toLowerCase();
+                const orConditions: Prisma.TransactionWhereInput[] = [];
+
+                // 1. Participant Status
                 const allStatuses = Object.values(ParticipantStatus);
-                const matchingStatuses = allStatuses.filter(s => s.toLowerCase().includes(search.toLowerCase()));
+                const matchingStatuses = allStatuses.filter(s => s.toLowerCase().includes(searchLower));
 
                 if (matchingStatuses.length > 0) {
-                    (where.AND as Prisma.TransactionWhereInput[]).push({
+                    orConditions.push({
                         participants: {
                             some: {
                                 userId,
                                 status: { in: matchingStatuses }
                             }
                         }
+                    });
+                }
+
+                // 2. Recurring Status (isFixed)
+                const recurringKeywords = ['recurring', 'recorrente', 'recurrente'];
+                if (recurringKeywords.some(k => k.includes(searchLower))) {
+                    orConditions.push({ isFixed: true });
+                }
+
+                // 3. Shared Status (isShared)
+                const sharedKeywords = ['shared', 'compartilhado', 'compartido'];
+                if (sharedKeywords.some(k => k.includes(searchLower))) {
+                    orConditions.push({ isShared: true });
+                }
+
+                if (orConditions.length > 0) {
+                    (where.AND as Prisma.TransactionWhereInput[]).push({
+                        OR: orConditions
                     });
                 } else {
                     // If no status matches the search term, return no results

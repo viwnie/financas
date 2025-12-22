@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
 import { format } from 'date-fns';
-import { Trash2, Filter, Calendar, History } from 'lucide-react';
+import { Trash2, Filter, Calendar, History, RotateCcw } from 'lucide-react';
 import { getCategoryDisplayName, formatCurrency, getInitials } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
@@ -416,7 +416,7 @@ export default function TransactionsPage() {
                                 }}
                                 title={t('common.reset') || "Reset Filters"}
                             >
-                                <Filter className="h-4 w-4 mr-2" />
+                                <RotateCcw className="h-4 w-4 mr-2" />
                                 {t('common.reset') || "Reset"}
 
                             </Button>
@@ -425,7 +425,10 @@ export default function TransactionsPage() {
 
                     {/* Second Row: Quick Filters */}
                     <div className="flex flex-wrap gap-2 items-center pt-2 border-t">
-                        <span className="text-sm text-muted-foreground mr-2">{t('transactions.filters')}:</span>
+                        <div className="flex items-center text-sm text-muted-foreground mr-2">
+                            <Filter className="h-4 w-4 mr-2" />
+                            {t('transactions.filters')}
+                        </div>
 
                         <Select value={typeFilter} onValueChange={setTypeFilter}>
                             <SelectTrigger className="w-[140px] h-8 text-xs">

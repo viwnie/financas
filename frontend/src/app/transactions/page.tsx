@@ -322,9 +322,15 @@ export default function TransactionsPage() {
     }));
 
     const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 5 }, (_, i) => ({
-        value: String(currentYear - 2 + i),
-        label: String(currentYear - 2 + i) // MultiSelect expects label/value objects
+    // Default range: 2000 to 2050 (or current year + 5 if greater)
+    // You requested "current year" context like 2025 -> 2000-2050.
+    // Let's make it static 2000-2050 for simplicity or dynamic?
+    // User asked "suggest 2000 to 2050".
+    const startYear = 2000;
+    const endYear = 2050;
+    const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => ({
+        value: String(endYear - i), // Descending order
+        label: String(endYear - i)
     }));
 
     return (
@@ -401,6 +407,7 @@ export default function TransactionsPage() {
                                     onChange={setYearsSelected}
                                     placeholder={t('transactions.year')}
                                     width="w-full"
+                                    creatable
                                 />
                             </div>
                             <Button

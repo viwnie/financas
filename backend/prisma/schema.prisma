@@ -168,6 +168,7 @@ model Transaction {
   recurrenceEndsAt DateTime?
   excludedDates DateTime[]  @default([])
   createdAt   DateTime        @default(now())
+  paymentMethod String?
   updatedAt   DateTime        @updatedAt
 
   categoryId  String

@@ -15,6 +15,12 @@ import { Switch } from '@/components/ui/switch';
 
 import { format } from "date-fns";
 
+const PAYMENT_METHODS = {
+    pt: ['Pix', 'Débito', 'Crédito', 'TED', 'DOC', 'Boleto', 'Dinheiro'],
+    en: ['Credit Card', 'Debit Card', 'Cash', 'Bank Transfer', 'Check', 'PayPal'],
+    es: ['Tarjeta de Crédito', 'Tarjeta de Débito', 'Efectivo', 'Transferencia Bancaria'],
+};
+
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
     const { t } = useLanguage();
     const [stopRecurrenceOpen, setStopRecurrenceOpen] = React.useState(false);
@@ -116,11 +122,31 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                 </div>
 
                 {type === 'EXPENSE' && (
-                    <div className="w-[100px] space-y-2">
-                        <Label>{t('transactions.installments')}</Label>
-                        <Input type="number" min="1" {...register('installmentsCount')} placeholder="1" />
-                        {errors.installmentsCount && <p className="text-xs text-red-500">{errors.installmentsCount.message}</p>}
-                    </div>
+                    <>
+                        <div className="w-[100px] space-y-2">
+                            <Label>{t('transactions.installments')}</Label>
+                            <Input type="number" min="1" {...register('installmentsCount')} placeholder="1" />
+                            {errors.installmentsCount && <p className="text-xs text-red-500">{errors.installmentsCount.message}</p>}
+                        </div>
+                        <div className="w-[200px] space-y-2">
+                            <Label>{t('transactions.paymentMethod')}</Label>
+                            <Select
+                                value={watch('paymentMethod') || ''}
+                                onValueChange={(val) => setValue('paymentMethod', val)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={t('transactions.selectPaymentMethod')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(PAYMENT_METHODS[locale as keyof typeof PAYMENT_METHODS] || PAYMENT_METHODS['en']).map((method) => (
+                                        <SelectItem key={method} value={method}>
+                                            {method}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </>
                 )}
 
             </div>

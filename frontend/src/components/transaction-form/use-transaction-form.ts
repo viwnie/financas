@@ -35,6 +35,7 @@ const createTransactionSchema = (t: (key: string) => string) => z.object({
     isShared: z.boolean().optional(),
     participants: z.array(participantSchema).optional(),
     excludedDates: z.array(z.string()).optional(),
+    paymentMethod: z.string().optional(),
 });
 
 // Base schema for type inference
@@ -52,6 +53,7 @@ const baseSchema = z.object({
     isShared: z.boolean().optional(),
     participants: z.array(participantSchema).optional(),
     excludedDates: z.array(z.string()).optional(),
+    paymentMethod: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof baseSchema>;
@@ -106,6 +108,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             isShared: initialData?.isShared || false,
             participants: participants,
             excludedDates: initialData?.excludedDates || [],
+            paymentMethod: initialData?.paymentMethod || '',
         };
     }, [initialData, user?.id, locale]);
 

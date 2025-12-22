@@ -55,6 +55,10 @@ export class CreateTransactionDto {
     installmentsCount?: number;
 
     @IsOptional()
+    @IsString()
+    paymentMethod?: string;
+
+    @IsOptional()
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => TransactionParticipantDto)

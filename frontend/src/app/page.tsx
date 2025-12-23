@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button"
 
 export default function LandingPage() {
     const [mounted, setMounted] = useState(false)
-    const { setTheme } = useTheme()
-    const { t, setLocale } = useLanguage()
+    const { theme, setTheme, resolvedTheme } = useTheme()
+    const { t, setLocale, locale } = useLanguage()
     const [hoveredNav, setHoveredNav] = useState<string | null>(null)
 
     useEffect(() => {
@@ -75,27 +75,26 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Theme Toggle */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9">
-                                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                                <span className="sr-only">Toggle theme</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Theme Toggle Boolean */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9"
+                    >
+                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                        <span className="sr-only">Toggle theme</span>
+                    </Button>
 
                     {/* Language Selector */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9">
+                            <Button variant="ghost" size="icon" className="relative text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9">
                                 <Globe className="h-[1.2rem] w-[1.2rem]" />
+                                <span className="absolute bottom-1 right-0 text-[9px] font-extrabold uppercase text-slate-900 dark:text-white leading-none">
+                                    {locale}
+                                </span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

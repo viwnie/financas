@@ -1,9 +1,11 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { TextHelper } from '../common/utils/text.helper';
+import { authenticator } from 'otplib';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class AuthService {
@@ -65,5 +67,46 @@ export class AuthService {
             username: formattedUsername
         });
         return this.login(user);
+    }
+
+    // MFA Methods
+    async generateMfaSecret(user: User) {
+        const secret = authenticator.generateSecret();
+        const otpauthUrl = authenticator.keyuri(user.email, 'MyFinanceApp', secret);
+
+        await this.usersService.upsertSecurity(user.id, { mfaSecret: secret, mfaEnabled: false });
+
+        return {
+            secret,
+            otpauthUrl
+        };
+    }
+
+    async generateQrCode(otpauthUrl: string) {
+        return QRCode.toDataURL(otpauthUrl);
+    }
+
+    async enableMfa(user: User, token: string) {
+        const security = await this.usersService.getSecurity(user.id);
+        if (!security || !security.mfaSecret) {
+            throw new BadRequestException('MFA setup not initiated');
+        }
+
+        const isValid = authenticator.verify({ token, secret: security.mfaSecret });
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid MFA token');
+        }
+
+        await this.usersService.upsertSecurity(user.id, { mfaEnabled: true });
+        return { success: true };
+    }
+
+    async validateMfaToken(userId: string, token: string): Promise<boolean> {
+        const security = await this.usersService.getSecurity(userId);
+        if (!security || !security.mfaEnabled || !security.mfaSecret) {
+            return false;
+        }
+
+        return authenticator.verify({ token, secret: security.mfaSecret });
     }
 }

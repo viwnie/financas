@@ -27,7 +27,8 @@ export function middleware(request: NextRequest) {
     }
 
     // Redirect root to dashboard (which will then redirect to login if not auth)
-    if (pathname === '/') {
+    // Redirect root to dashboard only if authenticated
+    if (pathname === '/' && token) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 

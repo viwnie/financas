@@ -29,9 +29,13 @@ export class UsersService {
         const formatEmail = (email: string) => email.trim().charAt(0).toUpperCase() + email.trim().slice(1);
         const formattedEmail = formatEmail(data.email);
 
+        // Exclude confirmPassword from data if it exists
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { confirmPassword, ...rest } = data as any;
+
         return this.prisma.user.create({
             data: {
-                ...data,
+                ...rest,
                 name,
                 username,
                 email: formattedEmail,
@@ -290,5 +294,17 @@ export class UsersService {
             data: { savedColors: newColors }
         });
         return newColors;
+    }
+
+    async getSecurity(userId: string) {
+        return this.prisma.userSecurity.findUnique({ where: { userId } });
+    }
+
+    async upsertSecurity(userId: string, data: { mfaSecret?: string, mfaEnabled?: boolean, backupCodes?: string[] }) {
+        return this.prisma.userSecurity.upsert({
+            where: { userId },
+            update: data,
+            create: { userId, ...data }
+        });
     }
 }

@@ -338,7 +338,7 @@ export default function TransactionsPage() {
             <Navbar />
             <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h1 className="text-3xl font-bold">{t('transactions.title')}</h1>
+                    <h1 className="text-3xl font-bold text-gradient">{t('transactions.title')}</h1>
                     <div className="flex gap-2">
                         {transactions.some(t => t.participants.some(p => p.userId === user?.id && p.status === 'PENDING')) && (
                             <>
@@ -367,7 +367,7 @@ export default function TransactionsPage() {
                 </Card>
 
                 {/* Filters */}
-                <div className="bg-card p-4 rounded-lg border space-y-4">
+                <div className="glass-card p-6 rounded-xl space-y-4">
                     <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
                         {/* Top Row: Search */}
                         <div className="flex gap-2 w-full lg:w-auto flex-1">
@@ -473,10 +473,10 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Responsive Table */}
-                <div className="rounded-md border bg-card">
+                <div className="glass-card rounded-xl overflow-hidden border-none">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+                            <thead className="text-xs text-muted-foreground uppercase bg-primary/5">
                                 <tr>
                                     <th className="px-6 py-3">{t('transactions.table.date')}</th>
                                     <th className="px-6 py-3">{t('transactions.table.description')}</th>
@@ -519,7 +519,7 @@ export default function TransactionsPage() {
                                         const catColor = transaction.category.color;
 
                                         return (
-                                            <tr key={`${transaction.id}-${transaction.date}`} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                                            <tr key={`${transaction.id}-${transaction.date}`} className="border-b border-white/10 last:border-0 hover:bg-white/5 dark:hover:bg-white/5 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />

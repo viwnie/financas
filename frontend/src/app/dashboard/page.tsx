@@ -10,6 +10,17 @@ import { useLanguage } from '@/contexts/language-context';
 import { Navbar } from '@/components/navbar';
 import { CreditCard, Users, Mail } from 'lucide-react';
 import { getCategoryDisplayName } from '@/lib/utils';
+import { PrivacyBlur } from '@/components/privacy-blur';
+import { DashboardWidget } from '@/components/dashboard-widget';
+import { OneTapEntryWidget } from '@/components/one-tap-widget';
+import { GamificationHub } from '@/components/gamification/gamification-hub';
+import { ComparativeReportWidget } from '@/components/comparative-report-widget';
+
+// New Dashboard Components
+import { NetWorthCard } from '@/components/dashboard/net-worth-card';
+import { SavingsGoalProgress } from '@/components/dashboard/savings-goal-progress';
+import { InsightsFeed } from '@/components/dashboard/insights-feed';
+import { dashboardService } from '@/services/dashboard.service';
 
 export default function DashboardPage() {
     const { user, token } = useAuthStore();
@@ -22,25 +33,13 @@ export default function DashboardPage() {
 
     const { data: stats, isLoading: statsLoading } = useQuery({
         queryKey: ['dashboard-stats'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:3000/dashboard/stats', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('Failed to fetch stats');
-            return res.json();
-        },
+        queryFn: dashboardService.getStats,
         enabled: !!token,
     });
 
     const { data: evolution, isLoading: evolutionLoading } = useQuery({
         queryKey: ['dashboard-evolution'],
-        queryFn: async () => {
-            const res = await fetch('http://localhost:3000/dashboard/evolution', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('Failed to fetch evolution');
-            return res.json();
-        },
+        queryFn: dashboardService.getEvolution,
         enabled: !!token,
     });
 
@@ -51,90 +50,101 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background transition-colors duration-300">
+        <div className="min-h-screen bg-background transition-colors duration-300 pb-10">
             <Navbar />
-            <div className="p-8 space-y-8">
+            <div className="container mx-auto p-4 space-y-6">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight">{t('dashboard.welcome')}, {user?.name}</h1>
-                        <p className="text-muted-foreground">Here's your financial overview.</p>
+                        <h1 className="text-3xl font-bold tracking-tight text-gradient">{t('dashboard.welcome')}, {user?.name}</h1>
+                        <p className="text-muted-foreground">Sua saúde financeira em um só lugar.</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => router.push('/transactions')}>
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            {t('dashboard.transactions')}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => router.push('/friends')}>
+                            <Users className="h-4 w-4 mr-2" />
+                            {t('dashboard.friends')}
+                        </Button>
                     </div>
                 </div>
 
-                {/* Navigation Cards - Optional now with Navbar, but good for quick access */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button variant="secondary" className="h-24 text-lg gap-2" onClick={() => router.push('/transactions')}>
-                        <CreditCard className="h-6 w-6" /> {t('dashboard.transactions')}
-                    </Button>
-                    <Button variant="secondary" className="h-24 text-lg gap-2" onClick={() => router.push('/friends')}>
-                        <Users className="h-6 w-6" /> {t('dashboard.friends')}
-                    </Button>
+                {/* Section 1: Financial Health & Wellness (The "Why") */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <NetWorthCard />
+
+                        {/* Stats Widgets Inline */}
+                        {stats && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <DashboardWidget title={t('dashboard.totalIncome')} className="glass-card">
+                                    <div className="text-2xl font-bold text-emerald-500">
+                                        <PrivacyBlur>+${stats.income.total.toFixed(2)}</PrivacyBlur>
+                                    </div>
+                                </DashboardWidget>
+
+                                <DashboardWidget title={t('dashboard.totalExpense')} className="glass-card">
+                                    <div className="text-2xl font-bold text-red-500">
+                                        <PrivacyBlur>-${stats.expense.total.toFixed(2)}</PrivacyBlur>
+                                    </div>
+                                </DashboardWidget>
+
+                                <DashboardWidget title={t('dashboard.balance')} className="glass-card">
+                                    <div className={`text-2xl font-bold ${stats.balance.total >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                        <PrivacyBlur>${stats.balance.total.toFixed(2)}</PrivacyBlur>
+                                    </div>
+                                </DashboardWidget>
+                            </div>
+                        )}
+                    </div>
+                    <ComparativeReportWidget />
                 </div>
 
-                {/* Stats Cards */}
-                {stats && (
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">{t('dashboard.totalIncome')}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-green-500">+${stats.income.total.toFixed(2)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">{t('dashboard.totalExpense')}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-red-500">-${stats.expense.total.toFixed(2)}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">{t('dashboard.balance')}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className={`text-2xl font-bold ${stats.balance.total >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                    ${stats.balance.total.toFixed(2)}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
+                {/* Section 2: Three Column Widgets */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <SavingsGoalProgress />
+                    <GamificationHub />
+                    <InsightsFeed />
+                </div>
 
-                {/* Charts */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                    <Card className="col-span-4">
+                {/* Section 3: Action & Deep Dive */}
+                <div className="md:hidden">
+                    <OneTapEntryWidget />
+                </div>
+
+                {/* Charts Section */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 max-w-full">
+                    <Card className="col-span-4 glass-card border-none overflow-hidden">
                         <CardHeader>
                             <CardTitle>{t('dashboard.evolution')}</CardTitle>
-                            <CardDescription>Income vs Expenses over the last 6 months</CardDescription>
+                            <CardDescription>Fluxo de caixa dos últimos 6 meses</CardDescription>
                         </CardHeader>
                         <CardContent className="pl-2">
-                            <div className="h-[300px] w-full">
+                            <div className="h-[300px] w-full min-w-0">
                                 {evolution && (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={evolution} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                                                 </linearGradient>
                                                 <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
                                                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
                                                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
-                                            <XAxis dataKey="month" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                                            <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+                                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+                                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: 'var(--radius)' }}
                                                 itemStyle={{ color: 'var(--foreground)' }}
                                             />
-                                            <Area type="monotone" dataKey="income" stroke="#22c55e" fillOpacity={1} fill="url(#colorIncome)" name="Income" />
-                                            <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" name="Expense" />
+                                            <Area type="monotone" dataKey="income" stroke="var(--chart-1)" fillOpacity={1} fill="url(#colorIncome)" name="Receita" />
+                                            <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" name="Despesa" />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 )}
@@ -142,7 +152,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="col-span-3">
+                    <Card className="col-span-3 glass-card border-none">
                         <CardHeader>
                             <CardTitle>{t('dashboard.expensesByCategory')}</CardTitle>
                         </CardHeader>
@@ -170,7 +180,7 @@ export default function DashboardPage() {
                                             </Pie>
                                             <Tooltip
                                                 formatter={(value: number) => `$${value.toFixed(2)}`}
-                                                contentStyle={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+                                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: 'var(--radius)' }}
                                                 itemStyle={{ color: 'var(--foreground)' }}
                                             />
                                             <Legend verticalAlign="bottom" height={36} />

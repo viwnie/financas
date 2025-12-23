@@ -11,6 +11,14 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
+import { SavingsGoalsModule } from './savings-goals/savings-goals.module';
+import { PrismaService } from './prisma.service';
+import { BankIntegrationModule } from './bank-integration/bank-integration.module';
+import { BankConnectionsModule } from './bank-connections/bank-connections.module';
+import { NudgesModule } from './nudges/nudges.module';
+import { BudgetsModule } from './budgets/budgets.module';
+import { ImportModule } from './import/import.module';
+import { GamificationModule } from './gamification/gamification.module';
 
 @Module({
   imports: [
@@ -26,8 +34,15 @@ import { ConfigModule } from '@nestjs/config';
     SharedTransactionsModule,
     DashboardModule,
     NotificationsModule,
+    SavingsGoalsModule,
+    BankIntegrationModule,
+    BankConnectionsModule,
+    NudgesModule,
+    BudgetsModule,
+    ImportModule,
+    GamificationModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PrismaService],
 })
 export class AppModule { }

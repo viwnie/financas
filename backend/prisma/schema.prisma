@@ -64,6 +64,70 @@ model User {
   externalFriends     ExternalFriend[]
   personalCategoryOverrides PersonalCategoryOverride[]
   categorySettings    UserCategorySetting[]
+  
+  // Strategic Modules (Phase 1 & 2)
+  budgets             Budget[]
+  savingsGoals        SavingsGoal[]
+  nudgeLogs           NudgeLog[]
+  security            UserSecurity?
+  bankConnections     BankConnection[]
+  badges              UserBadge[]
+  streakCurrent       Int      @default(0)
+  streakLongest       Int      @default(0)
+  lastStreakUpdate    DateTime?
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g. "SAVER_L1", "BUDGET_MASTER"
+  name        String
+  description String
+  icon        String   // Material icon name or URL
+  criteria    Json?    // Logic definition for auto-awarding
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+model BankConnection {
+  id             String   @id @default(uuid())
+  userId         String
+  provider       String   // "MOCK", "PLUGGY", "BELVO"
+  itemId         String?  // External ID (e.g., Pluggy Item ID)
+  accessToken    String?  // Encrypted (conceptually)
+  refreshToken   String?
+  status         String   @default("ACTIVE") // ACTIVE, ERROR, DISCONNECTED
+  lastSyncedAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, provider, itemId])
+}
+
+model UserSecurity {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  mfaSecret String?
+  mfaEnabled Boolean @default(false)
+  backupCodes String[]
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ExternalFriend {
@@ -126,6 +190,7 @@ model Category {
   globalStats  GlobalCategoryStats[]
   personalOverrides PersonalCategoryOverride[]
   userSettings UserCategorySetting[]
+  budgets      Budget[]
 }
 
 model CategoryTranslation {
@@ -251,4 +316,51 @@ model GlobalCategoryStats {
   updatedAt  DateTime @updatedAt
 
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model Budget {
+  id          String   @id @default(uuid())
+  userId      String
+  categoryId  String
+  amount      Decimal  @db.Decimal(10, 2)
+  period      String   @default("MONTHLY") // MONTHLY, WEEKLY, YEARLY
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  softLimit   Decimal? @db.Decimal(10, 2) // Alert threshold, e.g. 80%
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, categoryId, period])
+}
+
+model SavingsGoal {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  targetAmount  Decimal  @db.Decimal(10, 2)
+  currentAmount Decimal  @default(0) @db.Decimal(10, 2)
+  deadline      DateTime?
+  status        String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, PAUSED
+  icon          String?
+  color         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NudgeLog {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // e.g., "OVERSPENDING", "SAVE_MORE"
+  message   String
+  metadata  Json?    // Context data
+  seenAt    DateTime?
+  actedAt   DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

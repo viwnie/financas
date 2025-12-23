@@ -356,11 +356,11 @@ export default function FriendsPage() {
         <div className="min-h-screen bg-background">
             <Navbar />
             <div className="p-8 space-y-8 max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold">Friends</h1>
+                <h1 className="text-3xl font-bold text-gradient">Friends</h1>
 
                 <div className="grid gap-8 md:grid-cols-2">
                     <div className="space-y-8">
-                        <Card>
+                        <Card className="glass-card">
                             <CardHeader>
                                 <CardTitle>Add Friend</CardTitle>
                             </CardHeader>
@@ -428,7 +428,7 @@ export default function FriendsPage() {
 
                         {/* Received Merge Requests */}
                         {receivedMergeRequests.length > 0 && (
-                            <Card>
+                            <Card className="glass-card">
                                 <CardHeader>
                                     <CardTitle>Merge Requests ({receivedMergeRequests.length})</CardTitle>
                                 </CardHeader>
@@ -460,7 +460,7 @@ export default function FriendsPage() {
                         )}
 
                         {requests.length > 0 && (
-                            <Card>
+                            <Card className="glass-card">
                                 <CardHeader>
                                     <CardTitle>Pending Requests ({requests.length})</CardTitle>
                                 </CardHeader>
@@ -503,7 +503,7 @@ export default function FriendsPage() {
                         )}
 
                         {sentRequests.length > 0 && (
-                            <Card>
+                            <Card className="glass-card">
                                 <CardHeader>
                                     <CardTitle>Sent Requests ({sentRequests.length})</CardTitle>
                                 </CardHeader>
@@ -546,7 +546,7 @@ export default function FriendsPage() {
                     </div>
 
                     <div className="space-y-8">
-                        <Card>
+                        <Card className="glass-card">
                             <CardHeader>
                                 <CardTitle>My Friends ({friends.length})</CardTitle>
                             </CardHeader>
@@ -590,7 +590,7 @@ export default function FriendsPage() {
                         </Card>
 
                         {/* External Friends */}
-                        <Card>
+                        <Card className="glass-card">
                             <CardHeader>
                                 <CardTitle>External Friends ({externalFriends.length})</CardTitle>
                             </CardHeader>

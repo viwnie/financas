@@ -1,184 +1,169 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { DateHelper } from '../common/utils/date.helper';
+import { TransactionType } from '@prisma/client';
 
 @Injectable()
 export class DashboardService {
-    private readonly logger = new Logger(DashboardService.name);
-
     constructor(private prisma: PrismaService) { }
 
-    async getStats(userId: string, month: number, year: number) {
-        this.logger.log(`Fetching dashboard stats for user ${userId}, month: ${month}, year: ${year}`);
-        const { startDate, endDate } = DateHelper.getMonthRange(year, month);
-        const { startDate: lastMonthStart, endDate: lastMonthEnd } = DateHelper.getMonthRange(month === 1 ? year - 1 : year, month === 1 ? 12 : month - 1);
+    async getStats(userId: string) {
+        // Existing logic or placeholder
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-        const [transactions, lastMonthTransactions] = await Promise.all([
-            this.prisma.transaction.findMany({
-                where: {
-                    date: { gte: startDate, lte: endDate },
-                    OR: [
-                        { creatorId: userId },
-                        { participants: { some: { userId, status: 'ACCEPTED' } } }
-                    ]
-                },
-                include: { participants: true }
-            }),
-            this.prisma.transaction.findMany({
-                where: {
-                    date: { gte: lastMonthStart, lte: lastMonthEnd },
-                    OR: [
-                        { creatorId: userId },
-                        { participants: { some: { userId, status: 'ACCEPTED' } } }
-                    ]
-                },
-                include: { participants: true }
-            })
-        ]);
-
-        const current = this.calculateTotals(transactions, userId);
-        const last = this.calculateTotals(lastMonthTransactions, userId);
-
-        const calculateVariation = (curr: number, prev: number) => {
-            if (prev === 0) return curr > 0 ? 100 : 0;
-            return ((curr - prev) / prev) * 100;
-        };
-
-        const categories = await this.calculateCategoryTotals(transactions, userId);
-
-        return {
-            income: {
-                total: current.income,
-                variation: calculateVariation(current.income, last.income)
-            },
-            expense: {
-                total: current.expense,
-                variation: calculateVariation(current.expense, last.expense)
-            },
-            balance: {
-                total: current.income - current.expense,
-                variation: calculateVariation(current.income - current.expense, last.income - last.expense)
-            },
-            expensesByCategory: categories
-        };
-    }
-
-    async getEvolution(userId: string, year: number) {
-        this.logger.log(`Fetching evolution stats for user ${userId}, year: ${year}`);
-        const { startDate, endDate } = DateHelper.getYearRange(year);
-
-        const transactions = await this.prisma.transaction.findMany({
-            where: {
-                date: { gte: startDate, lte: endDate },
-                OR: [
-                    { creatorId: userId },
-                    { participants: { some: { userId, status: 'ACCEPTED' } } }
-                ]
-            },
-            include: { participants: true }
+        const income = await this.prisma.transaction.aggregate({
+            where: { creatorId: userId, type: TransactionType.INCOME, date: { gte: startOfMonth, lte: endOfMonth } },
+            _sum: { amount: true }
         });
 
-        // Initialize months map
-        const months = new Map<number, { income: number; expense: number }>();
-        for (let i = 0; i < 12; i++) {
-            months.set(i, { income: 0, expense: 0 });
-        }
+        const expense = await this.prisma.transaction.aggregate({
+            where: { creatorId: userId, type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
+            _sum: { amount: true }
+        });
 
-        for (const t of transactions) {
-            const monthIndex = t.date.getMonth();
-            const stats = months.get(monthIndex)!;
-            const amount = this.calculateUserShare(t, userId);
+        // Pie Chart Data
+        const expensesByCategory = await this.prisma.transaction.groupBy({
+            by: ['categoryId'],
+            where: { creatorId: userId, type: TransactionType.EXPENSE, date: { gte: startOfMonth, lte: endOfMonth } },
+            _sum: { amount: true }
+        });
 
-            if (t.type === 'INCOME') {
-                stats.income += amount;
-            } else {
-                stats.expense += amount;
-            }
-        }
-
-        return Array.from(months.entries())
-            .sort((a, b) => a[0] - b[0])
-            .map(([index, stats]) => ({
-                month: index + 1, // Return 1-based month for frontend consistency
-                ...stats,
-                balance: stats.income - stats.expense
-            }));
-    }
-
-    private calculateUserShare(transaction: any, userId: string): number {
-        // If user is creator and no established participants, full amount
-        // If shared, check if user is participant
-        let amount = Number(transaction.amount);
-
-        if (transaction.participants && transaction.participants.length > 0) {
-            const participant = transaction.participants.find((p: any) => p.userId === userId);
-            if (participant) {
-                // If user is a participant (accepted or pending? check logic. Usually accepted matters for balance but pending might be relevant depending on rules. Sticking to Accepted filter in query mainly, but here we calculate share)
-                // Note: The query filters for ACCEPTED or Creator.
-                // If I am creator but not in participants list (e.g. paying for others? No, creator is usually participant).
-                // Let's assume logic: if user is in participants list, use their share.
-                return Number(participant.shareAmount || 0);
-            } else if (transaction.creatorId === userId) {
-                // I am creator, but not in participants list? Weird case for shared bill where I pay nothing?
-                // Or I pay the remainder?
-                // Simple logic: if not participant, 0 (assuming I assigned everything to others).
-                // BUT, if it's a personal transaction (no participants), it falls here?
-                // No, if participants > 0 check.
-                return 0;
-            }
-        }
-
-        // Personal transaction
-        return amount;
-    }
-
-    private calculateTotals(transactions: any[], userId: string) {
-        return transactions.reduce((acc, t) => {
-            const amount = this.calculateUserShare(t, userId);
-            if (t.type === 'INCOME') acc.income += amount;
-            else acc.expense += amount;
-            return acc;
-        }, { income: 0, expense: 0 });
-    }
-
-    private async calculateCategoryTotals(transactions: any[], userId: string) {
-        const expenses = transactions.filter(t => t.type === 'EXPENSE');
-        const map = new Map<string, number>();
-
-        for (const t of expenses) {
-            const amount = this.calculateUserShare(t, userId);
-            if (amount > 0 && t.categoryId) {
-                map.set(t.categoryId, (map.get(t.categoryId) || 0) + amount);
-            }
-        }
-
-        // We need category details (names/colors)
-        // Ideally we fetch them. 
-        if (map.size === 0) return [];
-
-        const categoryIds = Array.from(map.keys());
+        // Resolve Category Names (simplified)
+        const categoryIds = expensesByCategory.map(e => e.categoryId);
         const categories = await this.prisma.category.findMany({
             where: { id: { in: categoryIds } },
-            include: {
-                userSettings: { where: { userId } },
-                translations: true
-            }
+            include: { translations: true, userSettings: { where: { userId } } }
         });
 
-        const totalExpense = Array.from(map.values()).reduce((a, b) => a + b, 0);
+        const enrichedExpenses = expensesByCategory.map(e => {
+            const cat = categories.find(c => c.id === e.categoryId);
+            const name = cat?.translations[0]?.name || 'Unknown';
+            const color = cat?.userSettings[0]?.color || '#ccc';
 
-        return categories.map(cat => {
-            const amount = map.get(cat.id) || 0;
             return {
-                categoryId: cat.id,
-                name: cat.translations[0]?.name || 'Unnamed', // Fallback
-                translations: cat.translations,
-                color: cat.userSettings[0]?.color || null,
-                amount,
-                percentage: totalExpense > 0 ? (amount / totalExpense) * 100 : 0
+                ...e,
+                amount: Number(e._sum.amount),
+                name,
+                color
             };
         });
 
+        return {
+            income: { total: Number(income._sum.amount) || 0 },
+            expense: { total: Number(expense._sum.amount) || 0 },
+            balance: { total: (Number(income._sum.amount) || 0) - (Number(expense._sum.amount) || 0) },
+            expensesByCategory: enrichedExpenses
+        };
+    }
 
+    async getEvolution(userId: string) {
+        const now = new Date();
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const transactions = await this.prisma.transaction.findMany({
+            where: {
+                creatorId: userId,
+                date: {
+                    gte: sixMonthsAgo,
+                    lte: endOfCurrentMonth,
+                },
+            },
+            select: {
+                date: true,
+                type: true,
+                amount: true,
+            },
+            orderBy: {
+                date: 'asc',
+            },
+        });
+
+        const evolutionMap = new Map<string, { income: number; expense: number; monthOrder: number }>();
+
+        // Initialize last 6 months
+        for (let i = 0; i < 6; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+            const monthKey = d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase();
+            // Use a sortable key like "YYYY-MM" to sort, but for this simplified view we just rely on loop order?
+            // Actually, let's just push to an array.
+        }
+
+        // Better approach: Create the array of 6 months first
+        const result: { month: string; income: number; expense: number; rawDate: Date }[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthLabel = d.toLocaleDateString('pt-BR', { month: 'short' }).substring(0, 3).toUpperCase();
+            result.push({
+                month: monthLabel,
+                income: 0,
+                expense: 0,
+                rawDate: d
+            });
+        }
+
+        transactions.forEach(t => {
+            const tDate = new Date(t.date);
+            // Find matching month in result
+            const match = result.find(r =>
+                r.rawDate.getMonth() === tDate.getMonth() &&
+                r.rawDate.getFullYear() === tDate.getFullYear()
+            );
+
+            if (match) {
+                if (t.type === TransactionType.INCOME) {
+                    match.income += Number(t.amount);
+                } else if (t.type === TransactionType.EXPENSE) {
+                    match.expense += Number(t.amount);
+                }
+            }
+        });
+
+        // Cleanup rawDate before returning
+        return result.map(({ rawDate, ...rest }) => rest);
+    }
+
+    async getComparison(userId: string) {
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+        const currentMonthExpense = await this.prisma.transaction.aggregate({
+            where: {
+                creatorId: userId,
+                type: TransactionType.EXPENSE,
+                date: { gte: startOfCurrentMonth, lte: endOfCurrentMonth }
+            },
+            _sum: { amount: true }
+        });
+
+        const lastMonthExpense = await this.prisma.transaction.aggregate({
+            where: {
+                creatorId: userId,
+                type: TransactionType.EXPENSE,
+                date: { gte: startOfLastMonth, lte: endOfLastMonth }
+            },
+            _sum: { amount: true }
+        });
+
+        const current = Number(currentMonthExpense._sum.amount) || 0;
+        const last = Number(lastMonthExpense._sum.amount) || 0;
+
+        let percentageChange = 0;
+        if (last === 0) {
+            percentageChange = current > 0 ? 100 : 0;
+        } else {
+            percentageChange = ((current - last) / last) * 100;
+        }
+
+        return {
+            currentMonthSpent: current,
+            lastMonthSpent: last,
+            percentageChange
+        };
     }
 }

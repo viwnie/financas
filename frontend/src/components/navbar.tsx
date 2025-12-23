@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from 'react';
 import { UserProfileModal } from '@/components/user-profile-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PrivacyToggle } from '@/components/privacy-blur';
 
 export function Navbar() {
     const pathname = usePathname();
@@ -97,6 +98,7 @@ export function Navbar() {
                     </div>
                     <div className="flex items-center gap-2">
                         <NotificationCenter />
+                        <PrivacyToggle />
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

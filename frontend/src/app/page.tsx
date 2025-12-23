@@ -30,7 +30,7 @@ export default function LandingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0A0F1E] text-slate-900 dark:text-white overflow-hidden font-sans selection:bg-[#C6A668]/30">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0A0F1E] text-slate-900 dark:text-white overflow-hidden font-sans selection:bg-[#C6A668]/30 transition-colors duration-700 ease-in-out">
 
             {/* Subtle Background Gradients */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -76,14 +76,15 @@ export default function LandingPage() {
 
                 <div className="flex items-center gap-3">
                     {/* Theme Toggle Boolean */}
+                    {/* Theme Toggle Boolean */}
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9"
+                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9 transition-colors duration-500"
                     >
-                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:-rotate-180 dark:scale-0" />
+                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-180 scale-0 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:rotate-0 dark:scale-100" />
                         <span className="sr-only">Toggle theme</span>
                     </Button>
 

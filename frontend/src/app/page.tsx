@@ -30,7 +30,7 @@ export default function LandingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0A0F1E] text-slate-900 dark:text-white overflow-hidden font-sans selection:bg-[#C6A668]/30 transition-colors duration-700 ease-in-out">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0A0F1E] text-slate-900 dark:text-white overflow-hidden font-sans selection:bg-[#C6A668]/30">
 
             {/* Subtle Background Gradients */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -129,10 +129,10 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="flex justify-center mb-8"
+                        className="flex justify-center mb-0"
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-800/60 bg-slate-900/40 backdrop-blur-md">
-                            <span className="text-sm font-medium text-slate-300">Nova abordagem em finanças pessoais</span>
+                        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-200 bg-white/60 dark:border-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm dark:shadow-md dark:shadow-black/10 transition-colors duration-300">
+                            <span className="text-sm font-medium text-[#4D3C10] dark:text-[#FFF8E1] tracking-wide">Nova abordagem em finanças pessoais</span>
                         </div>
                     </motion.div>
 
@@ -143,7 +143,7 @@ export default function LandingPage() {
                         transition={{ duration: 0.6, delay: 0.1 }}
                         className="text-center mb-6"
                     >
-                        <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight mb-6">
+                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight mb-4">
                             Finanças desenhadas<br />
                             para a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4B87C] via-[#F2D798] to-[#C6A668]">mente humana.</span>
                         </h1>
@@ -154,151 +154,81 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-center text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+                        className="text-center text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed"
                     >
                         Abandone as planilhas frias. O FinanceApp une design ético e ciência
                         comportamental para cultivar seu bem-estar financeiro, sem ansiedade.
                     </motion.p>
-
-                    {/* Buttons */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
-                    >
-                        <Link
-                            href="/auth/register"
-                            className="px-8 py-3.5 bg-gradient-to-b from-[#D4B87C] to-[#C6A668] hover:brightness-110 text-[#0F172A] font-bold rounded-full text-base transition-all shadow-[0_4px_20px_rgba(198,166,104,0.3)] hover:scale-105 duration-300 min-w-[220px] text-center"
-                        >
-                            Criar minha conta
-                        </Link>
-                        <button className="group px-8 py-3.5 bg-transparent border border-slate-700 hover:border-slate-500 text-slate-300 rounded-full text-base transition-all duration-300 flex items-center gap-3 hover:bg-slate-900/50 min-w-[220px] justify-center">
-                            <span className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-white group-hover:text-slate-950 transition-colors">
-                                <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                            </span>
-                            Ver como funciona
-                        </button>
-                    </motion.div>
-
-                    {/* MAIN GRAPHIC VISUALIZATION */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1, delay: 0.4 }}
-                        className="relative w-full max-w-5xl mx-auto h-[450px] md:h-[500px]"
-                    >
-                        {/* Base Glow Foundation */}
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px]">
-                            {/* Outer Glow */}
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[280px] bg-gradient-to-t from-[#C6A668]/8 via-[#C6A668]/4 to-transparent blur-[60px] rounded-t-full"></div>
-
-                            {/* Layered Arcs */}
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[420px] h-[210px] border-[3px] border-slate-700/40 rounded-t-full"></div>
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[380px] h-[190px] border-[3px] border-slate-600/30 rounded-t-full"></div>
-
-                            {/* Bright White Arc with Glow */}
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[440px] h-[220px] rounded-t-full"
-                                style={{
-                                    border: '4px solid transparent',
-                                    borderTopColor: 'rgba(255,255,255,0.6)',
-                                    borderLeftColor: 'rgba(255,255,255,0.2)',
-                                    borderRightColor: 'rgba(255,255,255,0.2)',
-                                    borderBottom: 'none',
-                                    filter: 'drop-shadow(0 -2px 12px rgba(255,255,255,0.2))'
-                                }}
-                            ></div>
-                        </div>
-
+                    <motion.div className="relative flex justify-center items-center w-full max-w-lg mx-auto h-[380px]">
                         {/* Central Plant */}
-                        <div className="absolute bottom-[80px] left-1/2 -translate-x-1/2 z-20 w-[280px] flex justify-center">
-                            {/* Plant Glow */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] h-[220px] bg-gradient-to-b from-cyan-400/15 to-blue-400/10 blur-[50px] rounded-full"></div>
-                            <Image
-                                src="/Planta.png"
-                                alt="Crescimento"
-                                width={240}
-                                height={280}
-                                className="relative drop-shadow-[0_0_25px_rgba(100,200,255,0.2)] animate-float"
-                                style={{ animationDuration: '6s' }}
-                            />
-                        </div>
+                        <Image
+                            src="/Planta.png"
+                            alt="Crescimento"
+                            width={240}
+                            height={280}
+                            className="relative z-20 drop-shadow-[0_0_25px_rgba(100,200,255,0.2)]"
+                        />
 
-                        {/* Left Card "Seus Recursos" */}
-                        <div className="absolute bottom-[120px] left-[2%] md:left-[5%] lg:left-[8%] z-30">
-                            <div className="relative group">
-                                <div className="w-[240px] md:w-[260px] bg-gradient-to-br from-[#0F1419] to-[#0A0F1E] border border-slate-800/70 p-5 rounded-2xl shadow-2xl relative overflow-hidden transition-all duration-500 hover:transform hover:scale-[1.02] hover:border-orange-500/40 hover:shadow-[0_0_30px_rgba(251,146,60,0.15)]">
-                                    {/* Card Inner Glow */}
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/8 blur-[35px] rounded-full pointer-events-none"></div>
-
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500/15 to-orange-600/10 flex items-center justify-center border border-orange-500/25 shadow-inner">
-                                            <Wallet className="w-5 h-5 text-orange-400" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Seus Recursos</p>
-                                            <p className="text-base font-bold text-white">R$ 5.420,00</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-xs text-slate-400 mb-4">
-                                        <span className="text-[10px]">Saldo disponível para investir</span>
-                                    </div>
-
-                                    <div className="flex justify-center py-3">
-                                        <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-slate-900 to-slate-800 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)] flex items-center justify-center border border-slate-700/50">
-                                            <Image src="/cerebro.png" alt="Brain" width={32} height={32} className="opacity-90 drop-shadow-md" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Left Arrow */}
-                                <div className="absolute -right-20 top-1/2 -translate-y-1/2 z-0 hidden lg:block opacity-50 group-hover:opacity-70 transition-opacity">
-                                    <Image src="/seta.png" width={90} height={35} alt="arrow" className="rotate-[8deg]" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Card "Net Worth" */}
-                        <div className="absolute bottom-[140px] right-[2%] md:right-[5%] lg:right-[8%] z-30">
-                            <div className="relative group">
-                                <div className="w-[240px] md:w-[260px] bg-gradient-to-br from-[#0F1419] to-[#0A0F1E] border border-slate-800/70 p-5 rounded-2xl shadow-2xl relative overflow-hidden transition-all duration-500 hover:transform hover:scale-[1.02] hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)]">
-                                    {/* Card Inner Glow */}
-                                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-cyan-500/8 blur-[35px] rounded-full pointer-events-none"></div>
-
-                                    <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Net Worth</p>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.9)] animate-pulse"></div>
-                                    </div>
-
-                                    {/* Chart */}
-                                    <div className="h-14 flex items-end gap-1 mb-4 px-0.5">
-                                        {['h-[35%]', 'h-[48%]', 'h-[42%]', 'h-[58%]', 'h-[72%]', 'h-[65%]', 'h-[82%]'].map((h, i) => (
-                                            <div
-                                                key={i}
-                                                className={`flex-1 bg-gradient-to-t from-cyan-600 via-cyan-500 to-blue-400 rounded-t-[2px] opacity-90 ${h} transition-all duration-300 hover:opacity-100`}
-                                                style={{
-                                                    boxShadow: '0 0 8px rgba(34, 211, 238, 0.3)'
-                                                }}
-                                            ></div>
-                                        ))}
-                                    </div>
-
-                                    <div className="flex items-center gap-2.5 bg-gradient-to-br from-slate-900/70 to-slate-800/50 p-2.5 rounded-xl border border-slate-700/60 shadow-inner">
-                                        <Image src="/Escudo_simples.png" alt="Shield" width={18} height={18} className="opacity-90" />
-                                        <span className="text-[10px] font-bold text-cyan-400 tracking-widest">PROTECTED</span>
-                                    </div>
-                                </div>
-
-                                {/* Right Arrow */}
-                                <div className="absolute -left-20 top-1/2 -translate-y-1/2 z-0 hidden lg:block opacity-50 group-hover:opacity-70 transition-opacity">
-                                    <Image src="/seta.png" width={90} height={35} alt="arrow" className="rotate-[172deg] scale-y-[-1]" />
-                                </div>
-                            </div>
-                        </div>
-
+                        {/* Decorative Elements */}
+                        {/* Arrow next to brain */}
+                        <Image
+                            src="/seta.png"
+                            alt="Seta"
+                            width={50}
+                            height={50}
+                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-70"
+                            style={{
+                                animationDuration: '7s',
+                                animationDelay: '0.5s',
+                                top: '143px',
+                                left: '142px',
+                                rotate: '12deg'
+                            }}
+                        />
+                        {/* Arrow pointing to shield */}
+                        <Image
+                            src="/seta.png"
+                            alt="Seta"
+                            width={55}
+                            height={55}
+                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-60"
+                            style={{
+                                animationDuration: '8s',
+                                animationDelay: '1.2s',
+                                top: '89px',
+                                left: '317px',
+                                rotate: '98deg'
+                            }}
+                        />
+                        {/* Escudo */}
+                        <Image
+                            src="/escudo.png"
+                            alt="Escudo"
+                            width={70}
+                            height={70}
+                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-80"
+                            style={{
+                                animationDuration: '9s',
+                                animationDelay: '2s',
+                                top: '157px',
+                                left: '358px'
+                            }}
+                        />
+                        {/* Cerebro */}
+                        <Image
+                            src="/cerebro.png"
+                            alt="Cerebro"
+                            width={80}
+                            height={80}
+                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-80"
+                            style={{
+                                animationDuration: '10s',
+                                animationDelay: '0.8s',
+                                top: '212px',
+                                left: '81px'
+                            }}
+                        />
                     </motion.div>
-
                 </div>
             </main>
 

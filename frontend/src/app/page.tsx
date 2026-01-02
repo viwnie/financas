@@ -132,7 +132,7 @@ export default function LandingPage() {
                         className="flex justify-center mb-0"
                     >
                         <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-200 bg-white/60 dark:border-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm dark:shadow-md dark:shadow-black/10 transition-colors duration-300">
-                            <span className="text-sm font-medium text-[#4D3C10] dark:text-[#FFF8E1] tracking-wide">Nova abordagem em finanças pessoais</span>
+                            <span className="text-sm font-medium text-[#4D3C10] dark:text-[#FFF8E1] tracking-wide">Finanças Pessoais Reinventadas</span>
                         </div>
                     </motion.div>
 
@@ -144,8 +144,8 @@ export default function LandingPage() {
                         className="text-center mb-4"
                     >
                         <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4">
-                            Finanças desenhadas<br />
-                            para a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4B87C] via-[#F2D798] to-[#C6A668]">mente humana.</span>
+                            A inteligência financeira<br />
+                            que sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4B87C] via-[#F2D798] to-[#C6A668]">mente precisa.</span>
                         </h1>
                     </motion.div>
 
@@ -156,8 +156,8 @@ export default function LandingPage() {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-center text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed"
                     >
-                        Abandone as planilhas frias. O FinanceApp une design ético e ciência
-                        comportamental para cultivar seu bem-estar financeiro, sem ansiedade.
+                        Chega de planilhas complicadas. Una a ciência comportamental à simplicidade para organizar
+                        seu dinheiro, conquistar objetivos e viver sem ansiedade.
                     </motion.p>
                     {/* Plant Container - Anchored Bottom */}
                     <motion.div className="relative flex justify-center items-end w-full max-w-lg mx-auto mt-auto">
@@ -241,20 +241,20 @@ export default function LandingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                         <FeatureCard
                             icon="/pessoa_planta.png"
-                            title="Bem-Estar Financeiro"
-                            description="Bem-Estar pensando à claridade, um econômio genia e do cálmido."
+                            title="Clareza Total"
+                            description="Visualize para onde vai cada centavo. Gráficos intuitivos que traduzem números em decisões inteligentes, eliminando a incerteza do fim do mês."
                             color="orange"
                         />
                         <FeatureCard
                             icon="/Cerebro_planta.png"
-                            title="Economia Comportamental"
-                            description="Economia comportamental aos hábitos smarters para cultivar seu bem-estar financeiro."
+                            title="Hábito sem Esforço"
+                            description="Projetado para criar bons hábitos. O design comportamental torna o controle financeiro natural e recompensador, não uma obrigação chata."
                             color="blue"
                         />
                         <FeatureCard
                             icon="/escudo.png"
-                            title="Ética & Transparência"
-                            description="Segurança e Ética transparência come a mantle de timascês e responsabilidade."
+                            title="Segurança & Paz"
+                            description="Seus dados blindados e sua mente tranquila. Tecnologia de ponta e transparência total para você focar no que realmente importa: seus sonhos."
                             color="cyan"
                         />
                     </div>

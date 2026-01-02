@@ -40,7 +40,7 @@ export default function LandingPage() {
 
 
             {/* Navbar */}
-            <nav className="relative z-50 flex items-center justify-between px-6 py-5 max-w-7xl mx-auto">
+            <nav className="relative z-50 flex items-center justify-between px-6 py-3 max-w-7xl mx-auto">
                 <div className="flex items-center gap-8">
                     <Link href="/" className="flex items-center gap-2">
                         <Wallet className="w-6 h-6 text-slate-900 dark:text-white" />
@@ -121,8 +121,8 @@ export default function LandingPage() {
             </nav>
 
             {/* Hero Section */}
-            <main className="relative z-10 pt-12 pb-20 px-6">
-                <div className="max-w-7xl mx-auto">
+            <main className="relative z-10 flex flex-col justify-end min-h-[calc(100vh-80px)] overflow-hidden">
+                <div className="w-full max-w-7xl mx-auto px-6 pt-10 flex-grow flex flex-col justify-center">
 
                     {/* Badge */}
                     <motion.div
@@ -141,9 +141,9 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-center mb-6"
+                        className="text-center mb-4"
                     >
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight mb-4">
+                        <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4">
                             Finanças desenhadas<br />
                             para a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4B87C] via-[#F2D798] to-[#C6A668]">mente humana.</span>
                         </h1>
@@ -159,79 +159,74 @@ export default function LandingPage() {
                         Abandone as planilhas frias. O FinanceApp une design ético e ciência
                         comportamental para cultivar seu bem-estar financeiro, sem ansiedade.
                     </motion.p>
-                    <motion.div className="relative flex justify-center items-center w-full max-w-lg mx-auto h-[380px]">
-                        {/* Background Glows */}
-                        <div className="absolute top-1/2 left-10 transform -translate-y-1/2 w-72 h-72 bg-[#C6A668]/40 rounded-full blur-[90px] mix-blend-screen" />
-                        <div className="absolute top-1/2 right-10 transform -translate-y-1/2 w-72 h-72 bg-blue-500/40 rounded-full blur-[90px] mix-blend-screen" />
+                    {/* Plant Container - Anchored Bottom */}
+                    <motion.div className="relative flex justify-center items-end w-full max-w-lg mx-auto mt-auto">
+                        <div className="relative w-[500px] h-[350px] flex items-end justify-center">
+                            {/* Background Glows */}
+                            <div className="absolute bottom-0 left-10 w-72 h-72 bg-[#C6A668]/30 rounded-full blur-[90px] mix-blend-screen" />
+                            <div className="absolute bottom-0 right-10 w-72 h-72 bg-blue-500/30 rounded-full blur-[90px] mix-blend-screen" />
 
-                        {/* Central Plant */}
-                        <Image
-                            src="/Planta.png"
-                            alt="Crescimento"
-                            width={240}
-                            height={280}
-                            className="relative z-20 drop-shadow-[0_0_25px_rgba(100,200,255,0.2)]"
-                        />
+                            {/* Central Plant */}
+                            <Image
+                                src="/Planta.png"
+                                alt="Crescimento"
+                                width={260}
+                                height={300}
+                                className="relative z-20 drop-shadow-[0_0_25px_rgba(100,200,255,0.2)]"
+                            />
 
-                        {/* Decorative Elements */}
-                        {/* Arrow next to brain */}
-                        <Image
-                            src="/seta.png"
-                            alt="Seta"
-                            width={50}
-                            height={50}
-                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-70"
-                            style={{
-                                animationDuration: '7s',
-                                animationDelay: '0.5s',
-                                top: '143px',
-                                left: '142px',
-                                rotate: '12deg'
-                            }}
-                        />
-                        {/* Arrow pointing to shield */}
-                        <Image
-                            src="/seta.png"
-                            alt="Seta"
-                            width={55}
-                            height={55}
-                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-60"
-                            style={{
-                                animationDuration: '8s',
-                                animationDelay: '1.2s',
-                                top: '89px',
-                                left: '317px',
-                                rotate: '98deg'
-                            }}
-                        />
-                        {/* Escudo */}
-                        <Image
-                            src="/escudo.png"
-                            alt="Escudo"
-                            width={70}
-                            height={70}
-                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-80"
-                            style={{
-                                animationDuration: '9s',
-                                animationDelay: '2s',
-                                top: '157px',
-                                left: '358px'
-                            }}
-                        />
-                        {/* Cerebro */}
-                        <Image
-                            src="/cerebro.png"
-                            alt="Cerebro"
-                            width={80}
-                            height={80}
-                            className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] animate-float opacity-80"
-                            style={{
-                                animationDuration: '10s',
-                                animationDelay: '0.8s',
-                                top: '212px',
-                                left: '81px'
-                            }}
-                        />
+                            {/* Decorative Elements */}
+                            {/* Arrow next to brain */}
+                            <Image
+                                src="/seta.png"
+                                alt="Seta"
+                                width={50}
+                                height={50}
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-70"
+                                style={{
+                                    bottom: '125px',
+                                    left: '135px',
+                                    rotate: '12deg'
+                                }}
+                            />
+                            {/* Arrow pointing to shield */}
+                            <Image
+                                src="/seta.png"
+                                alt="Seta"
+                                width={55}
+                                height={55}
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-60"
+                                style={{
+                                    bottom: '180px',
+                                    left: '310px',
+                                    rotate: '98deg'
+                                }}
+                            />
+                            {/* Escudo */}
+                            <Image
+                                src="/escudo.png"
+                                alt="Escudo"
+                                width={70}
+                                height={70}
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80"
+                                style={{
+                                    bottom: '110px',
+                                    left: '350px'
+                                }}
+                            />
+                            {/* Cerebro */}
+                            <Image
+                                src="/cerebro.png"
+                                alt="Cerebro"
+                                width={80}
+                                height={80}
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80"
+                                style={{
+                                    bottom: '60px',
+                                    left: '80px'
+                                }}
+                            />
+                        </div>
                     </motion.div>
                 </div>
             </main>

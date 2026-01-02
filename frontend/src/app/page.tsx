@@ -160,6 +160,10 @@ export default function LandingPage() {
                         comportamental para cultivar seu bem-estar financeiro, sem ansiedade.
                     </motion.p>
                     <motion.div className="relative flex justify-center items-center w-full max-w-lg mx-auto h-[380px]">
+                        {/* Background Glows */}
+                        <div className="absolute top-1/2 left-10 transform -translate-y-1/2 w-72 h-72 bg-[#C6A668]/40 rounded-full blur-[90px] mix-blend-screen" />
+                        <div className="absolute top-1/2 right-10 transform -translate-y-1/2 w-72 h-72 bg-blue-500/40 rounded-full blur-[90px] mix-blend-screen" />
+
                         {/* Central Plant */}
                         <Image
                             src="/Planta.png"

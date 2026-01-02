@@ -4,20 +4,20 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { Wallet, Play, Moon, Sun, Globe } from 'lucide-react'
+import { Wallet, Moon, Sun, Globe } from 'lucide-react'
 import { useTheme } from "next-themes"
 import { useLanguage } from '@/contexts/language-context'
+import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
 
 export default function LandingPage() {
     const [mounted, setMounted] = useState(false)
-    const { theme, setTheme, resolvedTheme } = useTheme()
+    const { setTheme, resolvedTheme } = useTheme()
     const { t, setLocale, locale } = useLanguage()
     const [hoveredNav, setHoveredNav] = useState<string | null>(null)
 
@@ -40,14 +40,14 @@ export default function LandingPage() {
 
 
             {/* Navbar */}
-            <nav className="relative z-50 flex items-center justify-between px-6 py-3 max-w-7xl mx-auto">
+            <nav className="fixed top-6 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 w-[95%] max-w-5xl mx-auto bg-[#0A0F1E]/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl transition-all duration-300">
                 <div className="flex items-center gap-8">
-                    <Link href="/" className="flex items-center gap-2">
-                        <Wallet className="w-6 h-6 text-slate-900 dark:text-white" />
-                        <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">FinanceApp</span>
+                    <Link href="/" className="flex items-center gap-2 pl-2">
+                        <Wallet className="w-6 h-6 text-white" />
+                        <span className="text-xl font-bold tracking-tight text-white">FinanceApp</span>
                     </Link>
 
-                    {/* Nav Links - Left Side */}
+                    {/* Nav Links - Center */}
                     <div className="hidden md:flex items-center gap-1">
                         {[
                             { id: 'features', label: t('nav.resources'), href: '#features' },
@@ -59,12 +59,12 @@ export default function LandingPage() {
                                 href={link.href}
                                 onMouseEnter={() => setHoveredNav(link.id)}
                                 onMouseLeave={() => setHoveredNav(null)}
-                                className="relative px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                className="relative px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
                             >
                                 {hoveredNav === link.id && (
                                     <motion.div
                                         layoutId="nav-hover"
-                                        className="absolute inset-0 bg-slate-200/50 dark:bg-white/10 rounded-lg"
+                                        className="absolute inset-0 bg-white/10 rounded-full"
                                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                     />
                                 )}
@@ -74,26 +74,25 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    {/* Theme Toggle Boolean */}
+                <div className="flex items-center gap-4 pr-1">
                     {/* Theme Toggle Boolean */}
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9 transition-colors duration-500"
+                        className="text-slate-400 hover:text-white hover:bg-white/10 rounded-full w-9 h-9 transition-colors"
                     >
-                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:-rotate-180 dark:scale-0" />
-                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-180 scale-0 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:rotate-0 dark:scale-100" />
+                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-180 dark:scale-0" />
+                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-180 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                         <span className="sr-only">Toggle theme</span>
                     </Button>
 
                     {/* Language Selector */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="relative text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full w-9 h-9">
+                            <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-white hover:bg-white/10 rounded-full w-9 h-9 transition-colors">
                                 <Globe className="h-[1.2rem] w-[1.2rem]" />
-                                <span className="absolute bottom-1 right-0 text-[9px] font-extrabold uppercase text-slate-900 dark:text-white leading-none">
+                                <span className="absolute bottom-1 right-0 text-[9px] font-extrabold uppercase text-white leading-none">
                                     {locale}
                                 </span>
                             </Button>
@@ -107,7 +106,7 @@ export default function LandingPage() {
 
                     <Link
                         href="/auth/login"
-                        className="hidden sm:inline-flex px-5 py-2 text-sm font-medium text-slate-700 dark:text-white hover:text-slate-900 dark:hover:text-slate-300 transition-colors border border-slate-300 dark:border-slate-700 rounded-full hover:border-slate-400 dark:hover:border-slate-600 ml-2"
+                        className="hidden sm:inline-flex text-sm font-medium text-slate-300 hover:text-white transition-colors"
                     >
                         {t('nav.login')}
                     </Link>
@@ -121,17 +120,17 @@ export default function LandingPage() {
             </nav>
 
             {/* Hero Section */}
-            <main className="relative z-10 flex flex-col justify-end min-h-[calc(100vh-80px)] overflow-hidden">
-                <div className="w-full max-w-7xl mx-auto px-6 pt-10 flex-grow flex flex-col justify-center">
+            <main className="relative z-10 flex flex-col justify-center min-h-screen overflow-hidden">
+                <div className="w-full max-w-7xl mx-auto px-6 pt-28 flex-grow flex flex-col justify-center items-center">
 
                     {/* Badge */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="flex justify-center mb-0"
+                        className="flex justify-center mb-6"
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-slate-200 bg-white/60 dark:border-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm dark:shadow-md dark:shadow-black/10 transition-colors duration-300">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-slate-200 bg-white/60 dark:border-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm dark:shadow-md dark:shadow-black/10 transition-colors duration-300">
                             <span className="text-sm font-medium text-[#4D3C10] dark:text-[#FFF8E1] tracking-wide">Finanças Pessoais Reinventadas</span>
                         </div>
                     </motion.div>
@@ -141,9 +140,9 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-center mb-4"
+                        className="text-center mb-6 max-w-4xl"
                     >
-                        <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4">
+                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight mb-2 text-slate-900 dark:text-white">
                             A inteligência financeira<br />
                             que sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4B87C] via-[#F2D798] to-[#C6A668]">mente precisa.</span>
                         </h1>
@@ -154,14 +153,15 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-center text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed"
+                        className="text-center text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed mb-8"
                     >
                         Chega de planilhas complicadas. Una a ciência comportamental à simplicidade para organizar
                         seu dinheiro, conquistar objetivos e viver sem ansiedade.
                     </motion.p>
-                    {/* Plant Container - Anchored Bottom */}
-                    <motion.div className="relative flex justify-center items-end w-full max-w-lg mx-auto mt-auto">
-                        <div className="relative w-[500px] h-[350px] flex items-end justify-center">
+
+                    {/* Plant Container */}
+                    <motion.div className="relative flex justify-center items-end w-full max-w-lg mx-auto">
+                        <div className="relative h-full w-auto aspect-[500/350] flex items-end justify-center">
                             {/* Background Glows */}
                             <div className="absolute bottom-0 left-10 w-72 h-72 bg-[#C6A668]/30 rounded-full blur-[90px] mix-blend-screen" />
                             <div className="absolute bottom-0 right-10 w-72 h-72 bg-blue-500/30 rounded-full blur-[90px] mix-blend-screen" />
@@ -172,7 +172,7 @@ export default function LandingPage() {
                                 alt="Crescimento"
                                 width={320}
                                 height={380}
-                                className="relative z-20 drop-shadow-[0_0_25px_rgba(100,200,255,0.2)]"
+                                className="relative z-20 drop-shadow-[0_0_25px_rgba(100,200,255,0.2)] h-full w-auto object-contain"
                             />
 
                             {/* Decorative Elements */}
@@ -182,10 +182,10 @@ export default function LandingPage() {
                                 alt="Seta"
                                 width={65}
                                 height={65}
-                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-70"
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-70 w-[12%] h-auto"
                                 style={{
-                                    bottom: '145px',
-                                    left: '105px',
+                                    bottom: '42%',
+                                    left: '22%',
                                     rotate: '14deg'
                                 }}
                             />
@@ -195,10 +195,10 @@ export default function LandingPage() {
                                 alt="Seta"
                                 width={70}
                                 height={70}
-                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-60"
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-60 w-[12%] h-auto"
                                 style={{
-                                    bottom: '180px',
-                                    left: '330px',
+                                    bottom: '62%',
+                                    right: '20%',
                                     rotate: '98deg'
                                 }}
                             />
@@ -208,10 +208,10 @@ export default function LandingPage() {
                                 alt="Escudo"
                                 width={90}
                                 height={90}
-                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80"
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80 w-[18%] h-auto"
                                 style={{
-                                    bottom: '110px',
-                                    left: '380px'
+                                    bottom: '45%',
+                                    right: '5%'
                                 }}
                             />
                             {/* Cerebro */}
@@ -220,10 +220,10 @@ export default function LandingPage() {
                                 alt="Cerebro"
                                 width={100}
                                 height={100}
-                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80"
+                                className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80 w-[20%] h-auto"
                                 style={{
-                                    bottom: '60px',
-                                    left: '30px'
+                                    bottom: '22%',
+                                    left: '8%'
                                 }}
                             />
                         </div>

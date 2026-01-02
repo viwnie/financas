@@ -170,8 +170,8 @@ export default function LandingPage() {
                             <Image
                                 src="/Planta.png"
                                 alt="Crescimento"
-                                width={260}
-                                height={300}
+                                width={320}
+                                height={380}
                                 className="relative z-20 drop-shadow-[0_0_25px_rgba(100,200,255,0.2)]"
                             />
 
@@ -180,25 +180,25 @@ export default function LandingPage() {
                             <Image
                                 src="/seta.png"
                                 alt="Seta"
-                                width={50}
-                                height={50}
+                                width={65}
+                                height={65}
                                 className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-70"
                                 style={{
-                                    bottom: '125px',
-                                    left: '135px',
-                                    rotate: '12deg'
+                                    bottom: '145px',
+                                    left: '105px',
+                                    rotate: '14deg'
                                 }}
                             />
                             {/* Arrow pointing to shield */}
                             <Image
                                 src="/seta.png"
                                 alt="Seta"
-                                width={55}
-                                height={55}
+                                width={70}
+                                height={70}
                                 className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-60"
                                 style={{
                                     bottom: '180px',
-                                    left: '310px',
+                                    left: '330px',
                                     rotate: '98deg'
                                 }}
                             />
@@ -206,24 +206,24 @@ export default function LandingPage() {
                             <Image
                                 src="/escudo.png"
                                 alt="Escudo"
-                                width={70}
-                                height={70}
+                                width={90}
+                                height={90}
                                 className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80"
                                 style={{
                                     bottom: '110px',
-                                    left: '350px'
+                                    left: '380px'
                                 }}
                             />
                             {/* Cerebro */}
                             <Image
                                 src="/cerebro.png"
                                 alt="Cerebro"
-                                width={80}
-                                height={80}
+                                width={100}
+                                height={100}
                                 className="absolute z-10 drop-shadow-[0_0_25px_rgba(100,200,255,0.15)] opacity-80"
                                 style={{
                                     bottom: '60px',
-                                    left: '80px'
+                                    left: '30px'
                                 }}
                             />
                         </div>

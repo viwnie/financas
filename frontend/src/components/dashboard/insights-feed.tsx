@@ -26,7 +26,7 @@ export function InsightsFeed() {
 
 
     return (
-        <Card className="glass-card border-none shadow-none bg-transparent">
+        <Card className="app-card border-none shadow-none bg-transparent">
             <CardHeader className="pb-2 px-0">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                     Insights & Nudges

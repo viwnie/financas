@@ -21,7 +21,7 @@ export function DashboardWidget({
     action
 }: DashboardWidgetProps) {
     return (
-        <Card className={cn("h-full flex flex-col", className)}>
+        <Card className={cn("app-card h-full flex flex-col", className)}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="space-y-1">
                     <CardTitle className="text-base font-semibold">{title}</CardTitle>

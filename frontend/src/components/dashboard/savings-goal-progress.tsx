@@ -21,7 +21,7 @@ export function SavingsGoalProgress() {
 
     if (isLoading) {
         return (
-            <Card className="glass-card border-none shadow-lg">
+            <Card className="app-card border-none shadow-lg">
                 <CardHeader className="pb-2">
                     <Skeleton className="h-4 w-24" />
                 </CardHeader>
@@ -44,7 +44,7 @@ export function SavingsGoalProgress() {
 
     if (!mainGoal) {
         return (
-            <Card className="glass-card border-none shadow-lg">
+            <Card className="app-card border-none shadow-lg">
                 <CardContent className="flex flex-col items-center justify-center py-10 text-center">
                     <div className="p-3 bg-primary/10 rounded-full mb-4">
                         <Plane className="h-6 w-6 text-primary" />
@@ -60,7 +60,7 @@ export function SavingsGoalProgress() {
     const percentage = Math.min((mainGoal.currentAmount / mainGoal.targetAmount) * 100, 100);
 
     return (
-        <Card className="glass-card border-none shadow-lg">
+        <Card className="app-card border-none shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                     Meta Principal
@@ -71,8 +71,8 @@ export function SavingsGoalProgress() {
             </CardHeader>
             <CardContent>
                 <div className="flex items-center gap-4 mb-4">
-                    <div className="p-3 bg-blue-500/10 rounded-xl">
-                        <Plane className="h-6 w-6 text-blue-500" />
+                    <div className="p-3 bg-primary/10 rounded-xl">
+                        <Plane className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                         <h3 className="font-semibold text-lg">{mainGoal.name}</h3>
@@ -87,7 +87,7 @@ export function SavingsGoalProgress() {
                         <span className="text-primary">{percentage.toFixed(0)}%</span>
                         <span className="text-muted-foreground">Faltam {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mainGoal.targetAmount - mainGoal.currentAmount)}</span>
                     </div>
-                    <Progress value={percentage} className="h-2.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-blue-500 to-primary" />
+                    <Progress value={percentage} className="h-2.5 bg-secondary" indicatorClassName="bg-gradient-to-r from-primary to-emerald-500" />
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2">

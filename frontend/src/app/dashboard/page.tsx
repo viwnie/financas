@@ -1,201 +1,278 @@
 'use client';
 
+import { useMemo, useState, type ReactNode } from 'react';
 import { useAuthStore } from '@/store/auth-store';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useLanguage } from '@/contexts/language-context';
-import { Navbar } from '@/components/navbar';
-import { CreditCard, Users, Mail } from 'lucide-react';
-import { getCategoryDisplayName } from '@/lib/utils';
-import { PrivacyBlur } from '@/components/privacy-blur';
-import { DashboardWidget } from '@/components/dashboard-widget';
-import { OneTapEntryWidget } from '@/components/one-tap-widget';
-import { GamificationHub } from '@/components/gamification/gamification-hub';
-import { ComparativeReportWidget } from '@/components/comparative-report-widget';
-
-// New Dashboard Components
-import { NetWorthCard } from '@/components/dashboard/net-worth-card';
-import { SavingsGoalProgress } from '@/components/dashboard/savings-goal-progress';
-import { InsightsFeed } from '@/components/dashboard/insights-feed';
+import { useQuery } from '@tanstack/react-query';
+import { AppShell } from '@/components/app-shell';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/utils';
 import { dashboardService } from '@/services/dashboard.service';
+import { Landmark, TrendingUp, ArrowUpRight, ArrowDownRight, ChartLine, Wallet } from 'lucide-react';
+
+const localeMap: Record<string, string> = {
+    pt: 'pt-BR',
+    en: 'en-US',
+    es: 'es-ES',
+};
+
+function StatCard({
+    label,
+    value,
+    helper,
+    icon,
+}: {
+    label: string;
+    value: string;
+    helper: string;
+    icon?: ReactNode;
+}) {
+    return (
+        <Card className="app-card border-none bg-background/60">
+            <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    <span>{label}</span>
+                    {icon}
+                </div>
+                <div className="text-2xl font-semibold text-foreground">{value}</div>
+                <p className="text-xs text-muted-foreground">{helper}</p>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function DashboardPage() {
     const { user, token } = useAuthStore();
-    const router = useRouter();
     const { t, locale } = useLanguage();
+    const [selectedMonth, setSelectedMonth] = useState(String(new Date().getMonth() + 1));
+    const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
+    const [projectionYear, setProjectionYear] = useState(String(new Date().getFullYear() + 1));
 
-    if (!user) {
-        // Middleware handles this
-    }
-
-    const { data: stats, isLoading: statsLoading } = useQuery({
+    const { data: stats, isLoading } = useQuery({
         queryKey: ['dashboard-stats'],
         queryFn: dashboardService.getStats,
         enabled: !!token,
     });
 
-    const { data: evolution, isLoading: evolutionLoading } = useQuery({
-        queryKey: ['dashboard-evolution'],
-        queryFn: dashboardService.getEvolution,
-        enabled: !!token,
-    });
+    const monthOptions = useMemo(() => {
+        const localeLabel = localeMap[locale] || 'pt-BR';
+        return Array.from({ length: 12 }, (_, index) => {
+            const label = new Date(2024, index).toLocaleString(localeLabel, { month: 'long' });
+            return { value: String(index + 1), label: label.charAt(0).toUpperCase() + label.slice(1) };
+        });
+    }, [locale]);
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+    const yearOptions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return Array.from({ length: 5 }, (_, index) => String(currentYear - 1 + index));
+    }, []);
 
-    if (statsLoading || evolutionLoading) {
+    const entries = stats?.income.total ?? 0;
+    const exits = stats?.expense.total ?? 0;
+    const balance = stats?.balance.total ?? 0;
+
+    if (isLoading) {
         return <div className="flex items-center justify-center h-screen">{t('common.loading')}</div>;
     }
 
     return (
-        <div className="min-h-screen bg-background transition-colors duration-300 pb-10">
-            <Navbar />
-            <div className="container mx-auto p-4 space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-gradient">{t('dashboard.welcome')}, {user?.name}</h1>
-                        <p className="text-muted-foreground">Sua saúde financeira em um só lugar.</p>
+        <AppShell>
+            <section className="space-y-8">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="space-y-2">
+                        <span className="app-chip">Dashboard</span>
+                        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
+                            Olá, {user?.name}
+                        </h1>
+                        <p className="text-muted-foreground">Bem vindo a sua gestão financeira.</p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => router.push('/transactions')}>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            {t('dashboard.transactions')}
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => router.push('/friends')}>
-                            <Users className="h-4 w-4 mr-2" />
-                            {t('dashboard.friends')}
-                        </Button>
+                    <div className="flex gap-3">
+                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                            <SelectTrigger className="w-[160px] rounded-full bg-background/60">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {monthOptions.map((month) => (
+                                    <SelectItem key={month.value} value={month.value}>
+                                        {month.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                            <SelectTrigger className="w-[120px] rounded-full bg-background/60">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {yearOptions.map((year) => (
+                                    <SelectItem key={year} value={year}>
+                                        {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
-                {/* Section 1: Financial Health & Wellness (The "Why") */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
-                        <NetWorthCard />
-
-                        {/* Stats Widgets Inline */}
-                        {stats && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <DashboardWidget title={t('dashboard.totalIncome')} className="glass-card">
-                                    <div className="text-2xl font-bold text-emerald-500">
-                                        <PrivacyBlur>+${stats.income.total.toFixed(2)}</PrivacyBlur>
-                                    </div>
-                                </DashboardWidget>
-
-                                <DashboardWidget title={t('dashboard.totalExpense')} className="glass-card">
-                                    <div className="text-2xl font-bold text-red-500">
-                                        <PrivacyBlur>-${stats.expense.total.toFixed(2)}</PrivacyBlur>
-                                    </div>
-                                </DashboardWidget>
-
-                                <DashboardWidget title={t('dashboard.balance')} className="glass-card">
-                                    <div className={`text-2xl font-bold ${stats.balance.total >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                        <PrivacyBlur>${stats.balance.total.toFixed(2)}</PrivacyBlur>
-                                    </div>
-                                </DashboardWidget>
+                <Card className="app-card border-none bg-gradient-to-br from-primary/10 via-emerald-500/5 to-transparent">
+                    <CardContent className="p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                                <Landmark className="h-4 w-4 text-primary" />
+                                Open Finance
                             </div>
-                        )}
-                    </div>
-                    <ComparativeReportWidget />
+                            <h2 className="text-xl font-semibold text-foreground">Conecte seu banco automaticamente</h2>
+                            <p className="text-sm text-muted-foreground max-w-xl">
+                                Importe suas transações bancárias de forma segura via Open Finance Brasil.
+                            </p>
+                        </div>
+                        <Button className="rounded-full bg-gradient-to-r from-primary to-emerald-500 text-primary-foreground shadow-[0_0_24px_rgba(16,185,129,0.35)]">
+                            Conectar Banco
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <StatCard
+                        label="Entradas"
+                        value={formatCurrency(entries, locale, 'BRL')}
+                        helper="Receitas do mês"
+                        icon={<ArrowUpRight className="h-4 w-4 text-emerald-500" />}
+                    />
+                    <StatCard
+                        label="Saídas"
+                        value={formatCurrency(exits, locale, 'BRL')}
+                        helper="Despesas do mês"
+                        icon={<ArrowDownRight className="h-4 w-4 text-rose-500" />}
+                    />
+                    <StatCard
+                        label="Saldo em Conta"
+                        value={formatCurrency(balance, locale, 'BRL')}
+                        helper="Disponível (projeção)"
+                        icon={<Wallet className="h-4 w-4 text-primary" />}
+                    />
+                    <StatCard
+                        label="Investimentos"
+                        value={formatCurrency(0, locale, 'BRL')}
+                        helper="Total investido (projeção)"
+                        icon={<TrendingUp className="h-4 w-4 text-primary" />}
+                    />
+                    <StatCard
+                        label="Transferências"
+                        value={formatCurrency(0, locale, 'BRL')}
+                        helper="Entre contas"
+                        icon={<ChartLine className="h-4 w-4 text-primary" />}
+                    />
                 </div>
 
-                {/* Section 2: Three Column Widgets */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <SavingsGoalProgress />
-                    <GamificationHub />
-                    <InsightsFeed />
-                </div>
-
-                {/* Section 3: Action & Deep Dive */}
-                <div className="md:hidden">
-                    <OneTapEntryWidget />
-                </div>
-
-                {/* Charts Section */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 max-w-full">
-                    <Card className="col-span-4 glass-card border-none overflow-hidden">
-                        <CardHeader>
-                            <CardTitle>{t('dashboard.evolution')}</CardTitle>
-                            <CardDescription>Fluxo de caixa dos últimos 6 meses</CardDescription>
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="app-card border-none">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Resultado</CardTitle>
+                            <p className="text-xs text-muted-foreground">Fluxo do mês</p>
                         </CardHeader>
-                        <CardContent className="pl-2">
-                            <div className="h-[300px] w-full min-w-0">
-                                {evolution && (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={evolution} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                            <defs>
-                                                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />
-                                                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-                                                </linearGradient>
-                                                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
-                                            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/20" vertical={false} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: 'var(--radius)' }}
-                                                itemStyle={{ color: 'var(--foreground)' }}
-                                            />
-                                            <Area type="monotone" dataKey="income" stroke="var(--chart-1)" fillOpacity={1} fill="url(#colorIncome)" name="Receita" />
-                                            <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" name="Despesa" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                )}
+                        <CardContent className="space-y-4">
+                            <div className="text-2xl font-semibold text-foreground">{formatCurrency(balance, locale, 'BRL')}</div>
+                            <div className="space-y-2 text-sm text-muted-foreground">
+                                <div className="flex items-center justify-between">
+                                    <span>Entradas</span>
+                                    <span className="text-foreground">{formatCurrency(entries, locale, 'BRL')}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span>Saídas</span>
+                                    <span className="text-foreground">{formatCurrency(exits, locale, 'BRL')}</span>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="col-span-3 glass-card border-none">
-                        <CardHeader>
-                            <CardTitle>{t('dashboard.expensesByCategory')}</CardTitle>
+                    <Card className="app-card border-none">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Faturas do Mês</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="h-[300px] w-full">
-                                {stats && stats.expensesByCategory.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={stats.expensesByCategory.map((item: any) => ({
-                                                    ...item,
-                                                    displayName: getCategoryDisplayName(item, locale)
-                                                }))}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="amount"
-                                                nameKey="displayName"
-                                            >
-                                                {stats.expensesByCategory.map((entry: any, index: number) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                formatter={(value: number) => `$${value.toFixed(2)}`}
-                                                contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: 'var(--radius)' }}
-                                                itemStyle={{ color: 'var(--foreground)' }}
-                                            />
-                                            <Legend verticalAlign="bottom" height={36} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                                        {t('dashboard.noExpenses')}
-                                    </div>
-                                )}
-                            </div>
+                        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                            <p className="text-sm text-muted-foreground">
+                                Nenhuma fatura ou despesa recorrente!
+                            </p>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                                Adicione despesas recorrentes ou conecte o Pluggy.
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
-            </div>
-        </div>
+
+                <Card className="app-card border-none">
+                    <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <CardTitle className="text-base">Fluxo de Caixa</CardTitle>
+                            <p className="text-xs text-muted-foreground">Projeção para o próximo ano</p>
+                        </div>
+                        <Select value={projectionYear} onValueChange={setProjectionYear}>
+                            <SelectTrigger className="w-[160px] rounded-full bg-background/60">
+                                <SelectValue placeholder="Próximo ano" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {yearOptions.map((year) => (
+                                    <SelectItem key={year} value={year}>
+                                        {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="rounded-2xl border border-dashed border-border/70 bg-background/40 px-4 py-6 text-center text-sm text-muted-foreground">
+                            Projeção baseada em lançamentos planejados e faturas futuras
+                            <br />
+                            Nenhum dado encontrado para o período selecionado.
+                        </div>
+                        <Button variant="outline" className="rounded-full">
+                            Adicionar lançamentos futuros
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <Card className="app-card border-none lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle className="text-base">Meus Investimentos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm text-muted-foreground">
+                            <p>Nenhum investimento encontrado.</p>
+                            <p>Conecte uma conta de corretora ou banco para ver seus investimentos.</p>
+                        </CardContent>
+                    </Card>
+
+                    <div className="grid gap-6">
+                        <Card className="app-card border-none">
+                            <CardHeader>
+                                <CardTitle className="text-base">Meus Cartões</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm text-muted-foreground">
+                                <p>Nenhum cartão cadastrado</p>
+                                <p>Cadastre seus cartões para acompanhar gastos e faturas.</p>
+                                <Button variant="outline" className="rounded-full">Cadastrar Cartão</Button>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="app-card border-none">
+                            <CardHeader>
+                                <CardTitle className="text-base">Maiores Gastos</CardTitle>
+                                <p className="text-xs text-muted-foreground">Mês Atual</p>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm text-muted-foreground">
+                                <p>Nenhum gasto registrado</p>
+                                <p>Seus gastos do mês aparecerão aqui assim que você adicionar transações.</p>
+                                <Button className="rounded-full bg-gradient-to-r from-primary to-emerald-500 text-primary-foreground shadow-[0_0_24px_rgba(16,185,129,0.35)]">
+                                    Adicionar Transação
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+        </AppShell>
     );
 }

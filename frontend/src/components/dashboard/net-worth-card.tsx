@@ -29,7 +29,7 @@ export function NetWorthCard() {
     const percentageChange = 0; // Placeholder
 
     return (
-        <Card className="glass border-0 bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden relative">
+        <Card className="app-card border-0 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent overflow-hidden relative">
             <div className="absolute top-0 right-0 p-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 z-10">

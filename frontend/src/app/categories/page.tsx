@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { useLanguage } from '@/contexts/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Navbar } from '@/components/navbar';
+import { AppShell } from '@/components/app-shell';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -383,29 +383,28 @@ export default function CategoriesPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background">
-                <Navbar />
-                <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+            <AppShell>
+                <div className="flex items-center justify-center h-[calc(100vh-200px)]">
                     <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
-            </div>
+            </AppShell>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background pb-8">
-            <Navbar />
-            <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-                <div>
-                    <h1 className="text-3xl font-bold">{t('categories.headerTitle')}</h1>
-                    <p className="text-muted-foreground mt-2">
+        <AppShell>
+            <div className="space-y-8">
+                <div className="space-y-3">
+                    <span className="app-chip">Categorias</span>
+                    <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">{t('categories.headerTitle')}</h1>
+                    <p className="text-muted-foreground">
                         {t('categories.headerDescription')}
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                     {/* Inline Creation Card */}
-                    <Card className="border-dashed border-2 bg-muted/20 flex flex-col justify-center">
+                    <Card className="app-card border-dashed border-2 bg-muted/30 flex flex-col justify-center">
                         <CardHeader>
                             <CardTitle className="text-lg">{t('categories.createNewTitle')}</CardTitle>
                             <CardDescription>{t('categories.createNewDescription')}</CardDescription>
@@ -450,7 +449,7 @@ export default function CategoriesPage() {
                     </Card>
 
                     {/* Color Management Section */}
-                    <Card className="flex flex-col">
+                    <Card className="app-card flex flex-col">
                         <CardHeader>
                             <CardTitle className="text-lg">{t('categories.colorsTitle')}</CardTitle>
                             <CardDescription>
@@ -468,7 +467,7 @@ export default function CategoriesPage() {
                         <Card
                             key={category.id}
                             className={cn(
-                                "overflow-hidden transition-all duration-300 ease-in-out",
+                                "app-card overflow-hidden transition-all duration-300 ease-in-out",
                                 expandedId === category.id ? "ring-2 ring-primary shadow-md" : "hover:border-primary/50"
                             )}
                         >
@@ -551,6 +550,6 @@ export default function CategoriesPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </AppShell>
     );
 }

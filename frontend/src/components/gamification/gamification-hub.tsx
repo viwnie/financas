@@ -32,7 +32,7 @@ export function GamificationHub() {
     const progress = ((points % 1000) / 1000) * 100;
 
     return (
-        <Card className="glass-card border-none bg-gradient-to-br from-orange-500/5 to-amber-500/5 overflow-hidden">
+        <Card className="app-card border-none bg-gradient-to-br from-orange-500/10 to-amber-500/10 overflow-hidden">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-amber-500" />
@@ -84,7 +84,7 @@ export function GamificationHub() {
 
 function GamificationSkeleton() {
     return (
-        <Card className="glass-card border-none">
+        <Card className="app-card border-none">
             <CardHeader className="pb-2">
                 <Skeleton className="h-4 w-24" />
             </CardHeader>

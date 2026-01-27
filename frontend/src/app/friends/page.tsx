@@ -6,8 +6,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/navbar';
+import { AppShell } from '@/components/app-shell';
 import { Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -50,7 +49,6 @@ interface UserSearch {
 
 export default function FriendsPage() {
     const { token, user } = useAuthStore();
-    const router = useRouter();
     const queryClient = useQueryClient();
 
     // State
@@ -353,14 +351,17 @@ export default function FriendsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
-            <div className="p-8 space-y-8 max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold text-gradient">Friends</h1>
+        <AppShell>
+            <div className="space-y-8">
+                <div className="space-y-3">
+                    <span className="app-chip">Conexões</span>
+                    <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">Amigos</h1>
+                    <p className="text-muted-foreground">Gerencie convites, amigos e participantes externos em um só lugar.</p>
+                </div>
 
-                <div className="grid gap-8 md:grid-cols-2">
+                <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-8">
-                        <Card className="glass-card">
+                        <Card className="app-card">
                             <CardHeader>
                                 <CardTitle>Add Friend</CardTitle>
                             </CardHeader>
@@ -411,7 +412,7 @@ export default function FriendsPage() {
                                                 ))}
                                                 {searchResults.length === 0 && (
                                                     <li
-                                                        className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex justify-between items-center text-blue-600"
+                                                        className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex justify-between items-center text-primary"
                                                         onClick={() => addExternalFriendMutation.mutate(searchQuery)}
                                                     >
                                                         <span>Adicionar "{searchQuery}" (Não cadastrado)</span>
@@ -428,13 +429,13 @@ export default function FriendsPage() {
 
                         {/* Received Merge Requests */}
                         {receivedMergeRequests.length > 0 && (
-                            <Card className="glass-card">
+                            <Card className="app-card">
                                 <CardHeader>
                                     <CardTitle>Merge Requests ({receivedMergeRequests.length})</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {receivedMergeRequests.map((req) => (
-                                        <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                        <div key={req.id} className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60 transition-all hover:border-primary/30 hover:shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10">
                                                     <AvatarFallback>{getInitials(req.requester.name)}</AvatarFallback>
@@ -460,13 +461,13 @@ export default function FriendsPage() {
                         )}
 
                         {requests.length > 0 && (
-                            <Card className="glass-card">
+                            <Card className="app-card">
                                 <CardHeader>
                                     <CardTitle>Pending Requests ({requests.length})</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {requests.map((req) => (
-                                        <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                        <div key={req.id} className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60 transition-all hover:border-primary/30 hover:shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10">
                                                     <AvatarImage
@@ -503,13 +504,13 @@ export default function FriendsPage() {
                         )}
 
                         {sentRequests.length > 0 && (
-                            <Card className="glass-card">
+                            <Card className="app-card">
                                 <CardHeader>
                                     <CardTitle>Sent Requests ({sentRequests.length})</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {sentRequests.map((req) => (
-                                        <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                        <div key={req.id} className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60 transition-all hover:border-primary/30 hover:shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10">
                                                     <AvatarImage
@@ -546,7 +547,7 @@ export default function FriendsPage() {
                     </div>
 
                     <div className="space-y-8">
-                        <Card className="glass-card">
+                        <Card className="app-card">
                             <CardHeader>
                                 <CardTitle>My Friends ({friends.length})</CardTitle>
                             </CardHeader>
@@ -559,7 +560,7 @@ export default function FriendsPage() {
                                 ) : (
                                     <div className="space-y-4">
                                         {friends.map((friend) => (
-                                            <div key={friend.username} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                            <div key={friend.username} className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60 transition-all hover:border-primary/30 hover:shadow-sm">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-10 w-10">
                                                         <AvatarImage
@@ -590,7 +591,7 @@ export default function FriendsPage() {
                         </Card>
 
                         {/* External Friends */}
-                        <Card className="glass-card">
+                        <Card className="app-card">
                             <CardHeader>
                                 <CardTitle>External Friends ({externalFriends.length})</CardTitle>
                             </CardHeader>
@@ -602,7 +603,7 @@ export default function FriendsPage() {
                                 ) : (
                                     <div className="space-y-4">
                                         {externalFriends.map((friend, idx) => (
-                                            <div key={idx} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                            <div key={idx} className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60 transition-all hover:border-primary/30 hover:shadow-sm">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className="h-10 w-10">
                                                         <AvatarFallback>{getInitials(friend.name)}</AvatarFallback>
@@ -739,6 +740,6 @@ export default function FriendsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </AppShell>
     );
 }

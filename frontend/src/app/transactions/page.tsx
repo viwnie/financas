@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { Trash2, Filter, Calendar, History, RotateCcw } from 'lucide-react';
 import { getCategoryDisplayName, formatCurrency, getInitials } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/navbar';
+import { AppShell } from '@/components/app-shell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Input } from '@/components/ui/input';
@@ -334,30 +334,33 @@ export default function TransactionsPage() {
     }));
 
     return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
-            <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h1 className="text-3xl font-bold text-gradient">{t('transactions.title')}</h1>
-                    <div className="flex gap-2">
+        <AppShell>
+            <div className="space-y-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div className="space-y-3">
+                        <span className="app-chip">Transações</span>
+                        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">{t('transactions.title')}</h1>
+                        <p className="text-muted-foreground">Organize receitas e despesas com filtros inteligentes.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                         {transactions.some(t => t.participants.some(p => p.userId === user?.id && p.status === 'PENDING')) && (
                             <>
-                                <Button size="sm" onClick={() => respondAllMutation.mutate('ACCEPTED')} className="bg-green-600 hover:bg-green-700 text-white">
+                                <Button size="sm" onClick={() => respondAllMutation.mutate('ACCEPTED')} className="rounded-full bg-green-600 hover:bg-green-700 text-white">
                                     {t('transactions.acceptAll')}
                                 </Button>
-                                <Button size="sm" variant="destructive" onClick={() => respondAllMutation.mutate('REJECTED')}>
+                                <Button size="sm" variant="destructive" className="rounded-full" onClick={() => respondAllMutation.mutate('REJECTED')}>
                                     {t('transactions.rejectAll')}
                                 </Button>
                             </>
                         )}
-                        <Button variant="outline" onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}>
+                        <Button variant="outline" className="rounded-full bg-background/60" onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}>
                             {t('transactions.exportCSV')}
                         </Button>
                     </div>
                 </div>
 
                 {/* Inline Creation Form */}
-                <Card>
+                <Card className="app-card border-none">
                     <CardHeader>
                         <CardTitle>{t('transactions.addTitle')}</CardTitle>
                     </CardHeader>
@@ -367,7 +370,7 @@ export default function TransactionsPage() {
                 </Card>
 
                 {/* Filters */}
-                <div className="glass-card p-6 rounded-xl space-y-4">
+                <div className="app-panel p-6 space-y-4">
                     <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
                         {/* Top Row: Search */}
                         <div className="flex gap-2 w-full lg:w-auto flex-1">
@@ -412,6 +415,7 @@ export default function TransactionsPage() {
                             </div>
                             <Button
                                 variant="outline"
+                                className="rounded-full bg-background/60"
                                 onClick={() => {
                                     const now = new Date();
                                     setMonthsSelected([String(now.getMonth() + 1)]);
@@ -473,7 +477,7 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Responsive Table */}
-                <div className="glass-card rounded-xl overflow-hidden border-none">
+                <div className="app-panel overflow-hidden border-none">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-muted-foreground uppercase bg-primary/5">
@@ -519,7 +523,7 @@ export default function TransactionsPage() {
                                         const catColor = transaction.category.color;
 
                                         return (
-                                            <tr key={`${transaction.id}-${transaction.date}`} className="border-b border-white/10 last:border-0 hover:bg-white/5 dark:hover:bg-white/5 transition-colors">
+                                            <tr key={`${transaction.id}-${transaction.date}`} className="border-b border-border/60 last:border-0 hover:bg-muted/40 transition-colors">
                                                 <td className="px-6 py-4 font-medium whitespace-nowrap">
                                                     <div className="flex items-center">
                                                         <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -531,7 +535,7 @@ export default function TransactionsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${!catColor ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}`}
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${!catColor ? 'bg-primary/15 text-primary' : ''}`}
                                                         style={catColor ? { background: catColor, color: getContrastColor(catColor) } : undefined}
                                                     >
                                                         {getCategoryDisplayName(transaction.category, locale)}
@@ -719,7 +723,7 @@ export default function TransactionsPage() {
                         )}
                     </DialogContent>
                 </Dialog>
-            </div >
-        </div >
+            </div>
+        </AppShell>
     );
 }

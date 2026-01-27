@@ -41,8 +41,8 @@ export function ComparativeReportWidget() {
     return (
         <DashboardWidget
             title="Monthly Comparison"
-            className={isGood ? "bg-green-50 dark:bg-green-950/20 border-green-200" : "bg-red-50 dark:bg-red-950/20 border-red-200"}
-            action={<TrendingUp className={`w-4 h-4 ${isGood ? 'text-green-500' : 'text-red-500'}`} />}
+            className={isGood ? "border-none bg-emerald-500/10" : "border-none bg-rose-500/10"}
+            action={<TrendingUp className={`w-4 h-4 ${isGood ? 'text-emerald-500' : 'text-rose-500'}`} />}
         >
             <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">

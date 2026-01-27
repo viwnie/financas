@@ -35,9 +35,9 @@ export function NotificationCenter() {
     } = useNotifications();
 
     return (
-        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative rounded-full w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-muted">
                     <Bell className="h-5 w-5" />
                     {totalNotifications > 0 && (
                         <Badge

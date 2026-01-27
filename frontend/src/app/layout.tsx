@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Outfit, Geist_Mono } from "next/font/google"; // Use Outfit for a premium, clean Fintech look
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 
-const fontSans = Outfit({
+const fontSans = IBM_Plex_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-const fontMono = Geist_Mono({
+const fontMono = IBM_Plex_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} antialiased`}
+        className={`${fontSans.variable} ${fontMono.variable} antialiased font-sans`}
       >
         <ThemeProvider
           attribute="class"

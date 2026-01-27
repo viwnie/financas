@@ -6,6 +6,8 @@ import { Prisma, User } from '@prisma/client';
 import { TextHelper } from '../common/utils/text.helper';
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
+import { randomBytes } from 'crypto';
+import type { Profile } from 'passport-google-oauth20';
 
 @Injectable()
 export class AuthService {
@@ -69,6 +71,36 @@ export class AuthService {
         return this.login(user);
     }
 
+    async validateGoogleUser(profile: Profile) {
+        const email = profile.emails?.[0]?.value;
+        if (!email) {
+            throw new UnauthorizedException('Google account has no email');
+        }
+
+        const existingUser = await this.usersService.findByEmail(email);
+        if (existingUser) {
+            return this.sanitizeUser(existingUser);
+        }
+
+        const nameCandidate =
+            profile.displayName ||
+            profile.name?.givenName ||
+            email.split('@')[0];
+
+        const baseUsername = TextHelper.sanitizeUsername(nameCandidate) || TextHelper.sanitizeUsername(email.split('@')[0]) || 'User';
+        const username = await this.generateUniqueUsername(baseUsername);
+        const password = this.generateRandomPassword();
+
+        const user = await this.usersService.create({
+            name: nameCandidate || 'Usuario',
+            username,
+            email,
+            password,
+        });
+
+        return this.sanitizeUser(user);
+    }
+
     // MFA Methods
     async generateMfaSecret(user: User) {
         const secret = authenticator.generateSecret();
@@ -108,5 +140,32 @@ export class AuthService {
         }
 
         return authenticator.verify({ token, secret: security.mfaSecret });
+    }
+
+    private sanitizeUser(user: User) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...rest } = user;
+        return rest;
+    }
+
+    private generateRandomPassword() {
+        return randomBytes(24).toString('hex');
+    }
+
+    private async generateUniqueUsername(base: string) {
+        const sanitizedBase = TextHelper.sanitizeUsername(base) || 'User';
+        let candidate = sanitizedBase;
+        let attempt = 0;
+
+        while (await this.usersService.findByUsernameInsensitive(candidate)) {
+            attempt += 1;
+            if (attempt < 1000) {
+                candidate = `${sanitizedBase}${attempt}`;
+                continue;
+            }
+            candidate = `${sanitizedBase}${randomBytes(2).toString('hex')}`;
+        }
+
+        return candidate;
     }
 }

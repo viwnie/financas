@@ -51,118 +51,135 @@
   --radius: 0.75rem;
   /* Slightly more rounded for premium feel */
 
-  /* Light Mode - Crisp, Clean, Efficient */
-  --background: oklch(0.99 0 0);
-  /* Pure White */
-  --foreground: oklch(0.12 0.01 220);
-  /* Deep Navy/Charcoal */
+  /* Light Mode - Financial Green */
+  --background: oklch(0.985 0.01 160);
+  /* Cool greenish white */
+  --foreground: oklch(0.20 0.03 210);
+  /* Deep slate */
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.01 220);
+  --card: oklch(0.995 0.005 160);
+  --card-foreground: oklch(0.20 0.03 210);
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.01 220);
+  --popover: oklch(0.995 0.005 160);
+  --popover-foreground: oklch(0.20 0.03 210);
 
-  --primary: oklch(0.45 0.15 260);
-  /* Royal Blue/Purple */
+  --primary: oklch(0.58 0.16 155);
+  /* Emerald green */
   --primary-foreground: oklch(0.98 0 0);
 
-  --secondary: oklch(0.96 0.01 260);
-  /* Very Light Blue/Grey */
-  --secondary-foreground: oklch(0.35 0.10 260);
+  --secondary: oklch(0.94 0.02 165);
+  /* Mist green */
+  --secondary-foreground: oklch(0.30 0.06 190);
 
-  --muted: oklch(0.96 0.01 220);
-  --muted-foreground: oklch(0.50 0.05 260);
+  --muted: oklch(0.94 0.015 170);
+  --muted-foreground: oklch(0.45 0.05 200);
 
-  --accent: oklch(0.96 0.01 260);
-  --accent-foreground: oklch(0.35 0.10 260);
+  --accent: oklch(0.90 0.05 150);
+  /* Light emerald */
+  --accent-foreground: oklch(0.20 0.06 160);
 
   --destructive: oklch(0.6 0.2 20);
 
-  --border: oklch(0.92 0.01 260);
-  --input: oklch(0.92 0.01 260);
-  --ring: oklch(0.45 0.15 260 / 20%);
+  --border: oklch(0.90 0.02 180);
+  --input: oklch(0.90 0.02 180);
+  --ring: oklch(0.58 0.16 155 / 25%);
 
-  /* Charts - Vibrant & Distinct */
-  --chart-1: oklch(0.55 0.18 260);
-  /* Primary Purple/Blue */
-  --chart-2: oklch(0.60 0.15 180);
-  /* Teal/Cyan */
-  --chart-3: oklch(0.65 0.18 30);
-  /* Warm Orange */
-  --chart-4: oklch(0.60 0.18 300);
-  /* Magenta/Pink */
-  --chart-5: oklch(0.70 0.12 80);
-  /* Soft Yellow/Gold */
+  /* Charts - Green-forward Palette */
+  --chart-1: oklch(0.56 0.15 155);
+  /* Emerald */
+  --chart-2: oklch(0.62 0.12 180);
+  /* Teal */
+  --chart-3: oklch(0.70 0.12 130);
+  /* Lime */
+  --chart-4: oklch(0.74 0.12 90);
+  /* Gold */
+  --chart-5: oklch(0.50 0.05 220);
+  /* Slate */
 
-  --sidebar: oklch(0.98 0.01 220);
-  --sidebar-foreground: oklch(0.15 0.02 220);
-  --sidebar-primary: oklch(0.45 0.15 260);
+  --sidebar: oklch(0.975 0.01 160);
+  --sidebar-foreground: oklch(0.20 0.03 210);
+  --sidebar-primary: oklch(0.58 0.16 155);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.95 0.02 260);
-  --sidebar-accent-foreground: oklch(0.45 0.15 260);
-  --sidebar-border: oklch(0.92 0.01 220);
-  --sidebar-ring: oklch(0.45 0.15 260 / 20%);
+  --sidebar-accent: oklch(0.93 0.02 165);
+  --sidebar-accent-foreground: oklch(0.30 0.06 190);
+  --sidebar-border: oklch(0.90 0.02 180);
+  --sidebar-ring: oklch(0.58 0.16 155 / 25%);
+
+  --text-gradient-start: oklch(0.62 0.17 155);
+  --text-gradient-mid: oklch(0.70 0.14 140);
+  --text-gradient-end: oklch(0.74 0.12 120);
+  --text-gradient-reflect: 16 185 129;
 }
 
 .dark {
-  /* Dark Mode - Deep, Rich, Premium */
-  --background: oklch(0.12 0.04 260);
-  /* Deep Void Blue/Purple */
-  --foreground: oklch(0.96 0.01 240);
-  /* Soft White */
+  /* Dark Mode - Emerald Night (More vivid) */
+  --background: oklch(0.13 0.04 190);
+  /* Deep green slate */
+  --foreground: oklch(0.96 0.02 155);
+  /* Soft white with green tint */
 
-  --card: oklch(0.15 0.04 260);
-  /* Slightly lighter than bg */
-  --card-foreground: oklch(0.96 0.01 240);
+  --card: oklch(0.18 0.05 190);
+  /* Subtle lift */
+  --card-foreground: oklch(0.96 0.02 155);
 
-  --popover: oklch(0.15 0.04 260);
-  --popover-foreground: oklch(0.96 0.01 240);
+  --popover: oklch(0.18 0.05 190);
+  --popover-foreground: oklch(0.96 0.02 155);
 
-  --primary: oklch(0.65 0.18 260);
-  /* Lighter Royal Blue/Purple for Contrast in Dark */
-  --primary-foreground: oklch(0.10 0.03 260);
+  --primary: oklch(0.78 0.18 150);
+  /* Vivid emerald */
+  --primary-foreground: oklch(0.10 0.03 180);
 
-  --secondary: oklch(0.25 0.05 260);
-  /* Deep muted blue */
-  --secondary-foreground: oklch(0.90 0.05 260);
+  --secondary: oklch(0.24 0.04 190);
+  /* Slate */
+  --secondary-foreground: oklch(0.90 0.06 160);
 
-  --muted: oklch(0.20 0.02 260);
-  --muted-foreground: oklch(0.70 0.05 260);
+  --muted: oklch(0.24 0.04 190);
+  --muted-foreground: oklch(0.76 0.05 175);
 
-  --accent: oklch(0.25 0.05 260);
-  --accent-foreground: oklch(0.90 0.05 260);
+  --accent: oklch(0.32 0.10 150);
+  /* Emerald accent */
+  --accent-foreground: oklch(0.94 0.05 155);
 
   --destructive: oklch(0.6 0.2 20);
 
-  --border: oklch(0.25 0.05 260 / 40%);
-  --input: oklch(0.25 0.05 260 / 40%);
-  --ring: oklch(0.65 0.18 260 / 20%);
+  --border: oklch(0.30 0.04 190 / 45%);
+  --input: oklch(0.30 0.04 190 / 45%);
+  --ring: oklch(0.78 0.18 150 / 35%);
 
-  /* Charts - Adjusted for Dark Mode brightness */
-  --chart-1: oklch(0.70 0.15 260);
-  --chart-2: oklch(0.75 0.12 180);
-  --chart-3: oklch(0.75 0.15 30);
-  --chart-4: oklch(0.70 0.15 300);
-  --chart-5: oklch(0.80 0.10 80);
+  /* Charts - Dark Mode Brightness */
+  --chart-1: oklch(0.80 0.16 150);
+  --chart-2: oklch(0.78 0.12 180);
+  --chart-3: oklch(0.82 0.14 130);
+  --chart-4: oklch(0.84 0.12 90);
+  --chart-5: oklch(0.70 0.06 220);
 
-  --sidebar: oklch(0.10 0.04 260);
-  /* Even darker for sidebar */
-  --sidebar-foreground: oklch(0.96 0.01 240);
-  --sidebar-primary: oklch(0.65 0.18 260);
-  --sidebar-primary-foreground: oklch(0.10 0.03 260);
-  --sidebar-accent: oklch(0.20 0.04 260);
-  --sidebar-accent-foreground: oklch(0.96 0.01 240);
-  --sidebar-border: oklch(0.25 0.05 260 / 20%);
-  --sidebar-ring: oklch(0.65 0.18 260 / 20%);
+  --sidebar: oklch(0.12 0.04 190);
+  --sidebar-foreground: oklch(0.96 0.02 155);
+  --sidebar-primary: oklch(0.78 0.18 150);
+  --sidebar-primary-foreground: oklch(0.10 0.03 180);
+  --sidebar-accent: oklch(0.22 0.04 190);
+  --sidebar-accent-foreground: oklch(0.96 0.02 155);
+  --sidebar-border: oklch(0.30 0.04 190 / 30%);
+  --sidebar-ring: oklch(0.78 0.18 150 / 35%);
+
+  --text-gradient-start: oklch(0.78 0.18 150);
+  --text-gradient-mid: oklch(0.82 0.16 140);
+  --text-gradient-end: oklch(0.84 0.14 120);
+  --text-gradient-reflect: 52 211 153;
+}
+
+html {
+  scrollbar-gutter: stable both-edges;
+  overflow-y: scroll;
+  scroll-behavior: smooth;
 }
 
 * {
-  @apply border-border outline-ring/50 transition-colors duration-500 ease-in-out;
+  @apply border-border outline-ring/50 transition-colors duration-700 ease-in-out;
 }
 
 body {
-  @apply bg-background text-foreground antialiased transition-colors duration-500 ease-in-out;
+  @apply bg-background text-foreground antialiased transition-colors duration-700 ease-in-out;
 }
 
 /* Custom Scrollbar for a polished look */
@@ -190,6 +207,60 @@ body {
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-500 dark:from-blue-400 dark:to-purple-400;
+    @apply bg-clip-text text-transparent;
+    background-image:
+      radial-gradient(90px circle at var(--reflect-x, 50%) var(--reflect-y, 50%),
+        rgba(var(--text-gradient-reflect) / var(--reflect-alpha, 0)),
+        rgba(var(--text-gradient-reflect) / 0) 70%),
+      linear-gradient(90deg, var(--text-gradient-start), var(--text-gradient-mid), var(--text-gradient-end));
+    background-size: 100% 100%, 100% 100%;
+    background-position: 0% 50%, 0% 50%;
+    transition: filter 400ms ease;
+  }
+}
+
+@keyframes theme-toggle-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  100% {
+    transform: rotate(180deg) scale(1.05);
+  }
+}
+
+.theme-toggle-anim {
+  animation: theme-toggle-spin 450ms ease;
+}
+
+@keyframes billing-toggle-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.billing-toggle-anim {
+  animation: billing-toggle-pop 320ms ease;
+}
+
+.text-gradient:hover {
+  filter: brightness(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .theme-toggle-anim,
+  .billing-toggle-anim {
+    animation: none;
+  }
+  .text-gradient {
+    transition: none;
   }
 }

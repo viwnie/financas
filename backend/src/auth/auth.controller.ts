@@ -1,10 +1,16 @@
-import { Controller, Post, Body, UsePipes, ValidationPipe, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UsePipes, ValidationPipe, HttpCode, HttpStatus, UnauthorizedException, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { GoogleAuthGuard } from './google-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(
+        private authService: AuthService,
+        private configService: ConfigService,
+    ) { }
 
     @Post('login')
     @HttpCode(HttpStatus.OK)
@@ -22,6 +28,28 @@ export class AuthController {
     @Post('register')
     async register(@Body() registerDto: RegisterDto) {
         return this.authService.register(registerDto);
+    }
+
+    @Get('google')
+    @UseGuards(GoogleAuthGuard)
+    async googleAuth() {
+        return;
+    }
+
+    @Get('google/callback')
+    @UseGuards(GoogleAuthGuard)
+    async googleAuthRedirect(@Req() req: Request & { user: any }, @Res() res: Response) {
+        try {
+            const payload = await this.authService.login(req.user);
+            const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+            const encoded = Buffer.from(JSON.stringify(payload)).toString('base64');
+            const base64Url = encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+            const redirectUrl = `${frontendUrl}/auth/google/callback#data=${encodeURIComponent(base64Url)}`;
+            return res.redirect(redirectUrl);
+        } catch (error) {
+            const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
+            return res.redirect(`${frontendUrl}/auth/login?error=google-auth`);
+        }
     }
 
     @Post('mfa/generate')

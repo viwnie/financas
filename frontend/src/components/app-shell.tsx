@@ -46,7 +46,7 @@ export function AppShell({ children }: AppShellProps) {
     const observer = new MutationObserver(applyFix);
     observer.observe(body, {
       attributes: true,
-      attributeFilter: ['data-scroll-locked', 'style', 'class'],
+      attributeFilter: ['data-scroll-locked'],
     });
 
     return () => {

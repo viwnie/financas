@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { useLanguage } from '@/contexts/language-context';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TransactionForm from '@/components/transaction-form';
 import { format } from 'date-fns';
-import { Trash2, Filter, Calendar, History, RotateCcw } from 'lucide-react';
+import { Trash2, Filter, Calendar, History, RotateCcw, Search, Plus, ArrowLeftRight, Upload, Download, Hash, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { getCategoryDisplayName, formatCurrency, getInitials } from '@/lib/utils'; // Import at top
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
@@ -135,6 +135,36 @@ export default function TransactionsPage() {
         placeholderData: keepPreviousData,
         enabled: !!token,
     });
+
+    const summary = useMemo(() => {
+        return transactions.reduce(
+            (acc, transaction) => {
+                let amount = parseFloat(transaction.amount || '0');
+                if (transaction.isShared && transaction.participants?.length) {
+                    const myParticipant = transaction.participants.find(p => p.userId === user?.id);
+                    if (myParticipant) {
+                        const amountToShow = myParticipant.status === 'PENDING'
+                            ? (myParticipant.baseShareAmount || myParticipant.shareAmount)
+                            : myParticipant.shareAmount;
+                        amount = parseFloat(amountToShow || '0');
+                    }
+                }
+
+                if (!Number.isFinite(amount)) amount = 0;
+                acc.count += 1;
+                if (transaction.type === 'INCOME') {
+                    acc.income += amount;
+                } else {
+                    acc.expense += amount;
+                }
+                if (!acc.currency && transaction.currency) acc.currency = transaction.currency;
+                return acc;
+            },
+            { count: 0, income: 0, expense: 0, currency: 'BRL' as string }
+        );
+    }, [transactions, user?.id]);
+
+    const balance = summary.income - summary.expense;
 
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
@@ -343,6 +373,37 @@ export default function TransactionsPage() {
                         <p className="text-muted-foreground">Organize receitas e despesas com filtros inteligentes.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <Button
+                            className="rounded-full"
+                            onClick={() => document.getElementById('transaction-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            {t('transactions.addTitle')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="rounded-full bg-background/60"
+                            onClick={() => toast.info(t('transactions.comingSoon') || 'Em breve')}
+                        >
+                            <ArrowLeftRight className="mr-2 h-4 w-4" />
+                            {t('transactions.transfer')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="rounded-full bg-background/60"
+                            onClick={() => toast.info(t('transactions.comingSoon') || 'Em breve')}
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            {t('transactions.import')}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="rounded-full bg-background/60"
+                            onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}
+                        >
+                            <Download className="mr-2 h-4 w-4" />
+                            {t('transactions.exportCSV')}
+                        </Button>
                         {transactions.some(t => t.participants.some(p => p.userId === user?.id && p.status === 'PENDING')) && (
                             <>
                                 <Button size="sm" onClick={() => respondAllMutation.mutate('ACCEPTED')} className="rounded-full bg-green-600 hover:bg-green-700 text-white">
@@ -353,14 +414,50 @@ export default function TransactionsPage() {
                                 </Button>
                             </>
                         )}
-                        <Button variant="outline" className="rounded-full bg-background/60" onClick={() => window.open('http://localhost:3000/transactions/export', '_blank')}>
-                            {t('transactions.exportCSV')}
-                        </Button>
+                    </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="app-card p-4">
+                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                            <span>{t('transactions.title')}</span>
+                            <span className="rounded-full bg-muted/40 p-2 text-muted-foreground">
+                                <Hash className="h-4 w-4" />
+                            </span>
+                        </div>
+                        <div className="mt-4 text-2xl font-semibold">{summary.count}</div>
+                    </div>
+                    <div className="app-card p-4">
+                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                            <span>{t('transactions.expense')}</span>
+                            <span className="rounded-full bg-muted/40 p-2 text-red-500">
+                                <TrendingDown className="h-4 w-4" />
+                            </span>
+                        </div>
+                        <div className="mt-4 text-2xl font-semibold">{formatCurrency(summary.expense, locale, summary.currency)}</div>
+                    </div>
+                    <div className="app-card p-4">
+                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                            <span>{t('transactions.income')}</span>
+                            <span className="rounded-full bg-muted/40 p-2 text-emerald-500">
+                                <TrendingUp className="h-4 w-4" />
+                            </span>
+                        </div>
+                        <div className="mt-4 text-2xl font-semibold">{formatCurrency(summary.income, locale, summary.currency)}</div>
+                    </div>
+                    <div className="app-card p-4">
+                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                            <span>{t('dashboard.balance')}</span>
+                            <span className="rounded-full bg-muted/40 p-2 text-primary">
+                                <Wallet className="h-4 w-4" />
+                            </span>
+                        </div>
+                        <div className="mt-4 text-2xl font-semibold">{formatCurrency(balance, locale, summary.currency)}</div>
                     </div>
                 </div>
 
                 {/* Inline Creation Form */}
-                <Card className="app-card border-none">
+                <Card id="transaction-form" className="app-card border-none">
                     <CardHeader>
                         <CardTitle>{t('transactions.addTitle')}</CardTitle>
                     </CardHeader>
@@ -384,12 +481,15 @@ export default function TransactionsPage() {
                                     <SelectItem value="STATUS">{t('transactions.searchField.status')}</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Input
-                                placeholder={t('transactions.searchPlaceholder') || "Search..."}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full max-w-md"
-                            />
+                            <div className="relative w-full max-w-md">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder={t('transactions.searchPlaceholder') || "Search..."}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full max-w-md pl-9"
+                                />
+                            </div>
                         </div>
 
                         {/* Top Row: Date & Reset */}
@@ -473,6 +573,23 @@ export default function TransactionsPage() {
                                 <SelectItem value="NO">{t('transactions.filter.onlyPrivate') || "Private Only"}</SelectItem>
                             </SelectContent>
                         </Select>
+
+                        <div className="ml-auto flex items-center gap-1 rounded-full border border-border/60 bg-background/60 p-1">
+                            {[
+                                { label: t('transactions.quickAll') || 'All', value: 'ALL' },
+                                { label: t('transactions.income'), value: 'INCOME' },
+                                { label: t('transactions.expense'), value: 'EXPENSE' },
+                            ].map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setTypeFilter(option.value)}
+                                    className={`px-3 py-1 text-xs rounded-full transition-colors ${typeFilter === option.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

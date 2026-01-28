@@ -145,7 +145,10 @@ export default function LoginPage() {
             </div>
 
             <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col-reverse items-center gap-10 px-6 py-12 lg:flex-row lg:gap-16">
-                <div className="w-full space-y-8 lg:w-3/5 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                <div
+                    className="w-full space-y-8 lg:w-3/5 animate-in fade-in slide-in-from-bottom-6 duration-700"
+                    style={{ animationFillMode: 'both' }}
+                >
                     <div className="flex items-center gap-3">
                         <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
                             <span className="text-lg font-semibold tracking-tight">{t('auth.brand.initials')}</span>
@@ -197,7 +200,10 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <Card className="w-full max-w-md border-border/60 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
+                <Card
+                    className="w-full max-w-md border-border/60 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150"
+                    style={{ animationFillMode: 'both' }}
+                >
                     <CardHeader className="space-y-2">
                         <CardTitle className="text-2xl">{t('auth.login.cardTitle')}</CardTitle>
                         <CardDescription>{t('auth.login.cardSubtitle')}</CardDescription>

@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Check, AlertCircle } from 'lucide-react';
+import { useLanguage } from '@/contexts/language-context';
 
 interface ProfileFormFieldsProps {
     formData: any;
@@ -17,11 +18,12 @@ export function ProfileFormFields({
     checkingUsername,
     usernameAvailable,
 }: ProfileFormFieldsProps) {
+    const { t } = useLanguage();
     return (
         <>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right whitespace-nowrap">
-                    Name
+                    {t('profile.nameLabel')}
                 </Label>
                 <Input
                     id="name"
@@ -33,7 +35,7 @@ export function ProfileFormFields({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="username" className="text-right whitespace-nowrap">
-                    Username
+                    {t('profile.usernameLabel')}
                 </Label>
                 <div className="col-span-3 relative">
                     <Input
@@ -48,19 +50,19 @@ export function ProfileFormFields({
                     )}
                     {!checkingUsername && usernameAvailable === true && formData.username !== user?.username && (
                         <span className="text-xs text-green-500 absolute -bottom-5 left-0 flex items-center">
-                            <Check className="w-3 h-3 mr-1" /> Available
+                            <Check className="w-3 h-3 mr-1" /> {t('profile.usernameAvailable')}
                         </span>
                     )}
                     {!checkingUsername && usernameAvailable === false && (
                         <span className="text-xs text-red-500 absolute -bottom-5 left-0 flex items-center">
-                            <AlertCircle className="w-3 h-3 mr-1" /> Not Available
+                            <AlertCircle className="w-3 h-3 mr-1" /> {t('profile.usernameUnavailable')}
                         </span>
                     )}
                 </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4 mt-2">
                 <Label htmlFor="email" className="text-right whitespace-nowrap">
-                    Email
+                    {t('profile.emailLabel')}
                 </Label>
                 <Input
                     id="email"

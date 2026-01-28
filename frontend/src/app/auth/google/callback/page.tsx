@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguage } from '@/contexts/language-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type AuthPayload = {
@@ -26,7 +27,9 @@ const decodeBase64Url = (value: string) => {
 export default function GoogleCallbackPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const { t } = useLanguage();
   const [error, setError] = useState<string | null>(null);
+  const errorMessage = t('auth.google.error');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -36,14 +39,14 @@ export default function GoogleCallbackPage() {
     const data = params.get('data');
 
     if (!data) {
-      setError('Nao foi possivel concluir o login com Google.');
+      setError(errorMessage);
       return;
     }
 
     try {
       const payload = decodeBase64Url(data);
       if (!payload?.access_token || !payload?.user) {
-        throw new Error('Invalid payload');
+        throw new Error('INVALID_PAYLOAD');
       }
 
       login(payload.user, payload.access_token);
@@ -51,21 +54,21 @@ export default function GoogleCallbackPage() {
       window.history.replaceState(null, '', '/auth/google/callback');
       router.replace('/dashboard');
     } catch (err) {
-      setError('Nao foi possivel concluir o login com Google.');
+      setError(errorMessage);
     }
-  }, [login, router]);
+  }, [login, router, errorMessage]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <Card className="w-full max-w-md border-border/60 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-2xl">Conectando sua conta</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.google.connectingTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {error ? (
             <p className="text-sm text-destructive">{error}</p>
           ) : (
-            <p className="text-sm text-muted-foreground">Finalizando o login com Google...</p>
+            <p className="text-sm text-muted-foreground">{t('auth.google.connectingDescription')}</p>
           )}
         </CardContent>
       </Card>

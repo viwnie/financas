@@ -5,15 +5,18 @@ import { ArrowDownRight, ArrowUpRight, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth-store";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/language-context";
+import { formatCurrency } from "@/lib/utils";
 
 export function ComparativeReportWidget() {
     const { token } = useAuthStore();
+    const { t, locale } = useLanguage();
 
     const fetchComparison = async () => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/dashboard/comparison`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to fetch comparison');
+        if (!res.ok) throw new Error(t('comparative.errors.fetch'));
         return res.json();
     }
 
@@ -24,7 +27,7 @@ export function ComparativeReportWidget() {
 
     if (isLoading) {
         return (
-            <DashboardWidget title="Monthly vs Last">
+            <DashboardWidget title={t('comparative.loadingTitle')}>
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
@@ -40,7 +43,7 @@ export function ComparativeReportWidget() {
 
     return (
         <DashboardWidget
-            title="Monthly Comparison"
+            title={t('comparative.title')}
             className={isGood ? "border-none bg-emerald-500/10" : "border-none bg-rose-500/10"}
             action={<TrendingUp className={`w-4 h-4 ${isGood ? 'text-emerald-500' : 'text-rose-500'}`} />}
         >
@@ -56,11 +59,11 @@ export function ComparativeReportWidget() {
                     )}
                 </div>
                 <p className="text-sm text-foreground/80">
-                    {isGood ? "less" : "more"} spent compared to last month.
+                    {isGood ? t('comparative.less') : t('comparative.more')}
                 </p>
                 <div className="flex justify-between text-xs text-muted-foreground mt-2 border-t pt-2 border-dashed border-gray-300 dark:border-gray-700">
-                    <span>Current: ${currentMonthSpent.toFixed(0)}</span>
-                    <span>Last: ${lastMonthSpent.toFixed(0)}</span>
+                    <span>{t('comparative.currentLabel')}: {formatCurrency(currentMonthSpent, locale, 'BRL')}</span>
+                    <span>{t('comparative.lastLabel')}: {formatCurrency(lastMonthSpent, locale, 'BRL')}</span>
                 </div>
             </div>
         </DashboardWidget>

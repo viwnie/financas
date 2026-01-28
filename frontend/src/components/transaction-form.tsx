@@ -15,15 +15,10 @@ import { Switch } from '@/components/ui/switch';
 
 import { format } from "date-fns";
 
-const PAYMENT_METHODS = {
-    pt: ['Pix', 'Débito', 'Crédito', 'TED', 'DOC', 'Boleto', 'Dinheiro'],
-    en: ['Credit Card', 'Debit Card', 'Cash', 'Bank Transfer', 'Check', 'PayPal'],
-    es: ['Tarjeta de Crédito', 'Tarjeta de Débito', 'Efectivo', 'Transferencia Bancaria'],
-};
-
 export default function TransactionForm({ onSuccess, initialData, transactionId }: { onSuccess?: () => void, initialData?: any, transactionId?: string }) {
-    const { t } = useLanguage();
+    const { t, tList } = useLanguage();
     const [stopRecurrenceOpen, setStopRecurrenceOpen] = React.useState(false);
+    const paymentMethods = tList('transactions.paymentMethods');
     const [tempEndDate, setTempEndDate] = React.useState<Date>(new Date());
     const {
         form,
@@ -70,7 +65,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                 </div>
 
                 <div className="w-[230px] space-y-2">
-                    <Label>Tipo, Moeda e Valor</Label>
+                    <Label>{t('transactions.typeCurrencyLabel')}</Label>
                     <MoneyInput
                         amount={totalAmount}
                         currency={watch('currency') || 'BRL'}
@@ -125,7 +120,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                     <>
                         <div className="w-[100px] space-y-2">
                             <Label>{t('transactions.installments')}</Label>
-                            <Input type="number" min="1" {...register('installmentsCount')} placeholder="1" />
+                            <Input type="number" min="1" {...register('installmentsCount')} placeholder={t('transactions.installmentsPlaceholder')} />
                             {errors.installmentsCount && <p className="text-xs text-red-500">{errors.installmentsCount.message}</p>}
                         </div>
                         <div className="w-[200px] space-y-2">
@@ -138,7 +133,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                     <SelectValue placeholder={t('transactions.selectPaymentMethod')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {(PAYMENT_METHODS[locale as keyof typeof PAYMENT_METHODS] || PAYMENT_METHODS['en']).map((method) => (
+                                    {(paymentMethods || []).map((method) => (
                                         <SelectItem key={method} value={method}>
                                             {method}
                                         </SelectItem>
@@ -204,7 +199,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
 
                             <div className="flex items-end gap-2">
                                 <div className="space-y-2">
-                                    <Label>Data final</Label>
+                                    <Label>{t('transactions.endDate')}</Label>
                                     <TransactionDatePicker
                                         date={tempEndDate}
                                         onSelect={(date) => date && setTempEndDate(date)}
@@ -215,19 +210,19 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                     // Confirming end date
                                     setValue('recurrenceEndsAt', tempEndDate);
                                     setStopRecurrenceOpen(false);
-                                }}>Confirmar fim</Button>
+                                }}>{t('transactions.confirmEnd')}</Button>
                                 <Button size="sm" variant="ghost" onClick={(e) => {
                                     e.preventDefault();
                                     setStopRecurrenceOpen(false);
                                     setValue('isFixed', true); // Revert to on
-                                }}>Cancelar</Button>
+                                }}>{t('common.cancel')}</Button>
                             </div>
                         </div>
                     )}
 
                     {watch('excludedDates') && watch('excludedDates')!.length > 0 && (
                         <div className="mt-4 p-4 border rounded-md bg-muted/30">
-                            <h4 className="text-sm font-medium mb-2">{t('transactions.excludedOccurrences') || 'Excluded Occurrences'}</h4>
+                            <h4 className="text-sm font-medium mb-2">{t('transactions.excludedOccurrences')}</h4>
                             <div className="space-y-2">
                                 {watch('excludedDates')!.map((dateStr, idx) => (
                                     <div key={idx} className="flex items-center justify-between text-sm bg-background p-2 rounded border">
@@ -242,7 +237,7 @@ export default function TransactionForm({ onSuccess, initialData, transactionId 
                                                 setValue('excludedDates', current.filter((_, i) => i !== idx));
                                             }}
                                         >
-                                            {t('common.restore') || 'Restore'}
+                                            {t('common.restore')}
                                         </Button>
                                     </div>
                                 ))}

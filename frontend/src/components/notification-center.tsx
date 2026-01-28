@@ -59,7 +59,7 @@ export function NotificationCenter() {
                             className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
                             onClick={() => deleteAllNotificationsMutation.mutate()}
                         >
-                            {t('notifications.clearAll') || 'Clear All'}
+                            {t('notifications.clearAll')}
                         </Button>
                     )}
                 </div>
@@ -70,13 +70,13 @@ export function NotificationCenter() {
                             value="all"
                             className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                         >
-                            All
+                            {t('notifications.tabAll')}
                         </TabsTrigger>
                         <TabsTrigger
                             value="actionable"
                             className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
                         >
-                            Actionable
+                            {t('notifications.tabActionable')}
                             {totalActionable > 0 && (
                                 <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
                                     {totalActionable}
@@ -100,7 +100,6 @@ export function NotificationCenter() {
                                     <TransactionInviteList
                                         items={invites}
                                         onRespond={(id, status) => respondInviteMutation.mutate({ id, status })}
-                                        t={t}
                                     />
                                     <NotificationList
                                         notifications={persistentNotifications}
@@ -114,7 +113,7 @@ export function NotificationCenter() {
                         <TabsContent value="actionable" className="m-0">
                             {totalActionable === 0 ? (
                                 <div className="p-8 text-center text-sm text-muted-foreground">
-                                    No pending actions
+                                    {t('notifications.noPendingActions')}
                                 </div>
                             ) : (
                                 <div className="space-y-1">
@@ -125,7 +124,6 @@ export function NotificationCenter() {
                                     <TransactionInviteList
                                         items={invites}
                                         onRespond={(id, status) => respondInviteMutation.mutate({ id, status })}
-                                        t={t}
                                     />
                                     <DeclinedRequestList
                                         items={declinedRequests}

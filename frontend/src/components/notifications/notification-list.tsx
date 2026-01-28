@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS, es } from 'date-fns/locale';
+import { useLanguage } from '@/contexts/language-context';
 import { PersistentNotification } from './use-notifications';
 
 interface NotificationListProps {
@@ -10,7 +11,10 @@ interface NotificationListProps {
     onDelete: (id: string) => void;
 }
 
+const dateLocales: Record<string, Locale> = { pt: ptBR, en: enUS, es };
+
 export function NotificationList({ notifications, onMarkAsRead, onDelete }: NotificationListProps) {
+    const { t, locale } = useLanguage();
     if (notifications.length === 0) return null;
 
     return (
@@ -29,7 +33,7 @@ export function NotificationList({ notifications, onMarkAsRead, onDelete }: Noti
                             <p className="text-[10px] text-muted-foreground mt-2">
                                 {formatDistanceToNow(new Date(notification.createdAt), {
                                     addSuffix: true,
-                                    locale: ptBR,
+                                    locale: dateLocales[locale] || enUS,
                                 })}
                             </p>
                         </div>
@@ -40,7 +44,7 @@ export function NotificationList({ notifications, onMarkAsRead, onDelete }: Noti
                                     size="icon"
                                     className="h-6 w-6"
                                     onClick={() => onMarkAsRead(notification.id)}
-                                    title="Mark as read"
+                                    title={t('notifications.markAsRead')}
                                 >
                                     <Eye className="h-3 w-3" />
                                 </Button>
@@ -50,7 +54,7 @@ export function NotificationList({ notifications, onMarkAsRead, onDelete }: Noti
                                     size="icon"
                                     className="h-6 w-6 text-muted-foreground"
                                     disabled
-                                    title="Read"
+                                    title={t('notifications.read')}
                                 >
                                     <EyeOff className="h-3 w-3" />
                                 </Button>
@@ -60,7 +64,7 @@ export function NotificationList({ notifications, onMarkAsRead, onDelete }: Noti
                                 size="icon"
                                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                                 onClick={() => onDelete(notification.id)}
-                                title="Delete"
+                                title={t('notifications.delete')}
                             >
                                 <Trash2 className="h-3 w-3" />
                             </Button>

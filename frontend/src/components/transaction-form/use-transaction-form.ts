@@ -82,7 +82,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
                     id: p.id,
                     userId: p.userId,
                     username: p.user?.username,
-                    name: p.user?.name || p.placeholderName || 'Unknown',
+                    name: p.user?.name || p.placeholderName || t('common.unknown'),
                     amount: p.shareAmount !== null ? parseFloat(p.shareAmount) : parseFloat(p.baseShareAmount || '0'),
                     percent: p.sharePercent !== null ? parseFloat(p.sharePercent) : parseFloat(p.baseSharePercent || '0'),
                     status: p.status,
@@ -110,7 +110,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             excludedDates: initialData?.excludedDates || [],
             paymentMethod: initialData?.paymentMethod || '',
         };
-    }, [initialData, user?.id, locale]);
+    }, [initialData, user?.id, locale, t]);
 
     const schema = useMemo(() => createTransactionSchema(t), [t]);
 
@@ -194,10 +194,13 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
                 }
                 setAutoFilledCategory(prediction.category.name);
                 setIsAutoFilled(true);
-                toast.info(`Categoria sugerida: ${prediction.category.name}`, {
-                    description: 'Baseado na descrição',
-                    icon: '✨'
-                });
+                toast.info(
+                    t('transactions.suggestedCategoryTitle').replace('{category}', prediction.category.name),
+                    {
+                        description: t('transactions.suggestedCategoryDescription'),
+                        icon: '?',
+                    }
+                );
             }
         }
     }, [prediction, isAutoFilled, description, setValue, form]); // Keeping isAutoFilled/description/form in deps is safer for closure correctness, but KEY is removing categoryName and touchedFields. Actually, strictly, removing categoryName is the fix.
@@ -221,7 +224,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             const res = await fetch('http://localhost:3000/friends', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch friends');
+            if (!res.ok) throw new Error(t('friends.fetchError'));
             return res.json();
         },
         enabled: !!token && isShared,
@@ -233,7 +236,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             const res = await fetch('http://localhost:3000/friends/sent', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch sent requests');
+            if (!res.ok) throw new Error(t('friends.sentRequestsError'));
             return res.json();
         },
         enabled: !!token && isShared,
@@ -260,7 +263,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
             const res = await fetch('http://localhost:3000/friends/external', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch external friends');
+            if (!res.ok) throw new Error(t('friends.externalFetchError'));
             return res.json();
         },
         enabled: !!token && isShared,
@@ -279,13 +282,13 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Failed to send request');
+                throw new Error(data.message || t('friends.requestError'));
             }
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['sentRequests'] });
-            toast.success('Friend request sent!');
+            toast.success(t('friends.requestSent'));
         },
         onError: (err) => {
             toast.error(err.message);
@@ -342,18 +345,18 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.message || 'Failed to save transaction');
+                throw new Error(err.message || t('transactions.saveError'));
             }
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            toast.success(transactionId ? 'Transação atualizada!' : 'Transação adicionada!');
+            toast.success(transactionId ? t('transactions.updatedToast') : t('transactions.createdToast'));
             if (onSuccess) onSuccess();
         },
         onError: (err) => {
             setError(err.message);
-            toast.error('Erro ao salvar transação');
+            toast.error(t('transactions.saveError'));
         },
     });
 
@@ -407,7 +410,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
         );
         const distributedFields = distributeEqually(updatedFields);
         replace(distributedFields);
-        toast.info('Participante re-convidado. O valor será redistribuído.');
+        toast.info(t('transactions.reinviteNotice'));
     };
 
     const handleRemoveParticipant = (index: number) => {
@@ -478,7 +481,7 @@ export function useTransactionForm({ onSuccess, initialData, transactionId }: Us
         if (data.isShared && data.participants && data.participants.length > 0) {
             const totalParticipantsAmount = data.participants.reduce((acc, curr) => acc + (curr.amount || 0), 0);
             if (totalParticipantsAmount > data.amount + 0.1) {
-                setError('A soma das partes dos participantes não pode exceder o valor total da transação.');
+                setError(t('transactions.participantsTotalError'));
                 return;
             }
         }

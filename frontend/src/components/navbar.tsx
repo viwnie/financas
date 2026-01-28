@@ -61,7 +61,7 @@ export function Navbar() {
                             <div className="flex flex-col space-y-4 mt-6">
                                 <Link href="/dashboard" className="flex items-center gap-3 font-semibold" onClick={() => setIsMobileMenuOpen(false)}>
                                     <Wallet className="h-5 w-5 text-primary" />
-                                    <span>Butler Finance</span>
+                                    <span>{t('common.brand')}</span>
                                 </Link>
                                 {navLinks.map((link) => (
                                     <Link
@@ -84,7 +84,7 @@ export function Navbar() {
 
                     <Link href="/dashboard" className="flex items-center gap-2 pl-1">
                         <Wallet className="w-6 h-6 text-primary" />
-                        <span className="hidden text-lg font-semibold tracking-tight text-foreground sm:inline-block">Butler Finance</span>
+                        <span className="hidden text-lg font-semibold tracking-tight text-foreground sm:inline-block">{t('common.brand')}</span>
                     </Link>
 
                     <div className="hidden md:flex items-center gap-1">
@@ -138,7 +138,7 @@ export function Navbar() {
                             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-180 dark:scale-0" />
                             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-180 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                         </span>
-                        <span className="sr-only">Toggle theme</span>
+                        <span className="sr-only">{t('common.toggleTheme')}</span>
                     </Button>
 
                     <DropdownMenu modal={false}>
@@ -151,9 +151,9 @@ export function Navbar() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setLocale("pt")}>Português (BR)</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setLocale("en")}>English</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setLocale("es")}>Español</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setLocale("pt")}>{t('common.language.pt')}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setLocale("en")}>{t('common.language.en')}</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setLocale("es")}>{t('common.language.es')}</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
 
@@ -162,7 +162,7 @@ export function Navbar() {
                             <Avatar className="h-8 w-8">
                                 <AvatarImage
                                     src={user?.avatarMimeType ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/users/avatar/${user.username}?t=${user.avatarLastUpdated || 0}` : undefined}
-                                    alt={user?.name || 'User'}
+                                    alt={user?.name || t('common.user')}
                                     className="object-cover"
                                     onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
                                 />

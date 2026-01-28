@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/language-context';
 
 export function useProfileManager(open: boolean, setOpen: (open: boolean) => void) {
     const { user, login } = useAuthStore();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(false);
     const [checkingUsername, setCheckingUsername] = useState(false);
     const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
@@ -101,11 +103,11 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                toast.error('Image must be less than 5MB');
+                toast.error(t('profile.errors.imageTooLarge'));
                 return;
             }
             if (!file.type.startsWith('image/') && !file.name.endsWith('.heic')) {
-                toast.error('Only image files are allowed');
+                toast.error(t('profile.errors.imageType'));
                 return;
             }
 
@@ -153,7 +155,7 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
             if (formData.email !== user?.email) data.append('email', formData.email);
             if (formData.password) {
                 if (formData.password !== formData.confirmNewPassword) {
-                    toast.error('New passwords do not match');
+                    toast.error(t('profile.errors.passwordMismatch'));
                     setLoading(false);
                     return;
                 }
@@ -161,7 +163,7 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
             }
 
             if (!formData.currentPassword) {
-                toast.error('Current password is required to save changes');
+                toast.error(t('profile.errors.currentPasswordRequired'));
                 setShowPasswordError(true);
                 setLoading(false);
                 return;
@@ -182,7 +184,7 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
 
             if (!res.ok) {
                 const errorData = await res.json();
-                throw new Error(errorData.message || 'Failed to update profile');
+                throw new Error(errorData.message || t('profile.errors.updateFailed'));
             }
 
             const updatedUser = await res.json();
@@ -200,7 +202,7 @@ export function useProfileManager(open: boolean, setOpen: (open: boolean) => voi
                 login(userForStore, token);
             }
 
-            toast.success('Profile updated successfully');
+            toast.success(t('profile.successUpdated'));
             setOpen(false);
 
         } catch (error: any) {

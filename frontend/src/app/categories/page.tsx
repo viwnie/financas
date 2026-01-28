@@ -395,7 +395,7 @@ export default function CategoriesPage() {
         <AppShell>
             <div className="space-y-8">
                 <div className="space-y-3">
-                    <span className="app-chip">Categorias</span>
+                    <span className="app-chip">{t('categories.chip')}</span>
                     <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">{t('categories.headerTitle')}</h1>
                     <p className="text-muted-foreground">
                         {t('categories.headerDescription')}
@@ -542,10 +542,10 @@ export default function CategoriesPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setCategoryToDelete(null)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setCategoryToDelete(null)}>{t('common.cancel')}</Button>
                         <Button variant="destructive" onClick={confirmDeleteCategory} disabled={deleteCategoryMutation.isPending}>
                             {deleteCategoryMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Delete
+                            {t('common.delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

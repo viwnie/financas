@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLanguage } from '@/contexts/language-context';
 
 export const PRESET_GRADIENTS = [
     'linear-gradient(135deg, #fce38a, #f38181)',
@@ -45,6 +46,7 @@ export interface ColorSelectionContentProps {
 }
 
 export function ColorSelectionContent({ selectedColor, onSelect, showManageLink = false, onClose }: ColorSelectionContentProps) {
+    const { t } = useLanguage();
     const initialColor = selectedColor;
     const isGradient = initialColor?.includes('gradient');
     const { token } = useAuthStore();
@@ -72,16 +74,16 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                 },
                 body: JSON.stringify({ color })
             });
-            if (!res.ok) throw new Error('Failed to save color');
+            if (!res.ok) throw new Error(t('colors.saveError'));
             return res.json();
         },
         onSuccess: (newColors) => {
             queryClient.setQueryData(['saved-colors'], newColors);
             queryClient.invalidateQueries({ queryKey: ['saved-colors'] });
-            toast.success('Color saved!');
+            toast.success(t('colors.saveSuccess'));
         },
         onError: () => {
-            toast.error('Failed to save color');
+            toast.error(t('colors.saveError'));
         }
     });
 
@@ -137,8 +139,8 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="gradients">Destaques</TabsTrigger>
-                <TabsTrigger value="solids">Personalizar</TabsTrigger>
+                <TabsTrigger value="gradients">{t('colors.highlights')}</TabsTrigger>
+                <TabsTrigger value="solids">{t('colors.customize')}</TabsTrigger>
             </TabsList>
             <TabsContent value="gradients" className="mt-0">
                 <div className="grid grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-3">
@@ -164,7 +166,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                     <div className="mt-4 pt-4 border-t flex justify-end">
                         <Link href="/categories" passHref>
                             <Button variant="ghost" size="sm" className="w-full text-xs">
-                                Gerenciar Categorias
+                                {t('colors.manageCategories')}
                             </Button>
                         </Link>
                     </div>
@@ -182,7 +184,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                             )}
                             onClick={() => setGradientMode(false)}
                         >
-                            Sólido
+                            {t('colors.solid')}
                         </button>
                         <button
                             type="button"
@@ -192,7 +194,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                             )}
                             onClick={() => setGradientMode(true)}
                         >
-                            Gradiente
+                            {t('colors.gradient')}
                         </button>
                     </div>
 
@@ -241,7 +243,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                                     )}
                                     onClick={() => setActiveGradientStop('start')}
                                 >
-                                    <span className="text-[10px] text-muted-foreground font-medium uppercase">Início</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{t('colors.start')}</span>
                                     <div className="flex items-center gap-2">
                                         <div className="w-4 h-4 rounded-full border" style={{ background: gradientStart }} />
                                         <span className="text-xs font-mono">{gradientStart}</span>
@@ -255,7 +257,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                                     )}
                                     onClick={() => setActiveGradientStop('end')}
                                 >
-                                    <span className="text-[10px] text-muted-foreground font-medium uppercase">Fim</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{t('colors.end')}</span>
                                     <div className="flex items-center gap-2">
                                         <div className="w-4 h-4 rounded-full border" style={{ background: gradientEnd }} />
                                         <span className="text-xs font-mono">{gradientEnd}</span>
@@ -284,7 +286,7 @@ export function ColorSelectionContent({ selectedColor, onSelect, showManageLink 
                     )}
 
                     <Button className="w-full" onClick={handleSaveColor}>
-                        Salvar Cor
+                        {t('colors.save')}
                     </Button>
                 </div>
             </TabsContent>

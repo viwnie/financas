@@ -8,6 +8,7 @@ interface LanguageContextType {
     locale: Locale;
     setLocale: (locale: Locale) => void;
     t: (key: string) => string;
+    tList: (key: string) => string[];
 }
 
 const translations = {
@@ -552,8 +553,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         return (translations[locale] as any)[key] || key;
     };
 
+    const tList = (key: string) => {
+        const value = (translations[locale] as any)[key];
+        return Array.isArray(value) ? value : [];
+    };
+
     return (
-        <LanguageContext.Provider value={{ locale, setLocale: handleSetLocale, t }}>
+        <LanguageContext.Provider value={{ locale, setLocale: handleSetLocale, t, tList }}>
             {children}
         </LanguageContext.Provider>
     );

@@ -5,13 +5,14 @@ import { useLanguage } from '@/contexts/language-context';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { formatCurrency } from '@/lib/utils';
 
 import { useQuery } from '@tanstack/react-query';
 import { goalsService } from '@/services/goals.service';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function GoalsPage() {
-    const { t } = useLanguage();
+    const { t, locale } = useLanguage();
     const router = useRouter();
     const { token } = useAuthStore();
 
@@ -31,11 +32,11 @@ export default function GoalsPage() {
             <div className="container mx-auto p-4 md:p-8 space-y-8">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-gradient">Metas Financeiras</h1>
-                        <p className="text-muted-foreground">Visualize seu futuro e acompanhe seu progresso.</p>
+                        <h1 className="text-3xl font-bold tracking-tight text-gradient">{t('goals.title')}</h1>
+                        <p className="text-muted-foreground">{t('goals.subtitle')}</p>
                     </div>
                     <Button onClick={() => router.push('/goals/new')} className="shadow-lg shadow-primary/20">
-                        <Plus className="mr-2 h-4 w-4" /> Nova Meta
+                        <Plus className="mr-2 h-4 w-4" /> {t('goals.new')}
                     </Button>
                 </div>
 
@@ -44,19 +45,19 @@ export default function GoalsPage() {
                     <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
                         <div className="space-y-1">
                             <h3 className="text-lg font-bold flex items-center gap-2">
-                                🛡️ Reserva de Emergência
+                                🛡️ {t('goals.emergency.title')}
                             </h3>
                             <p className="text-sm text-muted-foreground max-w-xl">
-                                Sua segurança financeira é prioridade. Recomendamos ter de 3 a 6 meses de gastos essenciais guardados.
+                                {t('goals.emergency.description')}
                             </p>
                         </div>
                         <div className="flex items-center gap-4 w-full md:w-auto">
                             <div className="text-right">
-                                <span className="block text-xl font-bold text-emerald-600 dark:text-emerald-400">R$ 15.000</span>
-                                <span className="text-xs text-muted-foreground">de R$ 20.000</span>
+                                <span className="block text-xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(15000, locale, 'BRL')}</span>
+                                <span className="text-xs text-muted-foreground">{t('goals.emergency.ofLabel').replace('{total}', formatCurrency(20000, locale, 'BRL'))}</span>
                             </div>
                             <Button variant="outline" className="border-emerald-200 dark:border-emerald-800 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                                Adicionar
+                                {t('goals.emergency.add')}
                             </Button>
                         </div>
                     </div>
@@ -78,7 +79,7 @@ export default function GoalsPage() {
                                 <div>
                                     <h3 className="font-bold text-lg">{goal.name}</h3>
                                     <p className="text-sm text-muted-foreground">
-                                        R$ {goal.currentAmount.toLocaleString()} de R$ {goal.targetAmount.toLocaleString()}
+                                        {t('goals.progressOf').replace('{current}', formatCurrency(goal.currentAmount, locale, 'BRL')).replace('{target}', formatCurrency(goal.targetAmount, locale, 'BRL'))}
                                     </p>
                                 </div>
 
@@ -90,8 +91,8 @@ export default function GoalsPage() {
                                         />
                                     </div>
                                     <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>{((goal.currentAmount / goal.targetAmount) * 100).toFixed(0)}% concluído</span>
-                                        <span>Faltam R$ {(goal.targetAmount - goal.currentAmount).toLocaleString()}</span>
+                                        <span>{t('goals.progress.completed').replace('{percent}', ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0))}</span>
+                                        <span>{t('goals.progress.remaining').replace('{amount}', formatCurrency(goal.targetAmount - goal.currentAmount, locale, 'BRL'))}</span>
                                     </div>
                                 </div>
                             </div>
@@ -101,7 +102,7 @@ export default function GoalsPage() {
                         <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Plus className="h-6 w-6" />
                         </div>
-                        <span className="font-medium">Criar nova meta</span>
+                        <span className="font-medium">{t('goals.createNew')}</span>
                     </button>
                 </div>
             </div>

@@ -5,9 +5,11 @@ import { Lightbulb, AlertTriangle, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNudgesService } from "@/lib/nudges.service";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/language-context";
 
 export function SmartNudgeWidget() {
     const { getActiveNudges } = useNudgesService();
+    const { t } = useLanguage();
 
     const { data: nudges, isLoading } = useQuery({
         queryKey: ['smart-nudges'],
@@ -17,7 +19,7 @@ export function SmartNudgeWidget() {
 
     if (isLoading) {
         return (
-            <DashboardWidget title="Smart Insight" className="min-h-[120px]">
+            <DashboardWidget title={t('nudges.title')} className="min-h-[120px]">
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
@@ -30,16 +32,16 @@ export function SmartNudgeWidget() {
     if (!nudges || nudges.length === 0) {
         return (
             <DashboardWidget
-                title="Smart Insight"
+                title={t('nudges.title')}
                 className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800"
                 action={<CheckCircle className="w-4 h-4 text-green-500" />}
             >
                 <div className="space-y-1">
                     <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                        All good!
+                        {t('nudges.allGoodTitle')}
                     </p>
                     <p className="text-sm text-green-700 dark:text-green-300">
-                        You're within your budget limits for now. Keep it up!
+                        {t('nudges.allGoodDescription')}
                     </p>
                 </div>
             </DashboardWidget>

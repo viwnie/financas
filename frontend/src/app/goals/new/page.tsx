@@ -9,11 +9,13 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SavingsGoalsService } from '@/lib/savings-goals.service';
+import { useLanguage } from '@/contexts/language-context';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 
 export default function NewGoalPage() {
     const router = useRouter();
+    const { t } = useLanguage();
     const { token } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -28,10 +30,10 @@ export default function NewGoalPage() {
                 targetAmount: parseFloat(formData.get('target') as string),
                 deadline: formData.get('deadline') ? new Date(formData.get('deadline') as string).toISOString() : undefined,
             });
-            toast.success('Goal created successfully!');
+            toast.success(t('goals.new.success'));
             router.push('/goals');
         } catch (error) {
-            toast.error('Failed to create goal');
+            toast.error(t('goals.new.error'));
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -43,34 +45,34 @@ export default function NewGoalPage() {
             <Navbar />
             <div className="container mx-auto p-4 md:p-8 max-w-2xl">
                 <Button variant="ghost" onClick={() => router.back()} className="mb-4 pl-0">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Goals
+                    <ArrowLeft className="mr-2 h-4 w-4" /> {t('goals.new.back')}
                 </Button>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Create Savings Goal</CardTitle>
-                        <CardDescription>Visualize your target. What are you saving for?</CardDescription>
+                        <CardTitle>{t('goals.new.title')}</CardTitle>
+                        <CardDescription>{t('goals.new.description')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             <div className="space-y-2">
-                                <Label htmlFor="name">Goal Name</Label>
-                                <Input id="name" name="name" placeholder="e.g. Emergency Fund, New Car" required />
+                                <Label htmlFor="name">{t('goals.new.nameLabel')}</Label>
+                                <Input id="name" name="name" placeholder={t('goals.new.namePlaceholder')} required />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="target">Target Amount</Label>
-                                <Input id="target" name="target" type="number" step="0.01" placeholder="0.00" required />
+                                <Label htmlFor="target">{t('goals.new.targetLabel')}</Label>
+                                <Input id="target" name="target" type="number" step="0.01" placeholder={t('goals.new.targetPlaceholder')} required />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="deadline">Target Date (Optional)</Label>
+                                <Label htmlFor="deadline">{t('goals.new.deadlineLabel')}</Label>
                                 <Input id="deadline" name="deadline" type="date" />
                             </div>
 
                             <div className="pt-4">
                                 <Button className="w-full" disabled={isLoading}>
-                                    {isLoading ? 'Creating...' : 'Create Goal'}
+                                    {isLoading ? t('goals.new.submitting') : t('goals.new.submit')}
                                 </Button>
                             </div>
                         </form>

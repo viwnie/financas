@@ -3,6 +3,7 @@
 import { useSettingsStore } from '@/store/settings-store';
 import { cn } from '@/lib/utils';
 import { Eye, EyeOff } from 'lucide-react';
+import { useLanguage } from '@/contexts/language-context';
 
 interface PrivacyBlurProps extends React.HTMLAttributes<HTMLSpanElement> {
     children: React.ReactNode;
@@ -42,12 +43,13 @@ export function PrivacyBlur({
 
 export function PrivacyToggle({ className }: { className?: string }) {
     const { privacyMode, togglePrivacyMode } = useSettingsStore();
+    const { t } = useLanguage();
 
     return (
         <button
             onClick={togglePrivacyMode}
             className={cn("p-2 rounded-full hover:bg-muted transition-colors", className)}
-            title={privacyMode ? "Show sensitive data" : "Hide sensitive data"}
+            title={privacyMode ? t('privacy.showSensitive') : t('privacy.hideSensitive')}
         >
             {privacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
         </button>

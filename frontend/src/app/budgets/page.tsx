@@ -3,6 +3,7 @@
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language-context';
+import { formatCurrency } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +12,7 @@ import { budgetsService } from '@/services/budgets.service';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function BudgetsPage() {
-    const { t } = useLanguage();
+    const { t, locale } = useLanguage();
     const router = useRouter();
     const { token } = useAuthStore();
 
@@ -31,11 +32,11 @@ export default function BudgetsPage() {
             <div className="p-8 space-y-8 max-w-5xl mx-auto">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-gradient">Orçamentos</h1>
-                        <p className="text-muted-foreground">Defina limites e controle seus gastos por categoria.</p>
+                        <h1 className="text-3xl font-bold tracking-tight text-gradient">{t('budgets.title')}</h1>
+                        <p className="text-muted-foreground">{t('budgets.subtitle')}</p>
                     </div>
                     <Button onClick={() => router.push('/budgets/new')} className="gap-2 shadow-lg shadow-primary/20">
-                        <Plus className="w-4 h-4" /> Novo Orçamento
+                        <Plus className="w-4 h-4" /> {t('budgets.new')}
                     </Button>
                 </div>
 
@@ -49,19 +50,23 @@ export default function BudgetsPage() {
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-3 h-3 rounded-full ${budget.category?.userSettings?.[0]?.color || 'bg-gray-500'}`} />
-                                        <h3 className="font-semibold">{budget.category?.translations?.[0]?.name || budget.category?.name || 'Uncategorized'}</h3>
+                                        <h3 className="font-semibold">{budget.category?.translations?.[0]?.name || budget.category?.name || t('common.uncategorized')}</h3>
                                     </div>
                                     {isOverBudget && (
                                         <span className="text-[10px] font-bold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                            Alerta
+                                            {t('budgets.alert')}
                                         </span>
                                     )}
                                 </div>
 
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Gasto: <span className="text-foreground font-medium">R$ {budget.spent}</span></span>
-                                        <span className="text-muted-foreground">Limite: R$ {budget.limit}</span>
+                                        <span className="text-muted-foreground">
+                                            {t('budgets.spentLabel')}: <span className="text-foreground font-medium">{formatCurrency(budget.spent, locale, 'BRL')}</span>
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                            {t('budgets.limitLabel')}: {formatCurrency(budget.limit, locale, 'BRL')}
+                                        </span>
                                     </div>
                                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                                         <div
@@ -70,7 +75,7 @@ export default function BudgetsPage() {
                                         />
                                     </div>
                                     <p className="text-xs text-right text-muted-foreground">
-                                        {percentage.toFixed(0)}% utilizado
+                                        {t('budgets.usedPercentage').replace('{percent}', percentage.toFixed(0))}
                                     </p>
                                 </div>
                             </div>
@@ -82,7 +87,7 @@ export default function BudgetsPage() {
                         <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Plus className="h-5 w-5" />
                         </div>
-                        <span className="font-medium">Criar limite</span>
+                        <span className="font-medium">{t('budgets.createLimit')}</span>
                     </button>
                 </div>
             </div>

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select';
 import { CURRENCIES, getCurrencyLocale, getCurrencySymbol } from '@/lib/currencies';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/language-context';
 
 interface MoneyInputProps {
     amount: number | undefined;
@@ -35,6 +36,7 @@ export const MoneyInputComponent = React.forwardRef<HTMLDivElement, MoneyInputPr
     placeholder
 }, ref) => {
     const [inputValue, setInputValue] = useState('');
+    const { t } = useLanguage();
 
     // Update input value when amount changes externally
     useEffect(() => {
@@ -107,10 +109,10 @@ export const MoneyInputComponent = React.forwardRef<HTMLDivElement, MoneyInputPr
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="INCOME" className="text-emerald-600 font-bold text-base">
-                                <span className="flex items-center gap-2"><Plus className="h-4 w-4 text-emerald-600" /> Receita</span>
+                                <span className="flex items-center gap-2"><Plus className="h-4 w-4 text-emerald-600" /> {t('transactions.income')}</span>
                             </SelectItem>
                             <SelectItem value="EXPENSE" className="text-red-500 font-bold text-base">
-                                <span className="flex items-center gap-2"><Minus className="h-4 w-4 text-red-500" /> Despesa</span>
+                                <span className="flex items-center gap-2"><Minus className="h-4 w-4 text-red-500" /> {t('transactions.expense')}</span>
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -127,7 +129,7 @@ export const MoneyInputComponent = React.forwardRef<HTMLDivElement, MoneyInputPr
                             showTypeSelector ? "rounded-none border-l-0" : "rounded-r-none"
                         )}
                     >
-                        <SelectValue placeholder="Moeda">
+                        <SelectValue placeholder={t('transactions.currency')}>
                             {getCurrencySymbol(currency)}
                         </SelectValue>
                     </SelectTrigger>

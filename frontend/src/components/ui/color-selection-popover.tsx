@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/language-context';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ColorSelectionContent } from './color-selection-content';
 
@@ -43,6 +44,7 @@ interface ColorSelectionPopoverProps {
 
 export function ColorSelectionPopover({ id = 'color-picker', selectedColor, onSelect, showManageLink = false, onClose, trigger, side = "bottom", align = "start" }: ColorSelectionPopoverProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const { t } = useLanguage();
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -57,7 +59,7 @@ export function ColorSelectionPopover({ id = 'color-picker', selectedColor, onSe
                             !selectedColor && "bg-muted"
                         )}
                         style={{ background: selectedColor || '#e2e8f0' }}
-                        title="Select Color"
+                        title={t('colors.select')}
                         onClick={() => setIsOpen(true)}
                     />
                 )}

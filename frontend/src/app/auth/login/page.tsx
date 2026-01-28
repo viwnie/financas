@@ -1,29 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguage } from '@/contexts/language-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
-const loginSchema = z.object({
-    email: z.string().email('Invalid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginForm = {
+    email: string;
+    password: string;
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true';
 
 export default function LoginPage() {
+    const { t } = useLanguage();
+    const loginSchema = useMemo(() => z.object({
+        email: z.string().email(t('auth.login.errors.invalidEmail')),
+        password: z.string().min(6, t('auth.login.errors.passwordMin')),
+    }), [t]);
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
     const [error, setError] = useState('');
@@ -42,7 +46,7 @@ export default function LoginPage() {
             });
 
             if (!res.ok) {
-                throw new Error('Login failed');
+                throw new Error(t('auth.login.errors.loginFailed'));
             }
 
             return res.json();
@@ -54,7 +58,7 @@ export default function LoginPage() {
             router.push('/dashboard');
         },
         onError: () => {
-            setError('Invalid email or password');
+            setError(t('auth.login.errors.invalidCredentials'));
         },
     });
 
@@ -76,35 +80,35 @@ export default function LoginPage() {
                 <div className="w-full space-y-8 lg:w-3/5 animate-in fade-in slide-in-from-bottom-6 duration-700">
                     <div className="flex items-center gap-3">
                         <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
-                            <span className="text-lg font-semibold tracking-tight">BD</span>
+                            <span className="text-lg font-semibold tracking-tight">{t('auth.brand.initials')}</span>
                         </div>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">Butler Finance</p>
-                            <p className="text-sm text-muted-foreground">Controle financeiro pessoal com visao em tempo real.</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">{t('common.brand')}</p>
+                            <p className="text-sm text-muted-foreground">{t('auth.login.brandTagline')}</p>
                         </div>
                     </div>
 
                     <div className="space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Entrar na sua conta</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">{t('auth.login.kicker')}</p>
                         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                            Assuma o controle do caixa com <span className="text-gradient">claridade</span>.
+                            {t('auth.login.title')} <span className="text-gradient">{t('auth.login.titleHighlight')}</span>.
                         </h1>
                         <p className="text-base text-muted-foreground">
-                            Despesas, metas e indicadores em um so painel para decidir com confiança.
+                            {t('auth.login.subtitle')}
                         </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm backdrop-blur">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Organizacao</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t('auth.login.block1Title')}</p>
                             <p className="mt-2 text-sm font-medium text-foreground">
-                                Categorias e metas sempre em ordem.
+                                {t('auth.login.block1Description')}
                             </p>
                         </div>
                         <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm backdrop-blur">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Performance</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t('auth.login.block2Title')}</p>
                             <p className="mt-2 text-sm font-medium text-foreground">
-                                Indicadores executivos prontos para acao.
+                                {t('auth.login.block2Description')}
                             </p>
                         </div>
                     </div>
@@ -112,23 +116,23 @@ export default function LoginPage() {
                     <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
                             <span className="size-2 rounded-full bg-emerald-500" />
-                            Criptografia AES-256
+                            {t('auth.login.badgeSecurity')}
                         </span>
                         <span className="inline-flex items-center gap-2">
                             <span className="size-2 rounded-full bg-primary" />
-                            Governança por perfis
+                            {t('auth.login.badgeGovernance')}
                         </span>
                         <span className="inline-flex items-center gap-2">
                             <span className="size-2 rounded-full bg-amber-400" />
-                            Indicadores ESG
+                            {t('auth.login.badgeEsg')}
                         </span>
                     </div>
                 </div>
 
                 <Card className="w-full max-w-md border-border/60 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
                     <CardHeader className="space-y-2">
-                        <CardTitle className="text-2xl">Entrar no Butler</CardTitle>
-                        <CardDescription>Acompanhe despesas, metas e relatorios em tempo real.</CardDescription>
+                        <CardTitle className="text-2xl">{t('auth.login.cardTitle')}</CardTitle>
+                        <CardDescription>{t('auth.login.cardSubtitle')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {GOOGLE_ENABLED && (
@@ -163,33 +167,33 @@ export default function LoginPage() {
                                             d="M12 6.6c1.32 0 2.5.46 3.43 1.35l2.57-2.57C16.47 3.9 14.43 3 12 3 8.55 3 5.54 4.3 4.06 7.74l3.17 2.41C7.9 8.1 9.78 6.6 12 6.6z"
                                         />
                                     </svg>
-                                    Continuar com Google
+                                    {t('auth.login.continueGoogle')}
                                 </Button>
                                 <div className="flex items-center gap-3">
                                     <span className="h-px flex-1 bg-border/60" />
-                                    <span className="text-xs text-muted-foreground">ou</span>
+                                    <span className="text-xs text-muted-foreground">{t('common.or')}</span>
                                     <span className="h-px flex-1 bg-border/60" />
                                 </div>
                             </div>
                         )}
                         <form onSubmit={handleSubmit(onSubmit)} className={`space-y-5 ${GOOGLE_ENABLED ? 'pt-4' : ''}`}>
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t('auth.login.emailLabel')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="nome@empresa.com"
+                                    placeholder={t('auth.login.emailPlaceholder')}
                                     className="bg-background/60"
                                     {...register('email')}
                                 />
                                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">{t('auth.login.passwordLabel')}</Label>
                                 <Input
                                     id="password"
                                     type="password"
-                                    placeholder="Sua senha"
+                                    placeholder={t('auth.login.passwordPlaceholder')}
                                     className="bg-background/60"
                                     {...register('password')}
                                 />
@@ -201,15 +205,15 @@ export default function LoginPage() {
                                 className="w-full h-10 text-sm font-semibold shadow-lg shadow-primary/20"
                                 disabled={mutation.isPending}
                             >
-                                {mutation.isPending ? 'Entrando...' : 'Entrar'}
+                                {mutation.isPending ? t('auth.login.submitting') : t('auth.login.submit')}
                             </Button>
                         </form>
                     </CardContent>
                     <CardFooter className="justify-center">
                         <p className="text-sm text-muted-foreground">
-                            Ainda não tem conta?{" "}
+                            {t('auth.login.noAccount')}{" "}
                             <Link href="/auth/register" className="font-semibold text-primary hover:text-primary/80">
-                                Criar conta
+                                {t('auth.login.createAccount')}
                             </Link>
                         </p>
                     </CardFooter>

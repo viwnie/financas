@@ -69,7 +69,7 @@ export function useNotifications() {
 
         socket.on('notification', () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            toast.info('New notification received');
+            toast.info(t('notifications.newNotification'));
         });
 
         socket.on('friend_request', () => {
@@ -145,7 +145,7 @@ export function useNotifications() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            toast.success(t('notifications.allDeleted') || 'All notifications cleared');
+            toast.success(t('notifications.allDeleted'));
         },
     });
 

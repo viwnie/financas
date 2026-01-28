@@ -129,7 +129,7 @@ export default function TransactionsPage() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch transactions');
+            if (!res.ok) throw new Error(t('transactions.errors.fetch'));
             return res.json();
         },
         placeholderData: keepPreviousData,
@@ -166,13 +166,20 @@ export default function TransactionsPage() {
 
     const balance = summary.income - summary.expense;
 
+    const statusLabels = useMemo(() => ({
+        PENDING: t('transactions.status.pending'),
+        ACCEPTED: t('transactions.status.accepted'),
+        REJECTED: t('transactions.status.rejected'),
+        EXITED: t('transactions.status.exited'),
+    }), [t]);
+
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/transactions/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to delete');
+            if (!res.ok) throw new Error(t('transactions.errors.delete'));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -189,7 +196,7 @@ export default function TransactionsPage() {
                 },
                 body: JSON.stringify({ status })
             });
-            if (!res.ok) throw new Error('Failed to respond');
+            if (!res.ok) throw new Error(t('transactions.errors.respond'));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -202,7 +209,7 @@ export default function TransactionsPage() {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to leave');
+            if (!res.ok) throw new Error(t('transactions.errors.leave'));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -219,7 +226,7 @@ export default function TransactionsPage() {
                 },
                 body: JSON.stringify({ status })
             });
-            if (!res.ok) throw new Error('Failed to respond all');
+            if (!res.ok) throw new Error(t('transactions.errors.respondAll'));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -237,11 +244,11 @@ export default function TransactionsPage() {
                 },
                 body: JSON.stringify(data),
             });
-            if (!res.ok) throw new Error('Failed to update');
+            if (!res.ok) throw new Error(t('transactions.errors.update'));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            toast.success(t('transactions.updated'));
+            toast.success(t('transactions.updatedToast'));
         },
     });
 
@@ -368,9 +375,9 @@ export default function TransactionsPage() {
             <div className="space-y-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div className="space-y-3">
-                        <span className="app-chip">Transações</span>
+                        <span className="app-chip">{t('transactions.chip')}</span>
                         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">{t('transactions.title')}</h1>
-                        <p className="text-muted-foreground">Organize receitas e despesas com filtros inteligentes.</p>
+                        <p className="text-muted-foreground">{t('transactions.subtitle')}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Button
@@ -383,7 +390,7 @@ export default function TransactionsPage() {
                         <Button
                             variant="outline"
                             className="rounded-full bg-background/60"
-                            onClick={() => toast.info(t('transactions.comingSoon') || 'Em breve')}
+                            onClick={() => toast.info(t('transactions.comingSoon'))}
                         >
                             <ArrowLeftRight className="mr-2 h-4 w-4" />
                             {t('transactions.transfer')}
@@ -391,7 +398,7 @@ export default function TransactionsPage() {
                         <Button
                             variant="outline"
                             className="rounded-full bg-background/60"
-                            onClick={() => toast.info(t('transactions.comingSoon') || 'Em breve')}
+                            onClick={() => toast.info(t('transactions.comingSoon'))}
                         >
                             <Upload className="mr-2 h-4 w-4" />
                             {t('transactions.import')}
@@ -484,7 +491,7 @@ export default function TransactionsPage() {
                             <div className="relative w-full max-w-md">
                                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
-                                    placeholder={t('transactions.searchPlaceholder') || "Search..."}
+                                    placeholder={t('transactions.searchPlaceholder')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full max-w-md pl-9"
@@ -525,10 +532,10 @@ export default function TransactionsPage() {
                                     setIsFixedFilter('ALL');
                                     setIsSharedFilter('ALL');
                                 }}
-                                title={t('common.reset') || "Reset Filters"}
+                                title={t('transactions.resetFilters')}
                             >
                                 <RotateCcw className="h-4 w-4 mr-2" />
-                                {t('common.reset') || "Reset"}
+                                {t('common.reset')}
 
                             </Button>
                         </div>
@@ -554,29 +561,29 @@ export default function TransactionsPage() {
 
                         <Select value={isFixedFilter} onValueChange={setIsFixedFilter}>
                             <SelectTrigger className="w-[160px] h-8 text-xs">
-                                <SelectValue placeholder="Recurring" />
+                                <SelectValue placeholder={t('transactions.filter.recurring')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="ALL">{t('transactions.filter.allRecurring') || "All Occurrences"}</SelectItem>
-                                <SelectItem value="YES">{t('transactions.filter.onlyRecurring') || "Recurring Only"}</SelectItem>
-                                <SelectItem value="NO">{t('transactions.filter.onlyOneTime') || "One-time Only"}</SelectItem>
+                                <SelectItem value="ALL">{t('transactions.filter.allRecurring')}</SelectItem>
+                                <SelectItem value="YES">{t('transactions.filter.onlyRecurring')}</SelectItem>
+                                <SelectItem value="NO">{t('transactions.filter.onlyOneTime')}</SelectItem>
                             </SelectContent>
                         </Select>
 
                         <Select value={isSharedFilter} onValueChange={setIsSharedFilter}>
                             <SelectTrigger className="w-[150px] h-8 text-xs">
-                                <SelectValue placeholder="Shared" />
+                                <SelectValue placeholder={t('transactions.filter.shared')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="ALL">{t('transactions.filter.allShared') || "All Transactions"}</SelectItem>
-                                <SelectItem value="YES">{t('transactions.filter.onlyShared') || "Shared Only"}</SelectItem>
-                                <SelectItem value="NO">{t('transactions.filter.onlyPrivate') || "Private Only"}</SelectItem>
+                                <SelectItem value="ALL">{t('transactions.filter.allShared')}</SelectItem>
+                                <SelectItem value="YES">{t('transactions.filter.onlyShared')}</SelectItem>
+                                <SelectItem value="NO">{t('transactions.filter.onlyPrivate')}</SelectItem>
                             </SelectContent>
                         </Select>
 
                         <div className="ml-auto flex items-center gap-1 rounded-full border border-border/60 bg-background/60 p-1">
                             {[
-                                { label: t('transactions.quickAll') || 'All', value: 'ALL' },
+                                { label: t('transactions.quickAll'), value: 'ALL' },
                                 { label: t('transactions.income'), value: 'INCOME' },
                                 { label: t('transactions.expense'), value: 'EXPENSE' },
                             ].map((option) => (
@@ -679,13 +686,13 @@ export default function TransactionsPage() {
                                                             {transaction.isShared && (
                                                                 <span className="inline-flex flex-col items-start px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
                                                                     <span>{t('transactions.shared')}</span>
-                                                                    <span className="text-[10px] whitespace-nowrap opacity-90">• {acceptedCount}/{totalInvited} Accepted</span>
+                                                                    <span className="text-[10px] whitespace-nowrap opacity-90">• {acceptedCount}/{totalInvited} {t('transactions.acceptedLabel')}</span>
                                                                 </span>
                                                             )}
                                                             {transaction.isShared && (
                                                                 <div className="flex -space-x-2">
                                                                     {transaction.participants.map((p, idx) => {
-                                                                        const name = p.user?.name || p.placeholderName || 'Unknown';
+                                                                        const name = p.user?.name || p.placeholderName || t('common.unknown');
                                                                         const isCreatorParticipant = p.userId === transaction.creatorId;
                                                                         if (isCreatorParticipant) return null;
 
@@ -726,7 +733,7 @@ export default function TransactionsPage() {
                                                                 myParticipant.status === 'ACCEPTED' ? 'text-green-600' :
                                                                     'text-red-600'
                                                                 }`}>
-                                                                {t('transactions.table.status')}: {myParticipant.status}
+                                                                {t('transactions.table.status')}: {statusLabels[myParticipant.status] || myParticipant.status}
                                                             </span>
                                                         )}
                                                     </div>
@@ -778,7 +785,7 @@ export default function TransactionsPage() {
                                                             </>
                                                         )}
                                                         {!isCreator && myParticipant?.status === 'ACCEPTED' && (
-                                                            <Button size="sm" variant="outline" onClick={() => openConfirmation('LEAVE', transaction.id)}>Leave</Button>
+                                                            <Button size="sm" variant="outline" onClick={() => openConfirmation('LEAVE', transaction.id)}>{t('transactions.leave')}</Button>
                                                         )}
                                                     </div>
                                                 </td>
@@ -793,20 +800,20 @@ export default function TransactionsPage() {
                 <Dialog open={isRecurrenceModalOpen} onOpenChange={setIsRecurrenceModalOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>{t('transactions.deleteRecurringTitle') || 'Delete Transaction'}</DialogTitle>
+                            <DialogTitle>{t('transactions.deleteRecurringTitle')}</DialogTitle>
                             <DialogDescription>
-                                {t('transactions.deleteRecurringDesc') || 'This is a recurring transaction. What do you want to delete?'}
+                                {t('transactions.deleteRecurringDesc')}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="py-4">
                             <RadioGroup value={recurrenceAction} onValueChange={(v: any) => setRecurrenceAction(v)}>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="SINGLE" id="single" />
-                                    <Label htmlFor="single">{t('transactions.deleteSingle') || 'Delete only this date'}</Label>
+                                    <Label htmlFor="single">{t('transactions.deleteSingle')}</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="ALL" id="all" />
-                                    <Label htmlFor="all">{t('transactions.deleteAll') || 'Delete all transactions'}</Label>
+                                    <Label htmlFor="all">{t('transactions.deleteAll')}</Label>
                                 </div>
                             </RadioGroup>
                         </div>

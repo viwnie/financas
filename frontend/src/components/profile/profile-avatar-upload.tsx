@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload, X, Undo } from 'lucide-react';
 import { MutableRefObject } from 'react';
 import { getInitials } from '@/lib/utils';
+import { useLanguage } from '@/contexts/language-context';
 
 interface ProfileAvatarUploadProps {
     fileInputRef: MutableRefObject<HTMLInputElement | null>;
@@ -27,6 +28,7 @@ export function ProfileAvatarUpload({
     handleRevertAvatar,
     handleRemoveAvatar,
 }: ProfileAvatarUploadProps) {
+    const { t } = useLanguage();
     return (
         <div className="flex flex-col items-center gap-4">
             <Avatar className="h-24 w-24 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
@@ -60,17 +62,17 @@ export function ProfileAvatarUpload({
             <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="mr-2 h-4 w-4" />
-                    Change Photo
+                    {t('profile.changePhoto')}
                 </Button>
                 {(formData.avatar || formData.removeAvatar) ? (
                     <Button type="button" variant="outline" size="sm" onClick={handleRevertAvatar}>
                         <Undo className="mr-2 h-4 w-4" />
-                        Reverter
+                        {t('profile.revertPhoto')}
                     </Button>
                 ) : hasDbAvatar ? (
                     <Button type="button" variant="destructive" size="sm" onClick={handleRemoveAvatar}>
                         <X className="mr-2 h-4 w-4" />
-                        Remover
+                        {t('profile.removePhoto')}
                     </Button>
                 ) : null}
             </div>

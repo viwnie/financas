@@ -82,11 +82,11 @@ export default function DashboardPage() {
             <section className="space-y-8">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div className="space-y-2">
-                        <span className="app-chip">Dashboard</span>
+                        <span className="app-chip">{t('dashboard.chip')}</span>
                         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
-                            Olá, {user?.name}
+                            {t('dashboard.greeting').replace('{name}', user?.name || '')}
                         </h1>
-                        <p className="text-muted-foreground">Bem vindo a sua gestão financeira.</p>
+                        <p className="text-muted-foreground">{t('dashboard.welcomeMessage')}</p>
                     </div>
                     <div className="flex gap-3">
                         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -121,48 +121,48 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                                 <Landmark className="h-4 w-4 text-primary" />
-                                Open Finance
+                                {t('dashboard.openFinance.label')}
                             </div>
-                            <h2 className="text-xl font-semibold text-foreground">Conecte seu banco automaticamente</h2>
+                            <h2 className="text-xl font-semibold text-foreground">{t('dashboard.openFinance.title')}</h2>
                             <p className="text-sm text-muted-foreground max-w-xl">
-                                Importe suas transações bancárias de forma segura via Open Finance Brasil.
+                                {t('dashboard.openFinance.description')}
                             </p>
                         </div>
                         <Button className="rounded-full bg-gradient-to-r from-primary to-emerald-500 text-primary-foreground shadow-[0_0_24px_rgba(16,185,129,0.35)]">
-                            Conectar Banco
+                            {t('dashboard.openFinance.cta')}
                         </Button>
                     </CardContent>
                 </Card>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <StatCard
-                        label="Entradas"
+                        label={t('dashboard.cards.entries')}
                         value={formatCurrency(entries, locale, 'BRL')}
-                        helper="Receitas do mês"
+                        helper={t('dashboard.cards.entriesHelper')}
                         icon={<ArrowUpRight className="h-4 w-4 text-emerald-500" />}
                     />
                     <StatCard
-                        label="Saídas"
+                        label={t('dashboard.cards.exits')}
                         value={formatCurrency(exits, locale, 'BRL')}
-                        helper="Despesas do mês"
+                        helper={t('dashboard.cards.exitsHelper')}
                         icon={<ArrowDownRight className="h-4 w-4 text-rose-500" />}
                     />
                     <StatCard
-                        label="Saldo em Conta"
+                        label={t('dashboard.cards.balance')}
                         value={formatCurrency(balance, locale, 'BRL')}
-                        helper="Disponível (projeção)"
+                        helper={t('dashboard.cards.balanceHelper')}
                         icon={<Wallet className="h-4 w-4 text-primary" />}
                     />
                     <StatCard
-                        label="Investimentos"
+                        label={t('dashboard.cards.investments')}
                         value={formatCurrency(0, locale, 'BRL')}
-                        helper="Total investido (projeção)"
+                        helper={t('dashboard.cards.investmentsHelper')}
                         icon={<TrendingUp className="h-4 w-4 text-primary" />}
                     />
                     <StatCard
-                        label="Transferências"
+                        label={t('dashboard.cards.transfers')}
                         value={formatCurrency(0, locale, 'BRL')}
-                        helper="Entre contas"
+                        helper={t('dashboard.cards.transfersHelper')}
                         icon={<ChartLine className="h-4 w-4 text-primary" />}
                     />
                 </div>
@@ -170,18 +170,18 @@ export default function DashboardPage() {
                 <div className="grid gap-6 lg:grid-cols-2">
                     <Card className="app-card border-none">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Resultado</CardTitle>
-                            <p className="text-xs text-muted-foreground">Fluxo do mês</p>
+                            <CardTitle className="text-base">{t('dashboard.result.title')}</CardTitle>
+                            <p className="text-xs text-muted-foreground">{t('dashboard.result.subtitle')}</p>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="text-2xl font-semibold text-foreground">{formatCurrency(balance, locale, 'BRL')}</div>
                             <div className="space-y-2 text-sm text-muted-foreground">
                                 <div className="flex items-center justify-between">
-                                    <span>Entradas</span>
+                                    <span>{t('dashboard.result.entries')}</span>
                                     <span className="text-foreground">{formatCurrency(entries, locale, 'BRL')}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span>Saídas</span>
+                                    <span>{t('dashboard.result.exits')}</span>
                                     <span className="text-foreground">{formatCurrency(exits, locale, 'BRL')}</span>
                                 </div>
                             </div>
@@ -190,14 +190,14 @@ export default function DashboardPage() {
 
                     <Card className="app-card border-none">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Faturas do Mês</CardTitle>
+                            <CardTitle className="text-base">{t('dashboard.invoices.title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col items-center justify-center py-10 text-center">
                             <p className="text-sm text-muted-foreground">
-                                Nenhuma fatura ou despesa recorrente!
+                                {t('dashboard.invoices.emptyTitle')}
                             </p>
                             <p className="mt-2 text-xs text-muted-foreground">
-                                Adicione despesas recorrentes ou conecte o Pluggy.
+                                {t('dashboard.invoices.emptyDescription')}
                             </p>
                         </CardContent>
                     </Card>
@@ -206,12 +206,12 @@ export default function DashboardPage() {
                 <Card className="app-card border-none">
                     <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <CardTitle className="text-base">Fluxo de Caixa</CardTitle>
-                            <p className="text-xs text-muted-foreground">Projeção para o próximo ano</p>
+                            <CardTitle className="text-base">{t('dashboard.cashflow.title')}</CardTitle>
+                            <p className="text-xs text-muted-foreground">{t('dashboard.cashflow.subtitle')}</p>
                         </div>
                         <Select value={projectionYear} onValueChange={setProjectionYear}>
                             <SelectTrigger className="w-[160px] rounded-full bg-background/60">
-                                <SelectValue placeholder="Próximo ano" />
+                                <SelectValue placeholder={t('dashboard.cashflow.placeholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {yearOptions.map((year) => (
@@ -224,12 +224,12 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="rounded-2xl border border-dashed border-border/70 bg-background/40 px-4 py-6 text-center text-sm text-muted-foreground">
-                            Projeção baseada em lançamentos planejados e faturas futuras
+                            {t('dashboard.cashflow.emptyTitle')}
                             <br />
-                            Nenhum dado encontrado para o período selecionado.
+                            {t('dashboard.cashflow.emptyDescription')}
                         </div>
                         <Button variant="outline" className="rounded-full">
-                            Adicionar lançamentos futuros
+                            {t('dashboard.cashflow.cta')}
                         </Button>
                     </CardContent>
                 </Card>
@@ -237,36 +237,36 @@ export default function DashboardPage() {
                 <div className="grid gap-6 lg:grid-cols-3">
                     <Card className="app-card border-none lg:col-span-2">
                         <CardHeader>
-                            <CardTitle className="text-base">Meus Investimentos</CardTitle>
+                            <CardTitle className="text-base">{t('dashboard.investments.title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm text-muted-foreground">
-                            <p>Nenhum investimento encontrado.</p>
-                            <p>Conecte uma conta de corretora ou banco para ver seus investimentos.</p>
+                            <p>{t('dashboard.investments.emptyTitle')}</p>
+                            <p>{t('dashboard.investments.emptyDescription')}</p>
                         </CardContent>
                     </Card>
 
                     <div className="grid gap-6">
                         <Card className="app-card border-none">
                             <CardHeader>
-                                <CardTitle className="text-base">Meus Cartões</CardTitle>
+                                <CardTitle className="text-base">{t('dashboard.cardsSection.title')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm text-muted-foreground">
-                                <p>Nenhum cartão cadastrado</p>
-                                <p>Cadastre seus cartões para acompanhar gastos e faturas.</p>
-                                <Button variant="outline" className="rounded-full">Cadastrar Cartão</Button>
+                                <p>{t('dashboard.cardsSection.emptyTitle')}</p>
+                                <p>{t('dashboard.cardsSection.emptyDescription')}</p>
+                                <Button variant="outline" className="rounded-full">{t('dashboard.cardsSection.cta')}</Button>
                             </CardContent>
                         </Card>
 
                         <Card className="app-card border-none">
                             <CardHeader>
-                                <CardTitle className="text-base">Maiores Gastos</CardTitle>
-                                <p className="text-xs text-muted-foreground">Mês Atual</p>
+                                <CardTitle className="text-base">{t('dashboard.topSpending.title')}</CardTitle>
+                                <p className="text-xs text-muted-foreground">{t('dashboard.topSpending.subtitle')}</p>
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm text-muted-foreground">
-                                <p>Nenhum gasto registrado</p>
-                                <p>Seus gastos do mês aparecerão aqui assim que você adicionar transações.</p>
+                                <p>{t('dashboard.topSpending.emptyTitle')}</p>
+                                <p>{t('dashboard.topSpending.emptyDescription')}</p>
                                 <Button className="rounded-full bg-gradient-to-r from-primary to-emerald-500 text-primary-foreground shadow-[0_0_24px_rgba(16,185,129,0.35)]">
-                                    Adicionar Transação
+                                    {t('dashboard.topSpending.cta')}
                                 </Button>
                             </CardContent>
                         </Card>

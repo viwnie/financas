@@ -3,12 +3,14 @@
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth-store';
+import { useLanguage } from '@/contexts/language-context';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 export function NotificationListener() {
     const { token, user } = useAuthStore();
     const router = useRouter();
+    const { t } = useLanguage();
 
     useEffect(() => {
         if (!token || !user) return;
@@ -24,7 +26,7 @@ export function NotificationListener() {
         socket.on('friend_request', (data: { message: string }) => {
             toast.info(data.message, {
                 action: {
-                    label: 'View',
+                    label: t('common.view'),
                     onClick: () => router.push('/friends')
                 }
             });
@@ -33,7 +35,7 @@ export function NotificationListener() {
         socket.on('transaction_invitation', (data: { message: string }) => {
             toast.info(data.message, {
                 action: {
-                    label: 'View',
+                    label: t('common.view'),
                     onClick: () => router.push('/transactions')
                 }
             });
@@ -42,14 +44,14 @@ export function NotificationListener() {
         socket.on('transaction_update', (data: { message: string }) => {
             toast.info(data.message, {
                 action: {
-                    label: 'View',
+                    label: t('common.view'),
                     onClick: () => router.push('/transactions')
                 }
             });
         });
 
         socket.on('friend_request_declined', (data: any) => {
-            toast.error('Friend Request Declined', {
+            toast.error(t('notifications.friendRequestDeclined'), {
                 description: data.message,
             });
         });

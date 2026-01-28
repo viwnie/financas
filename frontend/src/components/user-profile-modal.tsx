@@ -17,6 +17,7 @@ import { useProfileManager } from './profile/use-profile-manager';
 import { ProfileAvatarUpload } from './profile/profile-avatar-upload';
 import { ProfileFormFields } from './profile/profile-form-fields';
 import { ProfilePasswordFields } from './profile/profile-password-fields';
+import { useLanguage } from '@/contexts/language-context';
 
 interface UserProfileModalProps {
     children: React.ReactNode;
@@ -24,6 +25,7 @@ interface UserProfileModalProps {
 
 export function UserProfileModal({ children }: UserProfileModalProps) {
     const [open, setOpen] = useState(false);
+    const { t } = useLanguage();
     const {
         user,
         loading,
@@ -49,9 +51,9 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent className="sm:max-w-[550px]">
                 <DialogHeader>
-                    <DialogTitle>Edit Profile</DialogTitle>
+                    <DialogTitle>{t('profile.editTitle')}</DialogTitle>
                     <DialogDescription>
-                        Make changes to your profile here. Click save when you're done.
+                        {t('profile.editDescription')}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -87,7 +89,7 @@ export function UserProfileModal({ children }: UserProfileModalProps) {
                     <DialogFooter>
                         <Button type="submit" disabled={loading || usernameAvailable === false || !hasChanges}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save changes
+                            {t('profile.saveChanges')}
                         </Button>
                     </DialogFooter>
                 </form>

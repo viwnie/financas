@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppShell } from '@/components/app-shell';
 import { Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/language-context';
 import {
     Dialog,
     DialogContent,
@@ -49,6 +50,7 @@ interface UserSearch {
 
 export default function FriendsPage() {
     const { token, user } = useAuthStore();
+    const { t } = useLanguage();
     const queryClient = useQueryClient();
 
     // State
@@ -78,7 +80,7 @@ export default function FriendsPage() {
             const res = await fetch('http://localhost:3000/friends', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch friends');
+            if (!res.ok) throw new Error(t('friends.errors.fetchFriends'));
             return res.json();
         },
         enabled: !!token,
@@ -90,7 +92,7 @@ export default function FriendsPage() {
             const res = await fetch('http://localhost:3000/friends/pending', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch requests');
+            if (!res.ok) throw new Error(t('friends.errors.fetchRequests'));
             return res.json();
         },
         enabled: !!token,
@@ -102,7 +104,7 @@ export default function FriendsPage() {
             const res = await fetch('http://localhost:3000/friends/sent', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch sent requests');
+            if (!res.ok) throw new Error(t('friends.errors.fetchSentRequests'));
             return res.json();
         },
         enabled: !!token,
@@ -127,7 +129,7 @@ export default function FriendsPage() {
             const res = await fetch('http://localhost:3000/friends/external', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch external friends');
+            if (!res.ok) throw new Error(t('friends.errors.fetchExternal'));
             return res.json();
         },
         enabled: !!token,
@@ -139,7 +141,7 @@ export default function FriendsPage() {
             const res = await fetch('http://localhost:3000/friends/merge/received', {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch merge requests');
+            if (!res.ok) throw new Error(t('friends.errors.fetchMergeRequests'));
             return res.json();
         },
         enabled: !!token,
@@ -152,7 +154,7 @@ export default function FriendsPage() {
             const res = await fetch(`http://localhost:3000/friends/merge/${selectedMergeRequest}/details`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch details');
+            if (!res.ok) throw new Error(t('friends.errors.fetchMergeDetails'));
             return res.json();
         },
         enabled: !!selectedMergeRequest,
@@ -173,7 +175,7 @@ export default function FriendsPage() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Failed to send request');
+                throw new Error(data.message || t('friends.errors.sendRequest'));
             }
             return res.json();
         },
@@ -182,7 +184,7 @@ export default function FriendsPage() {
             setShowSuggestions(false);
             setAddError('');
             queryClient.invalidateQueries({ queryKey: ['sentRequests'] });
-            toast.success('Friend request sent!');
+            toast.success(t('friends.toast.requestSent'));
         },
         onError: (err) => {
             setAddError(err.message);
@@ -199,7 +201,7 @@ export default function FriendsPage() {
                 },
                 body: JSON.stringify({ status }),
             });
-            if (!res.ok) throw new Error('Failed to respond');
+            if (!res.ok) throw new Error(t('friends.errors.respond'));
             return res.json();
         },
         onSuccess: () => {
@@ -214,7 +216,7 @@ export default function FriendsPage() {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to cancel request');
+            if (!res.ok) throw new Error(t('friends.errors.cancelRequest'));
             return res.json();
         },
         onSuccess: () => {
@@ -228,12 +230,12 @@ export default function FriendsPage() {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to remove friend');
+            if (!res.ok) throw new Error(t('friends.errors.removeFriend'));
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['friends'] });
-            toast.success('Friend removed');
+            toast.success(t('friends.toast.removed'));
         },
     });
 
@@ -249,7 +251,7 @@ export default function FriendsPage() {
             });
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Failed to add external friend');
+                throw new Error(data.message || t('friends.errors.addExternalFriend'));
             }
             return res.json();
         },
@@ -257,7 +259,7 @@ export default function FriendsPage() {
             setSearchQuery('');
             setShowSuggestions(false);
             queryClient.invalidateQueries({ queryKey: ['externalFriends'] });
-            toast.success('External friend added');
+            toast.success(t('friends.toast.externalAdded'));
         },
         onError: (err) => toast.error(err.message),
     });
@@ -268,12 +270,12 @@ export default function FriendsPage() {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to delete external friend');
+            if (!res.ok) throw new Error(t('friends.errors.deleteExternalFriend'));
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['externalFriends'] });
-            toast.success('External friend deleted');
+            toast.success(t('friends.toast.externalDeleted'));
         },
     });
 
@@ -293,7 +295,7 @@ export default function FriendsPage() {
             });
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Failed to create merge request');
+                throw new Error(data.message || t('friends.errors.createMergeRequest'));
             }
             return res.json();
         },
@@ -301,7 +303,7 @@ export default function FriendsPage() {
             setMergeModalOpen(false);
             setSelectedExternalFriend(null);
             setSelectedMergeTarget(null);
-            toast.success('Merge request sent!');
+            toast.success(t('friends.toast.mergeSent'));
         },
         onError: (err) => toast.error(err.message)
     });
@@ -316,14 +318,14 @@ export default function FriendsPage() {
                 },
                 body: JSON.stringify({ status }),
             });
-            if (!res.ok) throw new Error('Failed to respond');
+            if (!res.ok) throw new Error(t('friends.errors.respond'));
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['receivedMergeRequests'] });
             queryClient.invalidateQueries({ queryKey: ['friends'] });
             setDetailsModalOpen(false);
-            toast.success('Response sent');
+            toast.success(t('friends.toast.responseSent'));
         },
     });
 
@@ -354,16 +356,16 @@ export default function FriendsPage() {
         <AppShell>
             <div className="space-y-8">
                 <div className="space-y-3">
-                    <span className="app-chip">Conexões</span>
-                    <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">Amigos</h1>
-                    <p className="text-muted-foreground">Gerencie convites, amigos e participantes externos em um só lugar.</p>
+                    <span className="app-chip">{t('friends.chip')}</span>
+                    <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient">{t('friends.title')}</h1>
+                    <p className="text-muted-foreground">{t('friends.subtitle')}</p>
                 </div>
 
                 <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-8">
                         <Card className="app-card">
                             <CardHeader>
-                                <CardTitle>Add Friend</CardTitle>
+                                <CardTitle>{t('friends.addTitle')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="relative">
@@ -371,7 +373,7 @@ export default function FriendsPage() {
                                         <div className="relative flex-1">
                                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                             <Input
-                                                placeholder="Search by username..."
+                                                placeholder={t('friends.searchPlaceholder')}
                                                 value={searchQuery}
                                                 onChange={handleSearchChange}
                                                 onKeyDown={handleKeyDown}
@@ -383,7 +385,7 @@ export default function FriendsPage() {
                                             onClick={() => addFriendMutation.mutate(searchQuery)}
                                             disabled={addFriendMutation.isPending || !searchQuery}
                                         >
-                                            {addFriendMutation.isPending ? 'Sending...' : 'Add'}
+                                            {addFriendMutation.isPending ? t('friends.sending') : t('friends.addButton')}
                                         </Button>
                                     </div>
 
@@ -415,7 +417,7 @@ export default function FriendsPage() {
                                                         className="px-4 py-2 hover:bg-accent hover:text-accent-foreground cursor-pointer flex justify-between items-center text-primary"
                                                         onClick={() => addExternalFriendMutation.mutate(searchQuery)}
                                                     >
-                                                        <span>Adicionar "{searchQuery}" (Não cadastrado)</span>
+                                                        <span>{t('friends.addExternalLabel').replace('{name}', searchQuery)}</span>
                                                         <UserPlus className="h-4 w-4" />
                                                     </li>
                                                 )}
@@ -431,7 +433,7 @@ export default function FriendsPage() {
                         {receivedMergeRequests.length > 0 && (
                             <Card className="app-card">
                                 <CardHeader>
-                                    <CardTitle>Merge Requests ({receivedMergeRequests.length})</CardTitle>
+                                    <CardTitle>{t('friends.mergeRequestsTitle').replace('{count}', String(receivedMergeRequests.length))}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {receivedMergeRequests.map((req) => (
@@ -441,8 +443,8 @@ export default function FriendsPage() {
                                                     <AvatarFallback>{getInitials(req.requester.name)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <p className="font-medium">From: {req.requester.name}</p>
-                                                    <p className="text-sm text-muted-foreground">Link with: {req.placeholderName}</p>
+                                                    <p className="font-medium">{t('friends.mergeFrom').replace('{name}', req.requester.name)}</p>
+                                                    <p className="text-sm text-muted-foreground">{t('friends.mergeLinkWith').replace('{name}', req.placeholderName)}</p>
                                                 </div>
                                             </div>
                                             <Button
@@ -452,7 +454,7 @@ export default function FriendsPage() {
                                                     setDetailsModalOpen(true);
                                                 }}
                                             >
-                                                View Details
+                                                {t('friends.viewDetails')}
                                             </Button>
                                         </div>
                                     ))}
@@ -463,7 +465,7 @@ export default function FriendsPage() {
                         {requests.length > 0 && (
                             <Card className="app-card">
                                 <CardHeader>
-                                    <CardTitle>Pending Requests ({requests.length})</CardTitle>
+                                    <CardTitle>{t('friends.pendingRequestsTitle').replace('{count}', String(requests.length))}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {requests.map((req) => (
@@ -487,14 +489,14 @@ export default function FriendsPage() {
                                                     size="sm"
                                                     onClick={() => respondMutation.mutate({ id: req.id, status: 'ACCEPTED' })}
                                                 >
-                                                    Accept
+                                                    {t('friends.accept')}
                                                 </Button>
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => respondMutation.mutate({ id: req.id, status: 'DECLINED' })}
                                                 >
-                                                    Decline
+                                                    {t('friends.decline')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -506,7 +508,7 @@ export default function FriendsPage() {
                         {sentRequests.length > 0 && (
                             <Card className="app-card">
                                 <CardHeader>
-                                    <CardTitle>Sent Requests ({sentRequests.length})</CardTitle>
+                                    <CardTitle>{t('friends.sentRequestsTitle').replace('{count}', String(sentRequests.length))}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {sentRequests.map((req) => (
@@ -524,7 +526,7 @@ export default function FriendsPage() {
                                                     <div className="flex items-center gap-2">
                                                         <p className="font-medium">{req.addressee.name}</p>
                                                         <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-medium">
-                                                            Pending
+                                                            {t('friends.pendingStatus')}
                                                         </span>
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">@{req.addressee.username}</p>
@@ -537,7 +539,7 @@ export default function FriendsPage() {
                                                 onClick={() => cancelRequestMutation.mutate(req.id)}
                                                 disabled={cancelRequestMutation.isPending}
                                             >
-                                                Cancel
+                                                {t('common.cancel')}
                                             </Button>
                                         </div>
                                     ))}
@@ -549,13 +551,13 @@ export default function FriendsPage() {
                     <div className="space-y-8">
                         <Card className="app-card">
                             <CardHeader>
-                                <CardTitle>My Friends ({friends.length})</CardTitle>
+                                <CardTitle>{t('friends.friendsTitle').replace('{count}', String(friends.length))}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 {friends.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground">
-                                        <p>No friends yet.</p>
-                                        <p className="text-sm">Search for users to add them!</p>
+                                        <p>{t('friends.emptyTitle')}</p>
+                                        <p className="text-sm">{t('friends.emptyDescription')}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
@@ -581,7 +583,7 @@ export default function FriendsPage() {
                                                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                     onClick={() => setFriendToRemove(friend)}
                                                 >
-                                                    Remove
+                                                    {t('friends.remove')}
                                                 </Button>
                                             </div>
                                         ))}
@@ -593,12 +595,12 @@ export default function FriendsPage() {
                         {/* External Friends */}
                         <Card className="app-card">
                             <CardHeader>
-                                <CardTitle>External Friends ({externalFriends.length})</CardTitle>
+                                <CardTitle>{t('friends.externalFriendsTitle').replace('{count}', String(externalFriends.length))}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 {externalFriends.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground">
-                                        <p>No external friends.</p>
+                                        <p>{t('friends.externalEmptyTitle')}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
@@ -610,7 +612,7 @@ export default function FriendsPage() {
                                                     </Avatar>
                                                     <div>
                                                         <p className="font-medium">{friend.name}</p>
-                                                        <p className="text-sm text-muted-foreground">Ad-hoc participant</p>
+                                                        <p className="text-sm text-muted-foreground">{t('friends.externalParticipantLabel')}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
@@ -622,7 +624,7 @@ export default function FriendsPage() {
                                                             setMergeModalOpen(true);
                                                         }}
                                                     >
-                                                        Link to User
+                                                        {t('friends.linkToUser')}
                                                     </Button>
                                                     {friend.id && (
                                                         <Button
@@ -631,7 +633,7 @@ export default function FriendsPage() {
                                                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                             onClick={() => deleteExternalFriendMutation.mutate(friend.id!)}
                                                         >
-                                                            Delete
+                                                            {t('common.delete')}
                                                         </Button>
                                                     )}
                                                 </div>
@@ -648,14 +650,14 @@ export default function FriendsPage() {
             <Dialog open={!!friendToRemove} onOpenChange={(open) => !open && setFriendToRemove(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Remove Friend</DialogTitle>
+                        <DialogTitle>{t('friends.dialogRemoveTitle')}</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to remove <strong>{friendToRemove?.name}</strong> from your friends list?
+                            {t('friends.dialogRemoveDescription').replace('{name}', friendToRemove?.name || "")}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setFriendToRemove(null)}>
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                         <Button
                             variant="destructive"
@@ -666,7 +668,7 @@ export default function FriendsPage() {
                                 }
                             }}
                         >
-                            Remove
+                            {t('friends.remove')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -676,10 +678,9 @@ export default function FriendsPage() {
             <Dialog open={mergeModalOpen} onOpenChange={setMergeModalOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Link External Friend</DialogTitle>
+                        <DialogTitle>{t('friends.dialogLinkTitle')}</DialogTitle>
                         <DialogDescription>
-                            Select a registered friend to link <strong>{selectedExternalFriend}</strong> to.
-                            This will send a request to the user to accept the merge.
+                            {t('friends.dialogLinkDescription').replace('{name}', selectedExternalFriend || "")}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -697,12 +698,12 @@ export default function FriendsPage() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setMergeModalOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setMergeModalOpen(false)}>{t('common.cancel')}</Button>
                         <Button
                             onClick={() => createMergeRequestMutation.mutate()}
                             disabled={!selectedMergeTarget || createMergeRequestMutation.isPending}
                         >
-                            {createMergeRequestMutation.isPending ? 'Sending...' : 'Send Request'}
+                            {createMergeRequestMutation.isPending ? t('friends.sending') : t('friends.sendRequest')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -712,20 +713,20 @@ export default function FriendsPage() {
             <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Merge Request Details</DialogTitle>
+                        <DialogTitle>{t('friends.dialogMergeDetailsTitle')}</DialogTitle>
                         <DialogDescription>
-                            The following transactions will be linked to your account if you accept.
+                            {t('friends.dialogMergeDetailsDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[300px] overflow-y-auto space-y-2">
                         {mergeDetails?.map((tx) => (
                             <div key={tx.id} className="p-3 border rounded bg-card">
                                 <div className="flex justify-between">
-                                    <span className="font-medium">{tx.description || 'No description'}</span>
+                                    <span className="font-medium">{tx.description || t('friends.mergeNoDescription')}</span>
                                     <span>{new Date(tx.date).toLocaleDateString()}</span>
                                 </div>
                                 <div className="text-sm text-muted-foreground mt-1">
-                                    Total: R$ {Number(tx.amount).toFixed(2)}
+                                    {t('friends.mergeTotal').replace('{amount}', Number(tx.amount).toFixed(2))}
                                 </div>
                             </div>
                         ))}
@@ -735,7 +736,7 @@ export default function FriendsPage() {
                             Reject
                         </Button>
                         <Button onClick={() => respondMergeMutation.mutate({ id: selectedMergeRequest!, status: 'ACCEPTED' })}>
-                            Accept
+                            {t('friends.accept')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

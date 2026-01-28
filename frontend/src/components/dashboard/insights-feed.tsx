@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "@/services/dashboard.service";
 import { useAuthStore } from "@/store/auth-store";
+import { useLanguage } from "@/contexts/language-context";
 
 const ICON_MAP: Record<string, any> = {
     'warning': AlertCircle,
@@ -15,6 +16,7 @@ const ICON_MAP: Record<string, any> = {
 
 export function InsightsFeed() {
     const { token } = useAuthStore();
+    const { t } = useLanguage();
 
     const { data: insights } = useQuery({
         queryKey: ['dashboard-nudges'],
@@ -29,7 +31,7 @@ export function InsightsFeed() {
         <Card className="app-card border-none shadow-none bg-transparent">
             <CardHeader className="pb-2 px-0">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Insights & Nudges
+                    {t('insights.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="px-0 space-y-3">

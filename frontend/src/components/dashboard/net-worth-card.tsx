@@ -7,9 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "@/services/dashboard.service";
 import { useAuthStore } from "@/store/auth-store";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/language-context";
+import { formatCurrency } from "@/lib/utils";
 
 export function NetWorthCard() {
     const { token } = useAuthStore();
+    const { t, locale } = useLanguage();
 
     const { data: stats, isLoading } = useQuery({
         queryKey: ['dashboard-stats'],
@@ -35,7 +38,7 @@ export function NetWorthCard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 z-10">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Wallet className="h-4 w-4 text-primary" />
-                    Patrimônio Líquido
+                    {t('dashboard.netWorth.title')}
                 </CardTitle>
                 <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
                     <TrendingUp className="h-4 w-4 text-primary" />
@@ -43,7 +46,7 @@ export function NetWorthCard() {
             </CardHeader>
             <CardContent className="z-10 relative">
                 <div className="text-4xl font-bold tracking-tight text-foreground">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(netWorth)}
+                    {formatCurrency(netWorth, locale, 'BRL')}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                     <span className="text-emerald-500 flex items-center font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
@@ -51,8 +54,7 @@ export function NetWorthCard() {
                         {percentageChange}%
                     </span>
                     <span className="opacity-80">
-                        + {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthlyChange)} este mês
-                    </span>
+                        {t('dashboard.netWorth.monthlyChange').replace('{amount}', formatCurrency(monthlyChange, locale, 'BRL'))}</span>
                 </p>
             </CardContent>
         </Card>

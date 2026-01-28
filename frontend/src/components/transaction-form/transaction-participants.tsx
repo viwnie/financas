@@ -176,11 +176,11 @@ export function TransactionParticipants({
                                 ) : (
                                     <div className="flex items-center gap-2">
                                         <div className="relative w-[100px]">
-                                            <span className="absolute left-2 top-2.5 text-xs text-muted-foreground">R$</span>
+                                            <span className="absolute left-2 top-2.5 text-xs text-muted-foreground">{t('common.currencySymbol')}</span>
                                             <Input
                                                 type="number"
                                                 step="0.01"
-                                                placeholder="0.00"
+                                                placeholder={t('transactions.splitAmountPlaceholder')}
                                                 className="pl-6 h-9"
                                                 {...register(`participants.${index}.amount`)}
                                                 onChange={(e) => handleSplitChange(index, 'amount', e.target.value)}
@@ -190,12 +190,12 @@ export function TransactionParticipants({
                                             <Input
                                                 type="number"
                                                 step="0.01"
-                                                placeholder="%"
+                                                placeholder={t('transactions.splitPercentPlaceholder')}
                                                 className="pr-6 h-9"
                                                 {...register(`participants.${index}.percent`)}
                                                 onChange={(e) => handleSplitChange(index, 'percent', e.target.value)}
                                             />
-                                            <span className="absolute right-2 top-2.5 text-xs text-muted-foreground">%</span>
+                                            <span className="absolute right-2 top-2.5 text-xs text-muted-foreground">{t('common.percentSymbol')}</span>
                                         </div>
                                         <Button
                                             type="button"

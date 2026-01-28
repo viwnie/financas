@@ -2,6 +2,7 @@ import * as React from "react"
 import { Check, ChevronsUpDown, Plus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useLanguage } from '@/contexts/language-context'
 import { Button } from "@/components/ui/button"
 import {
     Command,
@@ -37,13 +38,16 @@ export function MultiSelect({
     options,
     selected,
     onChange,
-    placeholder = "Select options...",
+    placeholder,
     className,
     width = "w-full",
     creatable = false
 }: MultiSelectProps) {
     const [open, setOpen] = React.useState(false)
     const [inputValue, setInputValue] = React.useState("")
+    const { t } = useLanguage()
+
+    const placeholderLabel = placeholder || t('common.selectOptions')
 
     const handleSelect = (value: string) => {
         if (selected.includes(value)) {
@@ -55,11 +59,11 @@ export function MultiSelect({
 
     // Calculate label for display
     const getDisplayLabel = () => {
-        if (selected.length === 0) return placeholder
+        if (selected.length === 0) return placeholderLabel
         if (selected.length === 1) {
             return options.find((opt) => opt.value === selected[0])?.label || selected[0]
         }
-        return `${selected.length} selected`
+        return t('common.selectedCount').replace('{count}', String(selected.length))
     }
 
     // Scroll to selected item execution
@@ -109,7 +113,7 @@ export function MultiSelect({
                     className={cn("justify-between font-normal", width, className)}
                 >
                     <span className="truncate">
-                        {selected.length === options.length && options.length > 1 ? "All" : getDisplayLabel()}
+                        {selected.length === options.length && options.length > 1 ? t('common.all') : getDisplayLabel()}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -117,7 +121,7 @@ export function MultiSelect({
             <PopoverContent className={cn("p-0", width)} align="start">
                 <Command defaultValue={selected.length === 1 ? options.find(o => o.value === selected[0])?.label : undefined}>
                     <CommandInput
-                        placeholder={`Search ${placeholder.toLowerCase()}...`}
+                        placeholder={t('common.searchPlaceholder').replace('{item}', placeholderLabel.toLowerCase())}
                         value={inputValue}
                         onValueChange={setInputValue}
                     />
@@ -129,10 +133,10 @@ export function MultiSelect({
                                     onClick={handleCreateOption}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Add "{inputValue}"
+{t('common.add')} "{inputValue}"
                                 </button>
                             ) : (
-                                "No results found."
+                                t('common.noResults')
                             )}
                         </CommandEmpty>
                         <CommandGroup>
@@ -164,7 +168,7 @@ export function MultiSelect({
                                         onSelect={handleCreateOption}
                                     >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Add "{inputValue}"
+    {t('common.add')} "{inputValue}"
                                     </CommandItem>
                                 </CommandGroup>
                             </>

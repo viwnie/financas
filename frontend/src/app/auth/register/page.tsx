@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Globe } from 'lucide-react';
+import { Moon, Sun, Globe, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
@@ -123,6 +123,19 @@ export default function RegisterPage() {
                 <div className="absolute bottom-[-12rem] right-[-8rem] h-[30rem] w-[30rem] rounded-full bg-emerald-500/20 blur-3xl" />
                 <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(15,23,42,0.04),transparent_45%,rgba(15,23,42,0.08))]" />
                 <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:24px_24px]" />
+            </div>
+
+            <div className="absolute top-6 left-6 z-50">
+                <Link href="/">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted/60 gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="text-sm font-medium">{t('common.backToHome')}</span>
+                    </Button>
+                </Link>
             </div>
 
             <div className="absolute top-6 right-6 z-50 flex items-center gap-4">

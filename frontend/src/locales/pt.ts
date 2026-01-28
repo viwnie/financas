@@ -1,5 +1,6 @@
 export const pt = {
     // Existing translations
+    'common.backToHome': 'Voltar para o início',
     'errors.descriptionRequired': 'A descrição é obrigatória',
     'errors.amountRequired': 'O valor deve ser maior que 0,01',
     'errors.categoryRequired': 'A categoria é obrigatória',

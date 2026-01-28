@@ -1,5 +1,6 @@
 export const es = {
     // Existing translations
+    'common.backToHome': 'Volver al inicio',
     'errors.descriptionRequired': 'La descripción es obligatoria',
     'errors.amountRequired': 'El monto debe ser mayor a 0.01',
     'errors.categoryRequired': 'La categoría es obligatoria',

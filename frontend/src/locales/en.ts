@@ -1,5 +1,6 @@
 export const en = {
     // Existing translations
+    'common.backToHome': 'Back to home',
     'errors.descriptionRequired': 'Description is required',
     'errors.amountRequired': 'Amount must be greater than 0.01',
     'errors.categoryRequired': 'Category is required',

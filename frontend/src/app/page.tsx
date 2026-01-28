@@ -306,15 +306,15 @@ export default function LandingPage() {
                     </Link>
 
                     <div className="hidden md:flex items-center gap-1">
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.id}
-                                    href={link.href}
-                                    onClick={(event) => handleNavClick(event, link.href)}
-                                    onMouseEnter={() => setHoveredNav(link.id)}
-                                    onMouseLeave={() => setHoveredNav(null)}
-                                    className="relative px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                >
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.id}
+                                href={link.href}
+                                onClick={(event) => handleNavClick(event, link.href)}
+                                onMouseEnter={() => setHoveredNav(link.id)}
+                                onMouseLeave={() => setHoveredNav(null)}
+                                className="relative px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            >
                                 {hoveredNav === link.id && (
                                     <motion.div
                                         layoutId="nav-hover"
@@ -499,7 +499,7 @@ export default function LandingPage() {
                                 const Icon = feature.icon
                                 return (
                                     <motion.div
-                                        key={feature.title}
+                                        key={feature.titleKey}
                                         className="group rounded-3xl border border-border/60 bg-card/70 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
                                         initial={{ opacity: 0, y: 16 }}
                                         whileInView={{ opacity: 1, y: 0 }}
@@ -591,9 +591,8 @@ export default function LandingPage() {
                                 return (
                                     <motion.div
                                         key={plan.nameKey}
-                                        className={`relative rounded-3xl border p-6 flex flex-col bg-card/70 ${
-                                            plan.highlight ? 'border-primary shadow-2xl shadow-primary/20' : 'border-border/60'
-                                        }`}
+                                        className={`relative rounded-3xl border p-6 flex flex-col bg-card/70 ${plan.highlight ? 'border-primary shadow-2xl shadow-primary/20' : 'border-border/60'
+                                            }`}
                                         initial={{ opacity: 0, y: 16 }}
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true, amount: 0.2 }}
@@ -667,9 +666,8 @@ export default function LandingPage() {
                                         <hr className="w-full my-4 border-border/60" />
 
                                         <Button
-                                            className={`rounded-full h-11 text-sm font-semibold ${
-                                                plan.highlight ? '' : 'bg-transparent text-foreground border border-border/60 hover:bg-muted'
-                                            }`}
+                                            className={`rounded-full h-11 text-sm font-semibold ${plan.highlight ? '' : 'bg-transparent text-foreground border border-border/60 hover:bg-muted'
+                                                }`}
                                             variant={plan.highlight ? 'default' : 'outline'}
                                             asChild
                                         >

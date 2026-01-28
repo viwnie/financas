@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +13,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
+import { Moon, Sun, Globe } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type LoginForm = {
     email: string;
@@ -23,11 +32,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === 'true';
 
 export default function LoginPage() {
-    const { t } = useLanguage();
+    const { t, locale, setLocale } = useLanguage();
+    const { setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    const [isThemeAnimating, setIsThemeAnimating] = useState(false);
+
+    // Initial hooks
     const loginSchema = useMemo(() => z.object({
         email: z.string().email(t('auth.login.errors.invalidEmail')),
         password: z.string().min(6, t('auth.login.errors.passwordMin')),
     }), [t]);
+
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
     const [error, setError] = useState('');
@@ -67,6 +82,20 @@ export default function LoginPage() {
         mutation.mutate(data);
     };
 
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isThemeAnimating) return;
+        const timeout = window.setTimeout(() => setIsThemeAnimating(false), 450);
+        return () => window.clearTimeout(timeout);
+    }, [isThemeAnimating]);
+
+    if (!mounted) {
+        return null;
+    }
+
     return (
         <div className="relative min-h-screen overflow-hidden bg-background">
             <div className="pointer-events-none absolute inset-0">
@@ -74,6 +103,45 @@ export default function LoginPage() {
                 <div className="absolute bottom-[-10rem] right-[-6rem] h-[28rem] w-[28rem] rounded-full bg-emerald-500/20 blur-3xl" />
                 <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(15,23,42,0.04),transparent_45%,rgba(15,23,42,0.08))]" />
                 <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:24px_24px]" />
+            </div>
+
+            <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+                        setIsThemeAnimating(true);
+                    }}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-full w-9 h-9"
+                >
+                    <span
+                        className={cn(
+                            "relative inline-flex items-center justify-center",
+                            isThemeAnimating && "theme-toggle-anim"
+                        )}
+                    >
+                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-180 dark:scale-0" />
+                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-180 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                    </span>
+                    <span className="sr-only">{t('common.toggleTheme')}</span>
+                </Button>
+
+                <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-full w-9 h-9">
+                            <Globe className="h-[1.2rem] w-[1.2rem]" />
+                            <span className="absolute bottom-1 right-0 text-[9px] font-extrabold uppercase text-foreground leading-none">
+                                {locale}
+                            </span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setLocale('pt')}>{t('common.language.pt')}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLocale('en')}>{t('common.language.en')}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLocale('es')}>{t('common.language.es')}</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col-reverse items-center gap-10 px-6 py-12 lg:flex-row lg:gap-16">
